@@ -152,9 +152,18 @@ class _ApatheticLogger_Logger:  # noqa: N801  # pyright: ignore[reportUnusedClas
                 return False
             cls._logging_module_extended = True
 
+            ns = _get_namespace()
+
+            # Sanity check: validate TAG_STYLES keys are in LEVEL_ORDER
+            if __debug__:
+                _tag_levels = set(ns.TAG_STYLES.keys())
+                _known_levels = {lvl.upper() for lvl in ns.LEVEL_ORDER}
+                if not _tag_levels <= _known_levels:
+                    _msg = "TAG_STYLES contains unknown levels"
+                    raise AssertionError(_msg)
+
             logging.setLoggerClass(cls)
 
-            ns = _get_namespace()
             logging.addLevelName(ns.TRACE_LEVEL, "TRACE")
             logging.addLevelName(ns.SILENT_LEVEL, "SILENT")
 
