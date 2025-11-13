@@ -9,14 +9,14 @@ import inspect
 import logging
 import sys
 from collections.abc import Callable
-from contextlib import suppress
-from typing import Any, TextIO, cast
+from typing import Any, cast
 
 from .constants import _ApatheticLogger_Constants  # pyright: ignore[reportPrivateUsage]
 from .dual_stream_handler import (
     _ApatheticLogger_DualStreamHandler,  # pyright: ignore[reportPrivateUsage]
 )
 from .logger import _ApatheticLogger_Logger  # pyright: ignore[reportPrivateUsage]
+from .safe_log import _ApatheticLogger_SafeLog  # pyright: ignore[reportPrivateUsage]
 from .tag_formatter import (
     _ApatheticLogger_TagFormatter,  # pyright: ignore[reportPrivateUsage]
 )
@@ -42,6 +42,7 @@ class ApatheticLogger(  # pyright: ignore[reportPrivateUsage]
     _ApatheticLogger_Constants,
     _ApatheticLogger_DualStreamHandler,
     _ApatheticLogger_Logger,
+    _ApatheticLogger_SafeLog,
     _ApatheticLogger_TagFormatter,
 ):
     """Namespace for apathetic logger functionality.
@@ -53,30 +54,20 @@ class ApatheticLogger(  # pyright: ignore[reportPrivateUsage]
     The TagFormatter class is provided via the _ApatheticLogger_TagFormatter mixin.
     The DualStreamHandler class is provided via the
     _ApatheticLogger_DualStreamHandler mixin.
+    The safe_log static method is provided via the _ApatheticLogger_SafeLog mixin.
     """
 
     # --- Static Methods ----------------------------------------------------
 
     @staticmethod
-    def safe_log(msg: str) -> None:
-        """Emergency logger that never fails."""
-        stream = cast("TextIO", sys.__stderr__)
-        try:
-            print(msg, file=stream)
-        except Exception:  # noqa: BLE001
-            # As final guardrail — never crash during crash reporting
-            with suppress(Exception):
-                stream.write(f"[INTERNAL] {msg}\n")
-
-    @staticmethod
-    def make_test_trace(icon: str = "🧵") -> Callable[..., Any]:
+    def make_test_trace(icon: str = "🧪") -> Callable[..., Any]:
         def local_trace(label: str, *args: Any) -> Any:
             return ApatheticLogger.TEST_TRACE(label, *args, icon=icon)
 
         return local_trace
 
     @staticmethod
-    def TEST_TRACE(label: str, *args: Any, icon: str = "🧵") -> None:  # noqa: N802
+    def TEST_TRACE(label: str, *args: Any, icon: str = "🧪") -> None:  # noqa: N802
         """Emit a synchronized, flush-safe diagnostic line.
 
         Args:
