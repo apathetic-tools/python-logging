@@ -1,0 +1,49 @@
+<!-- Roadmap.md -->
+# 🧭 Roadmap
+
+Some of these we just want to consider, and may not want to implement.
+
+## 🎯 Core Features
+Major stitching capabilities and enhancements:
+
+
+## 🧩 Joiner Scripts (Build System)
+Exploring bundling options for generating the single-file release:
+
+- zip file: zipapp / shiv / pyinstaller --onefile
+- serger for stitched file
+
+## 🧪 Tests
+- How can we report what we comment tool ignore, in src and in tests?
+
+## 🧑‍💻 Development
+- Evaluate ignores and determine if we can fix them instead of ignore them
+- AI command to do common tasks based on reddit advice for dealing with AI.
+
+## 🚀 Deployment
+- Deploy action when I tag a release should create a release and attach it to the tagged release.
+
+## 🔌 API
+
+
+
+## 📚 Documentation
+- Where do we document the structure of the project? What do we document inside it vs here?
+- Where do we do longer usage documentation? README can get a bit big
+- Logo? Images? Icon? README banner?
+- API docs
+
+## 💡 Ideas & Experiments
+Potential quality-of-life features:
+
+- publish to PyPI
+
+> See [REJECTED.md](REJECTED.md) for experiments and ideas that were explored but intentionally not pursued.
+
+---
+
+> ✨ *AI was used to help draft language, formatting, and code — plus we just love em dashes.*
+
+<p align="center">
+  <sub>😐 <a href="https://apathetic-tools.github.io/">Apathetic Tools</a> © <a href="./LICENSE">MIT-aNOAI</a></sub>
+</p>

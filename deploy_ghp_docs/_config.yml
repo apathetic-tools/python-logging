@@ -1,0 +1,49 @@
+# Jekyll configuration for GitHub Pages
+title: Apathetic Python Logger
+description: Minimal wrapper for the Python standard library logger
+url: https://apathetic-tools.github.io
+baseurl: /python-logs
+
+# GitHub Pages settings
+plugins:
+  - jekyll-feed
+  - jekyll-seo-tag
+  - jekyll-sitemap
+
+# Theme (using minimal theme for clean look)
+theme: minima
+
+# Exclude files from processing
+exclude:
+  - Gemfile
+  - Gemfile.lock
+  - node_modules
+  - vendor/bundle/
+  - vendor/cache/
+  - vendor/gems/
+  - vendor/ruby/
+
+# Navigation
+header_pages:
+  - index.md
+  - installation.md
+  - quickstart.md
+  - api.md
+  - examples.md
+  - contributing.md
+
+# Site metadata
+author: Apathetic Tools
+email: ""
+twitter:
+  username: ""
+github:
+  username: "apathetic-tools"
+
+# Build settings
+markdown: kramdown
+highlighter: rouge
+kramdown:
+  input: GFM
+  syntax_highlighter: rouge
+
