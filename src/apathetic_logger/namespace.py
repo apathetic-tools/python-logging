@@ -13,6 +13,9 @@ from contextlib import suppress
 from typing import Any, TextIO, cast
 
 from .constants import _ApatheticLogger_Constants  # pyright: ignore[reportPrivateUsage]
+from .dual_stream_handler import (
+    _ApatheticLogger_DualStreamHandler,  # pyright: ignore[reportPrivateUsage]
+)
 from .logger import _ApatheticLogger_Logger  # pyright: ignore[reportPrivateUsage]
 from .tag_formatter import (
     _ApatheticLogger_TagFormatter,  # pyright: ignore[reportPrivateUsage]
@@ -37,6 +40,7 @@ _real_time = importlib.import_module("time")
 
 class ApatheticLogger(  # pyright: ignore[reportPrivateUsage]
     _ApatheticLogger_Constants,
+    _ApatheticLogger_DualStreamHandler,
     _ApatheticLogger_Logger,
     _ApatheticLogger_TagFormatter,
 ):
@@ -47,28 +51,9 @@ class ApatheticLogger(  # pyright: ignore[reportPrivateUsage]
 
     The Logger class is provided via the _ApatheticLogger_Logger mixin.
     The TagFormatter class is provided via the _ApatheticLogger_TagFormatter mixin.
+    The DualStreamHandler class is provided via the
+    _ApatheticLogger_DualStreamHandler mixin.
     """
-
-    class DualStreamHandler(logging.StreamHandler):  # type: ignore[type-arg]
-        """Send info/debug/trace to stdout, everything else to stderr."""
-
-        enable_color: bool = False
-
-        def __init__(self) -> None:
-            # default to stdout, overridden per record in emit()
-            super().__init__()  # pyright: ignore[reportUnknownMemberType]
-
-        def emit(self, record: logging.LogRecord) -> None:
-            level = record.levelno
-            if level >= logging.WARNING:
-                self.stream = sys.stderr
-            else:
-                self.stream = sys.stdout
-
-            # used by TagFormatter
-            record.enable_color = getattr(self, "enable_color", False)
-
-            super().emit(record)
 
     # --- Static Methods ----------------------------------------------------
 
