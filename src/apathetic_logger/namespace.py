@@ -14,6 +14,9 @@ from typing import Any, TextIO, cast
 
 from .constants import _ApatheticLogger_Constants  # pyright: ignore[reportPrivateUsage]
 from .logger import _ApatheticLogger_Logger  # pyright: ignore[reportPrivateUsage]
+from .tag_formatter import (
+    _ApatheticLogger_TagFormatter,  # pyright: ignore[reportPrivateUsage]
+)
 
 
 # --- globals ---------------------------------------------------------------
@@ -32,30 +35,19 @@ _real_time = importlib.import_module("time")
 # --- Apathetic Logger Namespace -------------------------------------------
 
 
-class ApatheticLogger(_ApatheticLogger_Constants, _ApatheticLogger_Logger):
+class ApatheticLogger(  # pyright: ignore[reportPrivateUsage]
+    _ApatheticLogger_Constants,
+    _ApatheticLogger_Logger,
+    _ApatheticLogger_TagFormatter,
+):
     """Namespace for apathetic logger functionality.
 
     All logger functionality is accessed via this namespace class to minimize
     global namespace pollution when the library is embedded in a stitched script.
 
     The Logger class is provided via the _ApatheticLogger_Logger mixin.
+    The TagFormatter class is provided via the _ApatheticLogger_TagFormatter mixin.
     """
-
-    class TagFormatter(logging.Formatter):
-        def format(
-            self: ApatheticLogger.TagFormatter, record: logging.LogRecord
-        ) -> str:
-            tag_color, tag_text = ApatheticLogger.TAG_STYLES.get(
-                record.levelname, ("", "")
-            )
-            msg = super().format(record)
-            if tag_text:
-                if getattr(record, "enable_color", False) and tag_color:
-                    prefix = f"{tag_color}{tag_text}{ApatheticLogger.ANSIColors.RESET}"
-                else:
-                    prefix = tag_text
-                return f"{prefix} {msg}"
-            return msg
 
     class DualStreamHandler(logging.StreamHandler):  # type: ignore[type-arg]
         """Send info/debug/trace to stdout, everything else to stderr."""
