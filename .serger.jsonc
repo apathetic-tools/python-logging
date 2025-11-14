@@ -24,7 +24,7 @@
       "exclude": [
         "__pycache__/**",
         "*.pyc",
-        "**/__init__.py",    // Handled by import shims
+        // "**/__init__.py",    // we want to expose our guts, not just the class, in this case
         "**/__main__.py"     // Entry point, not stitched
       ],
 

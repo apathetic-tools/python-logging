@@ -12,7 +12,7 @@ class ApatheticLogging_Priv_SafeLog:  # noqa: N801  # pyright: ignore[reportUnus
     """Mixin class that provides the safe_log static method.
 
     This class contains the safe_log implementation as a static method.
-    When mixed into ApatheticLogging, it provides ApatheticLogging.safe_log.
+    When mixed into apathetic_logging, it provides apathetic_logging.safe_log.
     """
 
     @staticmethod

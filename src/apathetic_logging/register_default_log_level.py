@@ -15,8 +15,8 @@ class ApatheticLogging_Priv_RegisterDefaultLogLevel:  # noqa: N801  # pyright: i
     """Mixin class that provides the register_default_log_level static method.
 
     This class contains the register_default_log_level implementation as a static
-    method. When mixed into ApatheticLogging, it provides
-    ApatheticLogging.register_default_log_level.
+    method. When mixed into apathetic_logging, it provides
+    apathetic_logging.register_default_log_level.
     """
 
     @staticmethod
@@ -28,7 +28,7 @@ class ApatheticLogging_Priv_RegisterDefaultLogLevel:  # noqa: N801  # pyright: i
 
         Example:
             >>> from apathetic_logging import ApatheticLogging
-            >>> ApatheticLogging.register_default_log_level("warning")
+            >>> apathetic_logging.register_default_log_level("warning")
         """
         ApatheticLogging_Priv_Registry.registered_priv_default_log_level = default_level
         ApatheticLogging_Priv_TestTrace.TEST_TRACE(

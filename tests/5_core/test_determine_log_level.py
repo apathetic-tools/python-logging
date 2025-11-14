@@ -34,7 +34,7 @@ def reset_registry(monkeypatch: pytest.MonkeyPatch) -> Generator[None, None, Non
 
 
 def test_determine_log_level_from_args(
-    direct_logger: mod_alogs.ApatheticLogging.Logger,
+    direct_logger: mod_alogs.apathetic_logging.Logger,
 ) -> None:
     """determine_log_level() should prioritize CLI args."""
     # --- setup ---
@@ -49,7 +49,7 @@ def test_determine_log_level_from_args(
 
 def test_determine_log_level_from_registered_env_var(
     monkeypatch: pytest.MonkeyPatch,
-    direct_logger: mod_alogs.ApatheticLogging.Logger,
+    direct_logger: mod_alogs.apathetic_logging.Logger,
 ) -> None:
     """determine_log_level() should use registered env vars."""
     # --- setup ---
@@ -65,7 +65,7 @@ def test_determine_log_level_from_registered_env_var(
 
 def test_determine_log_level_from_default_env_var(
     monkeypatch: pytest.MonkeyPatch,
-    direct_logger: mod_alogs.ApatheticLogging.Logger,
+    direct_logger: mod_alogs.apathetic_logging.Logger,
 ) -> None:
     """determine_log_level() should fall back to default env var."""
     # --- setup ---
@@ -80,7 +80,7 @@ def test_determine_log_level_from_default_env_var(
 
 def test_determine_log_level_from_registered_env_vars_order(
     monkeypatch: pytest.MonkeyPatch,
-    direct_logger: mod_alogs.ApatheticLogging.Logger,
+    direct_logger: mod_alogs.apathetic_logging.Logger,
 ) -> None:
     """determine_log_level() should check env vars in order."""
     # --- setup ---
@@ -97,7 +97,7 @@ def test_determine_log_level_from_registered_env_vars_order(
 
 
 def test_determine_log_level_from_root_log_level(
-    direct_logger: mod_alogs.ApatheticLogging.Logger,
+    direct_logger: mod_alogs.apathetic_logging.Logger,
 ) -> None:
     """determine_log_level() should use root_log_level when provided."""
     # --- execute ---
@@ -108,7 +108,7 @@ def test_determine_log_level_from_root_log_level(
 
 
 def test_determine_log_level_from_registered_default(
-    direct_logger: mod_alogs.ApatheticLogging.Logger,
+    direct_logger: mod_alogs.apathetic_logging.Logger,
 ) -> None:
     """determine_log_level() should use registered default."""
     # --- setup ---
@@ -122,7 +122,7 @@ def test_determine_log_level_from_registered_default(
 
 
 def test_determine_log_level_falls_back_to_module_default(
-    direct_logger: mod_alogs.ApatheticLogging.Logger,
+    direct_logger: mod_alogs.apathetic_logging.Logger,
 ) -> None:
     """determine_log_level() should fall back to module default."""
     # --- execute ---
@@ -135,7 +135,7 @@ def test_determine_log_level_falls_back_to_module_default(
 
 def test_determine_log_level_priority_order(
     monkeypatch: pytest.MonkeyPatch,
-    direct_logger: mod_alogs.ApatheticLogging.Logger,
+    direct_logger: mod_alogs.apathetic_logging.Logger,
 ) -> None:
     """determine_log_level() should respect priority: args > env > root > default."""
     # --- setup ---

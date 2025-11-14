@@ -17,8 +17,8 @@ class ApatheticLogging_Priv_RegisterLoggerName:  # noqa: N801  # pyright: ignore
     """Mixin class that provides the register_logger_name static method.
 
     This class contains the register_logger_name implementation as a static
-    method. When mixed into ApatheticLogging, it provides
-    ApatheticLogging.register_logger_name.
+    method. When mixed into apathetic_logging, it provides
+    apathetic_logging.register_logger_name.
     """
 
     @staticmethod
@@ -56,10 +56,10 @@ class ApatheticLogging_Priv_RegisterLoggerName:  # noqa: N801  # pyright: ignore
         Example:
             >>> # Explicit registration
             >>> from apathetic_logging import ApatheticLogging
-            >>> ApatheticLogging.register_logger_name("myapp")
+            >>> apathetic_logging.register_logger_name("myapp")
 
             >>> # Auto-infer from __package__
-            >>> ApatheticLogging.register_logger_name()
+            >>> apathetic_logging.register_logger_name()
             ...     # Uses top-level package from __package__
         """
         auto_inferred = False

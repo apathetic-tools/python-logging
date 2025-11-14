@@ -14,7 +14,7 @@ class ApatheticLogging_Priv_TagFormatter:  # noqa: N801  # pyright: ignore[repor
     """Mixin class that provides the TagFormatter nested class.
 
     This class contains the TagFormatter implementation as a nested class.
-    When mixed into ApatheticLogging, it provides ApatheticLogging.TagFormatter.
+    When mixed into apathetic_logging, it provides apathetic_logging.TagFormatter.
     """
 
     class TagFormatter(logging.Formatter):

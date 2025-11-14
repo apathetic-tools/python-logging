@@ -193,10 +193,10 @@ logger.log_dynamic(logging.WARNING, "This is a warning")
 Work with colors directly:
 
 ```python
-from apathetic_logging import ApatheticLogging, ANSIColors
+from apathetic_logging import apathetic_logging, ANSIColors
 
 # Create logger with explicit color control
-logger = ApatheticLogging("my_app", enable_color=True)
+logger = ApatheticLogger("my_app", enable_color=True)
 
 # Use colorize method
 colored_text = logger.colorize("Important message", ANSIColors.RED)

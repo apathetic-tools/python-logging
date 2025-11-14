@@ -15,7 +15,7 @@ def test_dual_stream_handler_info_goes_to_stdout(
 ) -> None:
     """DualStreamHandler should route INFO level to stdout."""
     # --- setup ---
-    handler = mod_alogs.ApatheticLogging.DualStreamHandler()
+    handler = mod_alogs.apathetic_logging.DualStreamHandler()
     logger = logging.getLogger("test_stdout")
     logger.setLevel(logging.INFO)
     logger.addHandler(handler)
@@ -38,7 +38,7 @@ def test_dual_stream_handler_debug_goes_to_stdout(
 ) -> None:
     """DualStreamHandler should route DEBUG level to stdout."""
     # --- setup ---
-    handler = mod_alogs.ApatheticLogging.DualStreamHandler()
+    handler = mod_alogs.apathetic_logging.DualStreamHandler()
     logger = logging.getLogger("test_debug")
     logger.setLevel(logging.DEBUG)
     logger.addHandler(handler)
@@ -61,7 +61,7 @@ def test_dual_stream_handler_warning_goes_to_stderr(
 ) -> None:
     """DualStreamHandler should route WARNING level to stderr."""
     # --- setup ---
-    handler = mod_alogs.ApatheticLogging.DualStreamHandler()
+    handler = mod_alogs.apathetic_logging.DualStreamHandler()
     logger = logging.getLogger("test_warning")
     logger.setLevel(logging.WARNING)
     logger.addHandler(handler)
@@ -84,7 +84,7 @@ def test_dual_stream_handler_error_goes_to_stderr(
 ) -> None:
     """DualStreamHandler should route ERROR level to stderr."""
     # --- setup ---
-    handler = mod_alogs.ApatheticLogging.DualStreamHandler()
+    handler = mod_alogs.apathetic_logging.DualStreamHandler()
     logger = logging.getLogger("test_error")
     logger.setLevel(logging.ERROR)
     logger.addHandler(handler)
@@ -107,7 +107,7 @@ def test_dual_stream_handler_critical_goes_to_stderr(
 ) -> None:
     """DualStreamHandler should route CRITICAL level to stderr."""
     # --- setup ---
-    handler = mod_alogs.ApatheticLogging.DualStreamHandler()
+    handler = mod_alogs.apathetic_logging.DualStreamHandler()
     logger = logging.getLogger("test_critical")
     logger.setLevel(logging.CRITICAL)
     logger.addHandler(handler)
@@ -128,7 +128,7 @@ def test_dual_stream_handler_critical_goes_to_stderr(
 def test_dual_stream_handler_has_enable_color_attribute() -> None:
     """DualStreamHandler should have enable_color attribute."""
     # --- setup ---
-    handler = mod_alogs.ApatheticLogging.DualStreamHandler()
+    handler = mod_alogs.apathetic_logging.DualStreamHandler()
 
     # --- verify ---
     # Should have enable_color attribute (defaults to False)

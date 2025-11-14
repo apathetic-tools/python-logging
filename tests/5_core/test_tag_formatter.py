@@ -11,7 +11,7 @@ import apathetic_logging as mod_alogs
 def test_tag_formatter_adds_tag_prefix() -> None:
     """TagFormatter should add tag prefix to log messages."""
     # --- setup ---
-    formatter = mod_alogs.ApatheticLogging.TagFormatter()
+    formatter = mod_alogs.apathetic_logging.TagFormatter()
     # Use DEBUG level which has a tag in TAG_STYLES
     record = logging.LogRecord(
         name="test",
@@ -29,7 +29,7 @@ def test_tag_formatter_adds_tag_prefix() -> None:
 
     # --- verify ---
     # Should contain the tag text from TAG_STYLES
-    tag_text = mod_alogs.ApatheticLogging.TAG_STYLES.get("DEBUG", ("", ""))[1]
+    tag_text = mod_alogs.apathetic_logging.TAG_STYLES.get("DEBUG", ("", ""))[1]
     assert tag_text in formatted
     assert "test message" in formatted
 
@@ -37,7 +37,7 @@ def test_tag_formatter_adds_tag_prefix() -> None:
 def test_tag_formatter_respects_enable_color_false() -> None:
     """TagFormatter should not add ANSI codes when enable_color is False."""
     # --- setup ---
-    formatter = mod_alogs.ApatheticLogging.TagFormatter()
+    formatter = mod_alogs.apathetic_logging.TagFormatter()
     # Use DEBUG level which has a tag in TAG_STYLES
     record = logging.LogRecord(
         name="test",
@@ -58,14 +58,14 @@ def test_tag_formatter_respects_enable_color_false() -> None:
     # Should not contain ANSI escape codes
     assert "\033[" not in formatted
     # Should still contain tag text
-    tag_text = mod_alogs.ApatheticLogging.TAG_STYLES.get("DEBUG", ("", ""))[1]
+    tag_text = mod_alogs.apathetic_logging.TAG_STYLES.get("DEBUG", ("", ""))[1]
     assert tag_text in formatted
 
 
 def test_tag_formatter_respects_enable_color_true() -> None:
     """TagFormatter should add ANSI codes when enable_color is True."""
     # --- setup ---
-    formatter = mod_alogs.ApatheticLogging.TagFormatter()
+    formatter = mod_alogs.apathetic_logging.TagFormatter()
     # Use DEBUG level which has a color in TAG_STYLES
     record = logging.LogRecord(
         name="test",
@@ -86,7 +86,7 @@ def test_tag_formatter_respects_enable_color_true() -> None:
     # Should contain ANSI escape codes (DEBUG has CYAN color)
     assert "\033[" in formatted
     # Should contain tag text
-    tag_text = mod_alogs.ApatheticLogging.TAG_STYLES.get("DEBUG", ("", ""))[1]
+    tag_text = mod_alogs.apathetic_logging.TAG_STYLES.get("DEBUG", ("", ""))[1]
     assert tag_text in formatted
 
 
@@ -104,7 +104,7 @@ def test_tag_formatter_respects_enable_color_true() -> None:
 def test_tag_formatter_all_levels(level_name: str, level_num: int) -> None:
     """TagFormatter should format all log levels correctly."""
     # --- setup ---
-    formatter = mod_alogs.ApatheticLogging.TagFormatter()
+    formatter = mod_alogs.apathetic_logging.TagFormatter()
     record = logging.LogRecord(
         name="test",
         level=level_num,
@@ -122,8 +122,8 @@ def test_tag_formatter_all_levels(level_name: str, level_num: int) -> None:
 
     # --- verify ---
     # Should contain the tag text if it exists in TAG_STYLES
-    if level_name in mod_alogs.ApatheticLogging.TAG_STYLES:
-        tag_text = mod_alogs.ApatheticLogging.TAG_STYLES[level_name][1]
+    if level_name in mod_alogs.apathetic_logging.TAG_STYLES:
+        tag_text = mod_alogs.apathetic_logging.TAG_STYLES[level_name][1]
         assert tag_text in formatted
     assert "test message" in formatted
 
@@ -131,7 +131,7 @@ def test_tag_formatter_all_levels(level_name: str, level_num: int) -> None:
 def test_tag_formatter_unknown_level_no_tag() -> None:
     """TagFormatter should handle unknown log levels gracefully."""
     # --- setup ---
-    formatter = mod_alogs.ApatheticLogging.TagFormatter()
+    formatter = mod_alogs.apathetic_logging.TagFormatter()
     record = logging.LogRecord(
         name="test",
         level=999,

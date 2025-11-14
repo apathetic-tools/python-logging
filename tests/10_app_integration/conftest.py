@@ -54,7 +54,7 @@ def reset_registry_and_env() -> Generator[None, None, None]:
 # ----------------------------------------------------------------------
 
 
-class AppLoggerForTest(mod_alogs.ApatheticLogging.Logger):
+class AppLoggerForTest(mod_alogs.apathetic_logging.Logger):
     """Test application logger with custom log level resolution."""
 
     def determine_log_level(
@@ -85,7 +85,7 @@ class AppLoggerForTest(mod_alogs.ApatheticLogging.Logger):
         return "INFO"
 
 
-class AppLoggerWithCustomMethodForTest(mod_alogs.ApatheticLogging.Logger):
+class AppLoggerWithCustomMethodForTest(mod_alogs.apathetic_logging.Logger):
     """Test logger with custom application-specific methods."""
 
     def log_operation(self, operation: str, status: str) -> None:

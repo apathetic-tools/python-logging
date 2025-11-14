@@ -22,7 +22,7 @@ dependencies = [
 check = ["lint", "typecheck",  "test"]
 lint = ["lint:ruff", "lint:compile"]
 "lint:ruff" = "ruff check ."
-"lint:compile" = []
+"lint:compile" = ["lint:compile:script"]
 "lint:compile:script" = { shell = "if [ -f dist/apathetic_logging.py ]; then python -m py_compile dist/apathetic_logging.py; fi" }
 
 # 🧠 Type checking
@@ -32,7 +32,7 @@ typecheck = ["typecheck:mypy", "typecheck:pyright"]
 "typecheck:pyright" = "pyright src tests"
 
 # 🧪 Tests (runs both: installed + singlefile)
-test = ["test:pytest:installed"]
+test = ["test:pytest:installed", "test:pytest:script"]
 "test:pytest:installed" = "pytest"
 "test:pytest:script" = [
   "build:script",
@@ -72,7 +72,7 @@ fix = ["generate:ai-rules", "fix:ruff:installed", "lint:compile", "fix:format:in
 
 # 🧩 Build and license
 "generate:ai-rules" = "python dev/generate_ai_rules.py --quiet"
-"build:script" = "python -m dev/serger"
+"build:script" = "python dev/serger.py"
 
 # 🔧 Setup and installation
 "pre-commit:install" = { shell = "if [ ! -f .git/hooks/pre-commit ] || ! grep -q 'pre-commit' .git/hooks/pre-commit 2>/dev/null; then poetry run pre-commit install --install-hooks && poetry run pre-commit install --hook-type pre-push; fi" }

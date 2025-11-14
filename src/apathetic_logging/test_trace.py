@@ -23,8 +23,8 @@ class ApatheticLogging_Priv_TestTrace:  # noqa: N801  # pyright: ignore[reportUn
     """Mixin class that provides the TEST_TRACE and make_test_trace static methods.
 
     This class contains the TEST_TRACE implementation as static methods.
-    When mixed into ApatheticLogging, it provides ApatheticLogging.TEST_TRACE
-    and ApatheticLogging.make_test_trace.
+    When mixed into apathetic_logging, it provides apathetic_logging.TEST_TRACE
+    and apathetic_logging.make_test_trace.
     """
 
     @staticmethod

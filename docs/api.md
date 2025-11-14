@@ -17,7 +17,7 @@ Return the registered logger instance.
 Uses Python's built-in logging registry (`logging.getLogger()`) to retrieve the logger. If no logger name has been registered, attempts to auto-infer the logger name from the calling module's top-level package.
 
 **Returns:**
-- The logger instance from `logging.getLogger()` (as `ApatheticLogging` type)
+- The logger instance from `logging.getLogger()` (as `apathetic_logging` type)
 
 **Raises:**
 - `RuntimeError`: If called before a logger name has been registered and auto-inference fails.
@@ -100,7 +100,7 @@ except Exception:
 
 ## Classes
 
-### `ApatheticLogging`
+### `apathetic_logging`
 
 Logger class for all Apathetic tools. Extends Python's standard `logging.Logger`.
 
@@ -175,7 +175,7 @@ Checks:
 Extend Python's logging module with TRACE and SILENT levels.
 
 This method:
-- Sets `ApatheticLogging` as the default logger class
+- Sets `apathetic_logging` as the default logger class
 - Adds `TRACE` and `SILENT` level names
 - Adds `logging.TRACE` and `logging.SILENT` constants
 

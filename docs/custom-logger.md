@@ -6,7 +6,7 @@ permalink: /custom-logger/
 
 # Creating a Custom Logger
 
-This guide shows how to create a custom logger subclass for your application, allowing you to extend `ApatheticLogging` with application-specific behavior.
+This guide shows how to create a custom logger subclass for your application, allowing you to extend `apathetic_logging` with application-specific behavior.
 
 ## Why Create a Custom Logger?
 
@@ -30,7 +30,7 @@ import os
 from typing import cast
 
 from apathetic_logging import (
-    ApatheticLogging,
+    apathetic_logging,
     get_logger,
     register_default_log_level,
     register_log_level_env_vars,
@@ -46,7 +46,7 @@ LOG_LEVEL_ENV_VAR = f"{APP_NAME.upper()}_LOG_LEVEL"
 # --- Custom Logger Class -----------------------------------------------------
 
 
-class AppLogger(ApatheticLogging):
+class AppLogger(ApatheticLogger):
     """Application-specific logger with custom log level resolution."""
     
     def determine_log_level(
@@ -206,7 +206,7 @@ logger.setLevel("debug")
 You can add custom methods to your logger subclass:
 
 ```python
-class AppLogger(ApatheticLogging):
+class AppLogger(ApatheticLogger):
     """Application-specific logger."""
     
     def log_operation(self, operation: str, status: str) -> None:
@@ -235,7 +235,7 @@ class AppLogger(ApatheticLogging):
 
 ## Integration with Existing Code
 
-If you're migrating from the base `ApatheticLogging`, you can gradually adopt the custom logger:
+If you're migrating from the base `apathetic_logging`, you can gradually adopt the custom logger:
 
 ```python
 # Old code (still works)

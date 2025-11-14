@@ -24,11 +24,11 @@ def test_extend_logging_module_called_twice_is_safe() -> None:
     """Calling extend_logging_module() twice should be safe and idempotent."""
     # --- setup ---
     # First call (may have already been called at import)
-    mod_alogs.ApatheticLogging.Logger.extend_logging_module()
+    mod_alogs.apathetic_logging.Logger.extend_logging_module()
 
     # --- execute ---
     # Second call
-    result2 = mod_alogs.ApatheticLogging.Logger.extend_logging_module()
+    result2 = mod_alogs.apathetic_logging.Logger.extend_logging_module()
 
     # --- verify ---
     # Second call should return False (already extended)
@@ -36,8 +36,8 @@ def test_extend_logging_module_called_twice_is_safe() -> None:
     # TRACE and SILENT should still be available
     assert hasattr(logging, "TRACE")
     assert hasattr(logging, "SILENT")
-    assert logging.TRACE == mod_alogs.ApatheticLogging.TRACE_LEVEL  # pyright: ignore[reportAttributeAccessIssue,reportUnknownMemberType]
-    assert logging.SILENT == mod_alogs.ApatheticLogging.SILENT_LEVEL  # type: ignore[attr-defined]  # pyright: ignore[reportAttributeAccessIssue,reportUnknownMemberType]
+    assert logging.TRACE == mod_alogs.apathetic_logging.TRACE_LEVEL  # pyright: ignore[reportAttributeAccessIssue,reportUnknownMemberType]
+    assert logging.SILENT == mod_alogs.apathetic_logging.SILENT_LEVEL  # type: ignore[attr-defined]  # pyright: ignore[reportAttributeAccessIssue,reportUnknownMemberType]
 
 
 def test_extend_logging_module_before_get_logger_works() -> None:
@@ -70,18 +70,18 @@ def test_get_logger_works_after_extend_logging_module() -> None:
 
     # --- verify ---
     assert logger is not None
-    assert isinstance(logger, mod_alogs.ApatheticLogging.Logger)
+    assert isinstance(logger, mod_alogs.apathetic_logging.Logger)
     # Should be able to use custom levels
     logger.setLevel(logging.TRACE)  # type: ignore[attr-defined]
-    assert logger.level == mod_alogs.ApatheticLogging.TRACE_LEVEL
+    assert logger.level == mod_alogs.apathetic_logging.TRACE_LEVEL
     logger.setLevel(logging.SILENT)  # type: ignore[attr-defined]
-    assert logger.level == mod_alogs.ApatheticLogging.SILENT_LEVEL
+    assert logger.level == mod_alogs.apathetic_logging.SILENT_LEVEL
 
 
 def test_logger_can_use_trace_level_after_extend() -> None:
     """Logger should be able to use TRACE level after extend_logging_module()."""
     # --- setup ---
-    logger = mod_alogs.ApatheticLogging.Logger("test_trace_logger")
+    logger = mod_alogs.apathetic_logging.Logger("test_trace_logger")
     logger.setLevel("TRACE")
 
     # --- verify ---
@@ -93,13 +93,13 @@ def test_logger_can_use_trace_level_after_extend() -> None:
 def test_logger_can_use_silent_level_after_extend() -> None:
     """Logger should be able to use SILENT level after extend_logging_module()."""
     # --- setup ---
-    logger = mod_alogs.ApatheticLogging.Logger("test_silent_logger")
+    logger = mod_alogs.apathetic_logging.Logger("test_silent_logger")
 
     # --- execute ---
     logger.setLevel("SILENT")
 
     # --- verify ---
-    assert logger.level == mod_alogs.ApatheticLogging.SILENT_LEVEL
+    assert logger.level == mod_alogs.apathetic_logging.SILENT_LEVEL
     assert logger.level_name == "SILENT"
 
 
@@ -113,7 +113,7 @@ def test_extend_logging_module_sets_logger_class() -> None:
     logger = mod_alogs.get_logger()
 
     # --- verify ---
-    # The logger should be an instance of ApatheticLogging.Logger
+    # The logger should be an instance of apathetic_logging.Logger
     # (or at least compatible with it)
     assert logger is not None
     # Should have apathetic logging methods
@@ -127,7 +127,7 @@ def test_multiple_calls_to_extend_logging_module() -> None:
     # --- execute ---
     results: list[bool] = []
     for _ in range(5):
-        result = mod_alogs.ApatheticLogging.Logger.extend_logging_module()
+        result = mod_alogs.apathetic_logging.Logger.extend_logging_module()
         results.append(result)
 
     # --- verify ---
@@ -143,12 +143,12 @@ def test_extend_logging_module_preserves_existing_loggers() -> None:
     """extend_logging_module() should not break existing loggers."""
     # --- setup ---
     # Create a logger before calling extend (though it's already called at import)
-    existing_logger = mod_alogs.ApatheticLogging.Logger("existing_logger")
+    existing_logger = mod_alogs.apathetic_logging.Logger("existing_logger")
     existing_logger.setLevel("INFO")
 
     # --- execute ---
     # Call extend again (should be safe)
-    mod_alogs.ApatheticLogging.Logger.extend_logging_module()
+    mod_alogs.apathetic_logging.Logger.extend_logging_module()
 
     # --- verify ---
     # Existing logger should still work
@@ -226,9 +226,9 @@ def test_extend_logging_module_idempotent_behavior() -> None:
 
     # --- execute ---
     # Call multiple times
-    mod_alogs.ApatheticLogging.Logger.extend_logging_module()
-    result2 = mod_alogs.ApatheticLogging.Logger.extend_logging_module()
-    result3 = mod_alogs.ApatheticLogging.Logger.extend_logging_module()
+    mod_alogs.apathetic_logging.Logger.extend_logging_module()
+    result2 = mod_alogs.apathetic_logging.Logger.extend_logging_module()
+    result3 = mod_alogs.apathetic_logging.Logger.extend_logging_module()
 
     # --- verify ---
     # All calls after the first should return False
@@ -238,8 +238,8 @@ def test_extend_logging_module_idempotent_behavior() -> None:
     # TRACE and SILENT should still be set correctly
     assert hasattr(logging, "TRACE")
     assert hasattr(logging, "SILENT")
-    assert logging.TRACE == mod_alogs.ApatheticLogging.TRACE_LEVEL  # pyright: ignore[reportAttributeAccessIssue,reportUnknownMemberType]
-    assert logging.SILENT == mod_alogs.ApatheticLogging.SILENT_LEVEL  # type: ignore[attr-defined]  # pyright: ignore[reportAttributeAccessIssue,reportUnknownMemberType]
+    assert logging.TRACE == mod_alogs.apathetic_logging.TRACE_LEVEL  # pyright: ignore[reportAttributeAccessIssue,reportUnknownMemberType]
+    assert logging.SILENT == mod_alogs.apathetic_logging.SILENT_LEVEL  # type: ignore[attr-defined]  # pyright: ignore[reportAttributeAccessIssue,reportUnknownMemberType]
     # Values should not change
     if initial_trace is not None:
         assert initial_trace == logging.TRACE  # pyright: ignore[reportAttributeAccessIssue,reportUnknownMemberType]
@@ -248,21 +248,22 @@ def test_extend_logging_module_idempotent_behavior() -> None:
 
 
 def test_get_logger_returns_apathetic_logger_after_extend() -> None:
-    """get_logger() should return ApatheticLogging.Logger after extend_logging_module().
+    """get_logger() should return apathetic_logging.Logger
+     after extend_logging_module().
 
     This verifies that extend_logging_module() sets the logger class correctly,
     so that logging.getLogger() returns the right type.
     """
     # --- setup ---
     # extend_logging_module() is called at import time, which sets
-    # logging.setLoggerClass(ApatheticLogging.Logger)
+    # logging.setLoggerClass(apathetic_logging.Logger)
     mod_alogs.register_logger_name("test_logger_type")
 
     # --- execute ---
     logger = mod_alogs.get_logger()
 
     # --- verify ---
-    # Logger should have ApatheticLogging.Logger methods
+    # Logger should have apathetic_logging.Logger methods
     assert hasattr(logger, "trace")
     assert hasattr(logger, "colorize")
     assert hasattr(logger, "determine_log_level")

@@ -15,8 +15,8 @@ class ApatheticLogging_Priv_RegisterLogLevelEnvVars:  # noqa: N801  # pyright: i
     """Mixin class that provides the register_log_level_env_vars static method.
 
     This class contains the register_log_level_env_vars implementation as a static
-    method. When mixed into ApatheticLogging, it provides
-    ApatheticLogging.register_log_level_env_vars.
+    method. When mixed into apathetic_logging, it provides
+    apathetic_logging.register_log_level_env_vars.
     """
 
     @staticmethod
@@ -32,7 +32,7 @@ class ApatheticLogging_Priv_RegisterLogLevelEnvVars:  # noqa: N801  # pyright: i
 
         Example:
             >>> from apathetic_logging import ApatheticLogging
-            >>> ApatheticLogging.register_log_level_env_vars(
+            >>> apathetic_logging.register_log_level_env_vars(
             ...     ["MYAPP_LOG_LEVEL", "LOG_LEVEL"]
             ... )
         """

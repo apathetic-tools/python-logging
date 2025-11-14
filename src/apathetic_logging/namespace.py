@@ -39,7 +39,7 @@ from .test_trace import (
 # --- Apathetic Logging Namespace -------------------------------------------
 
 
-class ApatheticLogging(  # pyright: ignore[reportPrivateUsage]
+class apathetic_logging(  # pyright: ignore[reportPrivateUsage] # noqa: N801
     ApatheticLogging_Priv_Constants,
     ApatheticLogging_Priv_DualStreamHandler,
     ApatheticLogging_Priv_GetLogger,

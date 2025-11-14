@@ -8,7 +8,7 @@ class ApatheticLogging_Priv_Registry:  # noqa: N801  # pyright: ignore[reportUnu
     """Mixin class that provides registry storage for configurable settings.
 
     This class contains class-level attributes for storing registered configuration
-    values. When mixed into ApatheticLogging, it provides centralized storage for
+    values. When mixed into apathetic_logging, it provides centralized storage for
     log level environment variables, default log level, and logger name.
 
     Other mixins access these registries via direct class reference:

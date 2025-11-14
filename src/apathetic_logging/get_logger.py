@@ -22,11 +22,11 @@ class ApatheticLogging_Priv_GetLogger:  # noqa: N801  # pyright: ignore[reportUn
     """Mixin class that provides the get_logger static method.
 
     This class contains the get_logger implementation as a static method.
-    When mixed into ApatheticLogging, it provides ApatheticLogging.get_logger.
+    When mixed into apathetic_logging, it provides apathetic_logging.get_logger.
     """
 
     @staticmethod
-    def get_logger() -> Any:  # Returns ApatheticLogging.Logger
+    def get_logger() -> Any:  # Returns apathetic_logging.Logger
         """Return the registered logger instance.
 
         Uses Python's built-in logging registry (logging.getLogger()) to retrieve
@@ -35,7 +35,7 @@ class ApatheticLogging_Priv_GetLogger:  # noqa: N801  # pyright: ignore[reportUn
 
         Returns:
             The logger instance from logging.getLogger()
-            (as ApatheticLogging.Logger type)
+            (as apathetic_logging.Logger type)
 
         Raises:
             RuntimeError: If called before a logger name has been registered and
@@ -85,7 +85,7 @@ class ApatheticLogging_Priv_GetLogger:  # noqa: N801  # pyright: ignore[reportUn
             raise RuntimeError(_msg)
 
         logger = logging.getLogger(registered_logger_name)
-        typed_logger = cast("Any", logger)  # ApatheticLogging.Logger
+        typed_logger = cast("Any", logger)  # apathetic_logging.Logger
         ApatheticLogging_Priv_TestTrace.TEST_TRACE(
             "get_logger() called",
             f"name={typed_logger.name}",

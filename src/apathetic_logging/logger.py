@@ -32,7 +32,7 @@ class ApatheticLogging_Priv_Logger:  # noqa: N801  # pyright: ignore[reportUnuse
     """Mixin class that provides the Logger nested class.
 
     This class contains the Logger implementation as a nested class.
-    When mixed into ApatheticLogging, it provides ApatheticLogging.Logger.
+    When mixed into apathetic_logging, it provides apathetic_logging.Logger.
     """
 
     class Logger(logging.Logger):

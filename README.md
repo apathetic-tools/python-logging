@@ -7,7 +7,7 @@
 📘 **[Roadmap](./ROADMAP.md)** · 📝 **[Release Notes](https://github.com/apathetic-tools/python-logs/releases)**
 
 **Minimal wrapper for the Python standard library logger.**  
-*Because consistent, colorized logging shouldn't require large dependencies.*
+*Because consistent logging shouldn't require large dependencies.*
 
 Apathetic Python Logger provides a lightweight, dependency-free logging solution designed for CLI tools. It extends Python's standard library `logging` module with colorized output, dual-stream handling (stdout/stderr), and seamless integration with Apathetic Tools projects.
 

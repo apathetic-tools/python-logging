@@ -88,7 +88,7 @@ Colors are disabled when:
 from apathetic_logging import ApatheticLogging
 
 # Create logger with colors explicitly enabled/disabled
-logger = ApatheticLogging("my_app", enable_color=True)
+logger = ApatheticLogger("my_app", enable_color=True)
 ```
 
 ## Tag Formatting

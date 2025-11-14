@@ -44,7 +44,7 @@ def test_get_logger_with_registered_name() -> None:
 
     # --- verify ---
     assert result.name == logger_name
-    # The logger from logging.getLogger() may not be an ApatheticLogging.Logger
+    # The logger from logging.getLogger() may not be an apathetic_logging.Logger
     # unless it was explicitly created as one, but it should still have the name
 
 

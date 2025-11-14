@@ -11,7 +11,7 @@ class ApatheticLogging_Priv_DualStreamHandler:  # noqa: N801  # pyright: ignore[
     """Mixin class that provides the DualStreamHandler nested class.
 
     This class contains the DualStreamHandler implementation as a nested class.
-    When mixed into ApatheticLogging, it provides ApatheticLogging.DualStreamHandler.
+    When mixed into apathetic_logging, it provides apathetic_logging.DualStreamHandler.
     """
 
     class DualStreamHandler(logging.StreamHandler):  # type: ignore[type-arg]
