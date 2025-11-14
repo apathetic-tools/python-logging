@@ -2,22 +2,22 @@
 """Tests for make_test_trace function."""
 
 import sys
+from collections.abc import Generator
 from io import StringIO
 
 import pytest
 
 import apathetic_logging as mod_alogs
-from apathetic_logging.constants import (
-    ApatheticLogging_Priv_Constants,  # pyright: ignore[reportPrivateUsage]
-)
+import apathetic_logging.constants as mod_constants
 
 
 @pytest.fixture(autouse=True)
-def reset_test_trace_enabled() -> None:
+def reset_test_trace_enabled() -> Generator[None, None, None]:
     """Reset TEST_TRACE_ENABLED before and after each test."""
-    original = ApatheticLogging_Priv_Constants.TEST_TRACE_ENABLED
+    constants = mod_constants.ApatheticLogging_Priv_Constants  # pyright: ignore[reportPrivateUsage]
+    original = constants.TEST_TRACE_ENABLED
     yield
-    ApatheticLogging_Priv_Constants.TEST_TRACE_ENABLED = original
+    constants.TEST_TRACE_ENABLED = original
 
 
 def test_make_test_trace_returns_callable() -> None:
@@ -36,7 +36,8 @@ def test_make_test_trace_custom_icon(
     # --- setup ---
     custom_icon = "🔍"
     trace_func = mod_alogs.make_test_trace(icon=custom_icon)
-    ApatheticLogging_Priv_Constants.TEST_TRACE_ENABLED = True
+    constants = mod_constants.ApatheticLogging_Priv_Constants  # pyright: ignore[reportPrivateUsage]
+    constants.TEST_TRACE_ENABLED = True
     buf = StringIO()
 
     # --- execute ---
@@ -54,7 +55,8 @@ def test_make_test_trace_default_icon(
     """make_test_trace() should use default icon when not provided."""
     # --- setup ---
     trace_func = mod_alogs.make_test_trace()
-    ApatheticLogging_Priv_Constants.TEST_TRACE_ENABLED = True
+    constants = mod_constants.ApatheticLogging_Priv_Constants  # pyright: ignore[reportPrivateUsage]
+    constants.TEST_TRACE_ENABLED = True
     buf = StringIO()
 
     # --- execute ---
@@ -72,7 +74,8 @@ def test_make_test_trace_respects_test_trace_disabled(
     """make_test_trace() should not output when TEST_TRACE is disabled."""
     # --- setup ---
     trace_func = mod_alogs.make_test_trace()
-    ApatheticLogging_Priv_Constants.TEST_TRACE_ENABLED = False
+    constants = mod_constants.ApatheticLogging_Priv_Constants  # pyright: ignore[reportPrivateUsage]
+    constants.TEST_TRACE_ENABLED = False
     buf = StringIO()
 
     # --- execute ---
@@ -90,7 +93,8 @@ def test_make_test_trace_outputs_to_stderr(
     """make_test_trace() should write to sys.__stderr__."""
     # --- setup ---
     trace_func = mod_alogs.make_test_trace()
-    ApatheticLogging_Priv_Constants.TEST_TRACE_ENABLED = True
+    constants = mod_constants.ApatheticLogging_Priv_Constants  # pyright: ignore[reportPrivateUsage]
+    constants.TEST_TRACE_ENABLED = True
     buf = StringIO()
 
     # --- execute ---

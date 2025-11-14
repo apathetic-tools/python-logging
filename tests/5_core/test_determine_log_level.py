@@ -2,27 +2,25 @@
 """Tests for Logger.determine_log_level() method."""
 
 import argparse
+from collections.abc import Generator
 
 import pytest
 
 import apathetic_logging as mod_alogs
-from apathetic_logging.registry import (
-    ApatheticLogging_Priv_Registry,  # pyright: ignore[reportPrivateUsage]
-)
+import apathetic_logging.registry as mod_registry
 
 
 @pytest.fixture(autouse=True)
-def reset_registry(monkeypatch: pytest.MonkeyPatch) -> None:
+def reset_registry(monkeypatch: pytest.MonkeyPatch) -> Generator[None, None, None]:
     """Reset registry state and environment before and after each test."""
     # Save original values
-    original_env_vars = (
-        ApatheticLogging_Priv_Registry.registered_priv_log_level_env_vars
-    )
-    original_default = ApatheticLogging_Priv_Registry.registered_priv_default_log_level
+    registry = mod_registry.ApatheticLogging_Priv_Registry  # pyright: ignore[reportPrivateUsage]
+    original_env_vars = registry.registered_priv_log_level_env_vars
+    original_default = registry.registered_priv_default_log_level
 
     # Reset to None
-    ApatheticLogging_Priv_Registry.registered_priv_log_level_env_vars = None
-    ApatheticLogging_Priv_Registry.registered_priv_default_log_level = None
+    registry.registered_priv_log_level_env_vars = None
+    registry.registered_priv_default_log_level = None
 
     # Clear environment variables
     monkeypatch.delenv("LOG_LEVEL", raising=False)
@@ -31,10 +29,8 @@ def reset_registry(monkeypatch: pytest.MonkeyPatch) -> None:
     yield
 
     # Restore original values
-    ApatheticLogging_Priv_Registry.registered_priv_log_level_env_vars = (
-        original_env_vars
-    )
-    ApatheticLogging_Priv_Registry.registered_priv_default_log_level = original_default
+    registry.registered_priv_log_level_env_vars = original_env_vars
+    registry.registered_priv_default_log_level = original_default
 
 
 def test_determine_log_level_from_args(

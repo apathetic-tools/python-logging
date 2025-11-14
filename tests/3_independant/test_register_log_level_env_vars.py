@@ -1,37 +1,34 @@
 # tests/3_independant/test_register_log_level_env_vars.py
 """Tests for register_log_level_env_vars function."""
 
+from collections.abc import Generator
+
 import pytest
 
 import apathetic_logging as mod_alogs
-from apathetic_logging.registry import (
-    ApatheticLogging_Priv_Registry,  # pyright: ignore[reportPrivateUsage]
-)
+import apathetic_logging.registry as mod_registry
 
 
 @pytest.fixture(autouse=True)
-def reset_registry() -> None:
+def reset_registry() -> Generator[None, None, None]:
     """Reset registry state before and after each test."""
     # Save original values
-    original_env_vars = (
-        ApatheticLogging_Priv_Registry.registered_priv_log_level_env_vars
-    )
-    original_default = ApatheticLogging_Priv_Registry.registered_priv_default_log_level
-    original_name = ApatheticLogging_Priv_Registry.registered_priv_logger_name
+    registry = mod_registry.ApatheticLogging_Priv_Registry  # pyright: ignore[reportPrivateUsage]
+    original_env_vars = registry.registered_priv_log_level_env_vars
+    original_default = registry.registered_priv_default_log_level
+    original_name = registry.registered_priv_logger_name
 
     # Reset to None
-    ApatheticLogging_Priv_Registry.registered_priv_log_level_env_vars = None
-    ApatheticLogging_Priv_Registry.registered_priv_default_log_level = None
-    ApatheticLogging_Priv_Registry.registered_priv_logger_name = None
+    registry.registered_priv_log_level_env_vars = None
+    registry.registered_priv_default_log_level = None
+    registry.registered_priv_logger_name = None
 
     yield
 
     # Restore original values
-    ApatheticLogging_Priv_Registry.registered_priv_log_level_env_vars = (
-        original_env_vars
-    )
-    ApatheticLogging_Priv_Registry.registered_priv_default_log_level = original_default
-    ApatheticLogging_Priv_Registry.registered_priv_logger_name = original_name
+    registry.registered_priv_log_level_env_vars = original_env_vars
+    registry.registered_priv_default_log_level = original_default
+    registry.registered_priv_logger_name = original_name
 
 
 def test_register_log_level_env_vars_stores_list() -> None:
@@ -43,7 +40,8 @@ def test_register_log_level_env_vars_stores_list() -> None:
     mod_alogs.register_log_level_env_vars(env_vars)
 
     # --- verify ---
-    assert ApatheticLogging_Priv_Registry.registered_priv_log_level_env_vars == env_vars
+    registry = mod_registry.ApatheticLogging_Priv_Registry  # pyright: ignore[reportPrivateUsage]
+    assert registry.registered_priv_log_level_env_vars == env_vars
 
 
 def test_register_log_level_env_vars_overwrites_previous() -> None:
@@ -56,7 +54,8 @@ def test_register_log_level_env_vars_overwrites_previous() -> None:
     mod_alogs.register_log_level_env_vars(new_vars)
 
     # --- verify ---
-    assert ApatheticLogging_Priv_Registry.registered_priv_log_level_env_vars == new_vars
+    registry = mod_registry.ApatheticLogging_Priv_Registry  # pyright: ignore[reportPrivateUsage]
+    assert registry.registered_priv_log_level_env_vars == new_vars
 
 
 def test_register_log_level_env_vars_empty_list() -> None:
@@ -65,7 +64,8 @@ def test_register_log_level_env_vars_empty_list() -> None:
     mod_alogs.register_log_level_env_vars([])
 
     # --- verify ---
-    assert ApatheticLogging_Priv_Registry.registered_priv_log_level_env_vars == []
+    registry = mod_registry.ApatheticLogging_Priv_Registry  # pyright: ignore[reportPrivateUsage]
+    assert registry.registered_priv_log_level_env_vars == []
 
 
 def test_register_log_level_env_vars_single_var() -> None:
@@ -77,4 +77,5 @@ def test_register_log_level_env_vars_single_var() -> None:
     mod_alogs.register_log_level_env_vars(env_vars)
 
     # --- verify ---
-    assert ApatheticLogging_Priv_Registry.registered_priv_log_level_env_vars == env_vars
+    registry = mod_registry.ApatheticLogging_Priv_Registry  # pyright: ignore[reportPrivateUsage]
+    assert registry.registered_priv_log_level_env_vars == env_vars

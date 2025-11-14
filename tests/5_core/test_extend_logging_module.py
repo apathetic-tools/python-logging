@@ -19,7 +19,7 @@ def test_extend_logging_module_adds_trace_level() -> None:
     # --- verify ---
     # Should have TRACE level defined
     assert hasattr(logging, "TRACE")
-    assert logging.TRACE == mod_alogs.ApatheticLogging.TRACE_LEVEL
+    assert logging.TRACE == mod_alogs.ApatheticLogging.TRACE_LEVEL  # pyright: ignore[reportAttributeAccessIssue,reportUnknownMemberType]
     # Should return False if already extended
     assert isinstance(result, bool)
 
@@ -32,7 +32,7 @@ def test_extend_logging_module_adds_silent_level() -> None:
     # --- verify ---
     # Should have SILENT level defined
     assert hasattr(logging, "SILENT")
-    assert logging.SILENT == mod_alogs.ApatheticLogging.SILENT_LEVEL
+    assert logging.SILENT == mod_alogs.ApatheticLogging.SILENT_LEVEL  # pyright: ignore[reportAttributeAccessIssue,reportUnknownMemberType]
 
 
 def test_extend_logging_module_adds_level_names() -> None:

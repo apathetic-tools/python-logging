@@ -2,38 +2,34 @@
 """Tests for register_logger_name function."""
 
 import sys
+from collections.abc import Generator
 
 import pytest
 
 import apathetic_logging as mod_alogs
-from apathetic_logging.registry import (
-    ApatheticLogging_Priv_Registry,  # pyright: ignore[reportPrivateUsage]
-)
+import apathetic_logging.registry as mod_registry
 
 
 @pytest.fixture(autouse=True)
-def reset_registry() -> None:
+def reset_registry() -> Generator[None, None, None]:
     """Reset registry state before and after each test."""
     # Save original values
-    original_env_vars = (
-        ApatheticLogging_Priv_Registry.registered_priv_log_level_env_vars
-    )
-    original_default = ApatheticLogging_Priv_Registry.registered_priv_default_log_level
-    original_name = ApatheticLogging_Priv_Registry.registered_priv_logger_name
+    registry = mod_registry.ApatheticLogging_Priv_Registry  # pyright: ignore[reportPrivateUsage]
+    original_env_vars = registry.registered_priv_log_level_env_vars
+    original_default = registry.registered_priv_default_log_level
+    original_name = registry.registered_priv_logger_name
 
     # Reset to None
-    ApatheticLogging_Priv_Registry.registered_priv_log_level_env_vars = None
-    ApatheticLogging_Priv_Registry.registered_priv_default_log_level = None
-    ApatheticLogging_Priv_Registry.registered_priv_logger_name = None
+    registry.registered_priv_log_level_env_vars = None
+    registry.registered_priv_default_log_level = None
+    registry.registered_priv_logger_name = None
 
     yield
 
     # Restore original values
-    ApatheticLogging_Priv_Registry.registered_priv_log_level_env_vars = (
-        original_env_vars
-    )
-    ApatheticLogging_Priv_Registry.registered_priv_default_log_level = original_default
-    ApatheticLogging_Priv_Registry.registered_priv_logger_name = original_name
+    registry.registered_priv_log_level_env_vars = original_env_vars
+    registry.registered_priv_default_log_level = original_default
+    registry.registered_priv_logger_name = original_name
 
 
 def test_register_logger_name_explicit_name() -> None:
@@ -45,7 +41,8 @@ def test_register_logger_name_explicit_name() -> None:
     mod_alogs.register_logger_name(logger_name)
 
     # --- verify ---
-    assert ApatheticLogging_Priv_Registry.registered_priv_logger_name == logger_name
+    registry = mod_registry.ApatheticLogging_Priv_Registry  # pyright: ignore[reportPrivateUsage]
+    assert registry.registered_priv_logger_name == logger_name
 
 
 def test_register_logger_name_overwrites_previous() -> None:
@@ -57,7 +54,8 @@ def test_register_logger_name_overwrites_previous() -> None:
     mod_alogs.register_logger_name("new_name")
 
     # --- verify ---
-    assert ApatheticLogging_Priv_Registry.registered_priv_logger_name == "new_name"
+    registry = mod_registry.ApatheticLogging_Priv_Registry  # pyright: ignore[reportPrivateUsage]
+    assert registry.registered_priv_logger_name == "new_name"
 
 
 def test_register_logger_name_auto_infer_from_package() -> None:
@@ -77,9 +75,8 @@ def test_register_logger_name_auto_infer_from_package() -> None:
         mod_alogs.register_logger_name()
 
         # --- verify ---
-        assert (
-            ApatheticLogging_Priv_Registry.registered_priv_logger_name == "test_package"
-        )
+        registry = mod_registry.ApatheticLogging_Priv_Registry  # pyright: ignore[reportPrivateUsage]
+        assert registry.registered_priv_logger_name == "test_package"
     finally:
         # Restore original package
         if original_package is not None:
@@ -103,10 +100,8 @@ def test_register_logger_name_auto_infer_single_package() -> None:
         mod_alogs.register_logger_name()
 
         # --- verify ---
-        assert (
-            ApatheticLogging_Priv_Registry.registered_priv_logger_name
-            == "singlepackage"
-        )
+        registry = mod_registry.ApatheticLogging_Priv_Registry  # pyright: ignore[reportPrivateUsage]
+        assert registry.registered_priv_logger_name == "singlepackage"
     finally:
         # Restore original package
         if original_package is not None:
