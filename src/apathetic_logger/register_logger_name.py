@@ -5,6 +5,10 @@ from __future__ import annotations
 import sys
 from typing import Any
 
+from .test_trace import (
+    _ApatheticLogger_TestTrace,  # pyright: ignore[reportPrivateUsage]
+)
+
 
 def _get_namespace_module() -> Any:
     """Get the namespace module at runtime.
@@ -75,9 +79,11 @@ class _ApatheticLogger_RegisterLoggerName:  # noqa: N801  # pyright: ignore[repo
             # Extract top-level package from the namespace module's __package__
             package = getattr(namespace_module, "__package__", None)
             if package:
-                # Access _extract_top_level_package via the namespace class
-                namespace = namespace_module.ApatheticLogger
-                logger_name = namespace._extract_top_level_package(package)  # noqa: SLF001
+                logger_name = (
+                    _ApatheticLogger_RegisterLoggerName._extract_top_level_package(
+                        package
+                    )
+                )
                 auto_inferred = True
             if logger_name is None:
                 _msg = (
@@ -87,9 +93,7 @@ class _ApatheticLogger_RegisterLoggerName:  # noqa: N801  # pyright: ignore[repo
                 raise RuntimeError(_msg)
 
         namespace_module._registered_logger_name = logger_name  # noqa: SLF001
-        # Access TEST_TRACE via the namespace class
-        namespace = namespace_module.ApatheticLogger
-        namespace.TEST_TRACE(
+        _ApatheticLogger_TestTrace.TEST_TRACE(
             "register_logger_name() called",
             f"name={logger_name}",
             f"auto_inferred={auto_inferred}",

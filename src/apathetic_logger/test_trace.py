@@ -8,29 +8,14 @@ import sys
 from collections.abc import Callable
 from typing import Any
 
+from .constants import (
+    _ApatheticLogger_Constants,  # pyright: ignore[reportPrivateUsage]
+)
+
 
 # Lazy, safe import — avoids patched time modules
 #   in environments like pytest or eventlet
 _real_time = importlib.import_module("time")
-
-
-def _get_namespace_module() -> Any:
-    """Get the namespace module at runtime.
-
-    This avoids circular import issues by accessing the namespace
-    through the module system after it's been created.
-    """
-    # Access through sys.modules to avoid circular import
-    namespace_module = sys.modules.get("apathetic_logger.namespace")
-    if namespace_module is None:
-        # Fallback: import if not yet loaded
-        namespace_module = sys.modules["apathetic_logger.namespace"]
-    return namespace_module
-
-
-def _get_namespace() -> Any:
-    """Get the ApatheticLogger namespace at runtime."""
-    return _get_namespace_module().ApatheticLogger
 
 
 class _ApatheticLogger_TestTrace:  # noqa: N801  # pyright: ignore[reportUnusedClass]
@@ -44,8 +29,7 @@ class _ApatheticLogger_TestTrace:  # noqa: N801  # pyright: ignore[reportUnusedC
     @staticmethod
     def make_test_trace(icon: str = "🧪") -> Callable[..., Any]:
         def local_trace(label: str, *args: Any) -> Any:
-            ns = _get_namespace()
-            return ns.TEST_TRACE(label, *args, icon=icon)
+            return _ApatheticLogger_TestTrace.TEST_TRACE(label, *args, icon=icon)
 
         return local_trace
 
@@ -59,8 +43,7 @@ class _ApatheticLogger_TestTrace:  # noqa: N801  # pyright: ignore[reportUnusedC
             icon: Emoji prefix/suffix for easier visual scanning.
 
         """
-        ns = _get_namespace()
-        if not ns.TEST_TRACE_ENABLED:
+        if not _ApatheticLogger_Constants.TEST_TRACE_ENABLED:
             return
 
         ts = _real_time.monotonic()

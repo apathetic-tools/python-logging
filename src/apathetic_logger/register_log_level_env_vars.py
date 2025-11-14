@@ -5,6 +5,10 @@ from __future__ import annotations
 import sys
 from typing import Any
 
+from .test_trace import (
+    _ApatheticLogger_TestTrace,  # pyright: ignore[reportPrivateUsage]
+)
+
 
 def _get_namespace_module() -> Any:
     """Get the namespace module at runtime.
@@ -47,9 +51,7 @@ class _ApatheticLogger_RegisterLogLevelEnvVars:  # noqa: N801  # pyright: ignore
         """
         namespace_module = _get_namespace_module()
         namespace_module._registered_log_level_env_vars = env_vars  # noqa: SLF001
-        # Access TEST_TRACE via the namespace class
-        namespace = namespace_module.ApatheticLogger
-        namespace.TEST_TRACE(
+        _ApatheticLogger_TestTrace.TEST_TRACE(
             "register_log_level_env_vars() called",
             f"env_vars={env_vars}",
         )

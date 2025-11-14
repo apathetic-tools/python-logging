@@ -7,6 +7,13 @@ import logging
 import sys
 from typing import Any, cast
 
+from .register_logger_name import (
+    _ApatheticLogger_RegisterLoggerName,  # pyright: ignore[reportPrivateUsage]
+)
+from .test_trace import (
+    _ApatheticLogger_TestTrace,  # pyright: ignore[reportPrivateUsage]
+)
+
 
 def _get_namespace_module() -> Any:
     """Get the namespace module at runtime.
@@ -51,7 +58,6 @@ class _ApatheticLogger_GetLogger:  # noqa: N801  # pyright: ignore[reportUnusedC
             better type hints.
         """
         namespace_module = _get_namespace_module()
-        namespace = namespace_module.ApatheticLogger
         registered_logger_name = getattr(
             namespace_module, "_registered_logger_name", None
         )
@@ -66,13 +72,14 @@ class _ApatheticLogger_GetLogger:  # noqa: N801  # pyright: ignore[reportUnusedC
                     if caller_frame is not None:
                         caller_module = caller_frame.f_globals.get("__package__")
                         if caller_module:
-                            inferred_name = namespace._extract_top_level_package(  # noqa: SLF001
-                                caller_module
+                            _extract = (
+                                _ApatheticLogger_RegisterLoggerName._extract_top_level_package  # noqa: SLF001  # pyright: ignore[reportPrivateUsage]
                             )
+                            inferred_name = _extract(caller_module)
                             if inferred_name:
                                 namespace_module._registered_logger_name = inferred_name  # noqa: SLF001
                                 registered_logger_name = inferred_name
-                                namespace.TEST_TRACE(
+                                _ApatheticLogger_TestTrace.TEST_TRACE(
                                     "get_logger() auto-inferred logger name",
                                     f"name={inferred_name}",
                                     f"from_module={caller_module}",
@@ -90,7 +97,7 @@ class _ApatheticLogger_GetLogger:  # noqa: N801  # pyright: ignore[reportUnusedC
 
         logger = logging.getLogger(registered_logger_name)
         typed_logger = cast("Any", logger)  # ApatheticLogger.Logger
-        namespace.TEST_TRACE(
+        _ApatheticLogger_TestTrace.TEST_TRACE(
             "get_logger() called",
             f"name={typed_logger.name}",
             f"id={id(typed_logger)}",
