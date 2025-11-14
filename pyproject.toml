@@ -259,7 +259,7 @@ skip-string-normalization = false
 
 # --- Poetry Build System ---
 [project.scripts]
-apathetic_logger = "apathetic_logging.__main__:main"
+apathetic_logging = "apathetic_logging.__main__:main"
 
 [build-system]
 requires = ["poetry-core>=2.0.0"]

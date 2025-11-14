@@ -57,7 +57,7 @@ class ApatheticLogging(  # pyright: ignore[reportPrivateUsage]
     ApatheticLogging_Priv_TagFormatter,
     ApatheticLogging_Priv_TestTrace,
 ):
-    """Namespace for apathetic logger functionality.
+    """Namespace for apathetic logging functionality.
 
     All logger functionality is accessed via this namespace class to minimize
     global namespace pollution when the library is embedded in a stitched script.

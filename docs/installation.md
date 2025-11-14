@@ -31,16 +31,16 @@ This is the recommended installation method for most users as it provides:
 
 ## Alternative: Single-File Distribution
 
-For projects that prefer a single-file dependency, we also distribute a standalone `apathetic_logger.py` file that you can download directly from [releases](https://github.com/apathetic-tools/python-logs/releases).
+For projects that prefer a single-file dependency, we also distribute a standalone `apathetic_logging.py` file that you can download directly from [releases](https://github.com/apathetic-tools/python-logs/releases).
 
 ### Download and Use
 
-1. Download `apathetic_logger.py` from the [latest release](https://github.com/apathetic-tools/python-logs/releases)
+1. Download `apathetic_logging.py` from the [latest release](https://github.com/apathetic-tools/python-logs/releases)
 2. Place it in your project directory
 3. Import it directly:
 
 ```python
-import apathetic_logger
+import apathetic_logging
 ```
 
 This method is useful for:
@@ -60,7 +60,7 @@ Apathetic Python Logger has **zero runtime dependencies** — it uses only Pytho
 After installation, verify that it works:
 
 ```python
-from apathetic_logger import get_logger, register_logger_name
+from apathetic_logging import get_logger, register_logger_name
 
 register_logger_name("test")
 logger = get_logger()

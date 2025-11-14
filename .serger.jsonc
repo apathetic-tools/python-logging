@@ -1,11 +1,11 @@
 // Serger's configuration
-// This file defines how to stitch apathetic_logger into a single-file python script
+// This file defines how to stitch apathetic_logging into a single-file python script
 
 {
   "builds": [
     {
       // Stitching configuration for the main serger package
-      "package": "apathetic_logger",
+      "package": "apathetic_logging",
 
       // Repository URL (appears in generated header)
       "repo": "https://github.com/apathetic-tools/python-logger",
@@ -30,7 +30,7 @@
 
       // Output file path (relative to project root)
       // This will be the final single-file executable
-      "out": "dist/apathetic_logger.py"
+      "out": "dist/apathetic_logging.py"
     }
   ]
 }

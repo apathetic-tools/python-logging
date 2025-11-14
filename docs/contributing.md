@@ -90,7 +90,7 @@ Apathetic Python Logger ships in two forms:
 
 | Target | Command | Output |
 |--------|---------|--------|
-| **Single-file script** | `poetry run poe build:script` | Creates `dist/apathetic_logger.py` |
+| **Single-file script** | `poetry run poe build:script` | Creates `dist/apathetic_logging.py` |
 | **PyPI package** | `poetry build && poetry publish` | Builds and uploads wheel & sdist |
 
 To publish to PyPI:

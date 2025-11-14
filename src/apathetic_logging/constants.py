@@ -8,7 +8,7 @@ from typing import ClassVar
 
 
 class ApatheticLogging_Priv_Constants:  # noqa: N801  # pyright: ignore[reportUnusedClass]
-    """Constants for apathetic logger functionality.
+    """Constants for apathetic logging functionality.
 
     This class contains all constant values used by ApatheticLogging.
     It's kept separate for organizational purposes.

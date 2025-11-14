@@ -29,7 +29,7 @@ import logging
 import os
 from typing import cast
 
-from apathetic_logger import (
+from apathetic_logging import (
     ApatheticLogging,
     get_logger,
     register_default_log_level,
@@ -114,7 +114,7 @@ def get_app_logger() -> AppLogger:
     """Return the configured application logger.
     
     This is the application-specific logger getter that returns AppLogger type.
-    Use this in application code instead of apathetic_logger.get_logger() for
+    Use this in application code instead of apathetic_logging.get_logger() for
     better type hints and to ensure you're using the custom logger.
     
     Returns:
@@ -239,7 +239,7 @@ If you're migrating from the base `ApatheticLogging`, you can gradually adopt th
 
 ```python
 # Old code (still works)
-from apathetic_logger import get_logger
+from apathetic_logging import get_logger
 logger = get_logger()
 
 # New code (better type hints)

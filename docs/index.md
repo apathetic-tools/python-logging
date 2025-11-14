@@ -23,7 +23,7 @@ Apathetic Python Logger provides a lightweight, dependency-free logging solution
 ## Quick Example
 
 ```python
-from apathetic_logger import get_logger, register_logger_name
+from apathetic_logging import get_logger, register_logger_name
 
 # Register your logger name
 register_logger_name("my_app")

@@ -24,7 +24,7 @@ Uses Python's built-in logging registry (`logging.getLogger()`) to retrieve the 
 
 **Example:**
 ```python
-from apathetic_logger import get_logger, register_logger_name
+from apathetic_logging import get_logger, register_logger_name
 
 register_logger_name("my_app")
 logger = get_logger()
@@ -41,7 +41,7 @@ If `logger_name` is not provided, the top-level package is automatically extract
 
 **Example:**
 ```python
-from apathetic_logger import register_logger_name
+from apathetic_logging import register_logger_name
 
 register_logger_name("my_app")
 # Or let it auto-infer:
@@ -59,7 +59,7 @@ The environment variables will be checked in order, and the first non-empty valu
 
 **Example:**
 ```python
-from apathetic_logger import register_log_level_env_vars
+from apathetic_logging import register_log_level_env_vars
 
 register_log_level_env_vars(["MYAPP_LOG_LEVEL", "LOG_LEVEL"])
 ```
@@ -73,7 +73,7 @@ Register the default log level to use when no other source is found.
 
 **Example:**
 ```python
-from apathetic_logger import register_default_log_level
+from apathetic_logging import register_default_log_level
 
 register_default_log_level("warning")
 ```
@@ -89,7 +89,7 @@ This function bypasses the normal logging system and writes directly to `sys.__s
 
 **Example:**
 ```python
-from apathetic_logger import safe_log
+from apathetic_logging import safe_log
 
 try:
     # Some operation
@@ -345,7 +345,7 @@ Access via `ANSIColors` class:
 
 **Example:**
 ```python
-from apathetic_logger import ANSIColors
+from apathetic_logging import ANSIColors
 
 message = f"{ANSIColors.CYAN}Colored text{ANSIColors.RESET}"
 ```

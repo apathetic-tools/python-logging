@@ -13,7 +13,7 @@ Get up and running with Apathetic Python Logger in minutes.
 The simplest way to use Apathetic Python Logger is to register a logger name and get a logger instance:
 
 ```python
-from apathetic_logger import get_logger, register_logger_name
+from apathetic_logging import get_logger, register_logger_name
 
 # Register your logger name
 register_logger_name("my_app")
@@ -85,7 +85,7 @@ Colors are disabled when:
 ### Manual Control
 
 ```python
-from apathetic_logger import ApatheticLogging
+from apathetic_logging import ApatheticLogging
 
 # Create logger with colors explicitly enabled/disabled
 logger = ApatheticLogging("my_app", enable_color=True)
@@ -149,7 +149,7 @@ For command-line applications, you can integrate with `argparse`:
 
 ```python
 import argparse
-from apathetic_logger import get_logger, register_logger_name
+from apathetic_logging import get_logger, register_logger_name
 
 def main():
     parser = argparse.ArgumentParser()

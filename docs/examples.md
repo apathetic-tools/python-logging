@@ -18,7 +18,7 @@ A complete example of a command-line application using Apathetic Python Logger:
 
 import argparse
 import sys
-from apathetic_logger import get_logger, register_logger_name
+from apathetic_logging import get_logger, register_logger_name
 
 def main():
     parser = argparse.ArgumentParser(description="Example CLI tool")
@@ -66,7 +66,7 @@ if __name__ == "__main__":
 Temporarily increase verbosity for specific operations:
 
 ```python
-from apathetic_logger import get_logger, register_logger_name
+from apathetic_logging import get_logger, register_logger_name
 
 register_logger_name("my_app")
 logger = get_logger()
@@ -89,7 +89,7 @@ logger.info("Operation complete")
 Show full tracebacks only in debug mode:
 
 ```python
-from apathetic_logger import get_logger, register_logger_name
+from apathetic_logging import get_logger, register_logger_name
 
 register_logger_name("my_app")
 logger = get_logger()
@@ -112,7 +112,7 @@ except Exception:
 Register custom environment variables for log level:
 
 ```python
-from apathetic_logger import (
+from apathetic_logging import (
     get_logger,
     register_logger_name,
     register_log_level_env_vars,
@@ -139,7 +139,7 @@ Seamless integration with argparse for CLI tools:
 
 ```python
 import argparse
-from apathetic_logger import get_logger, register_logger_name
+from apathetic_logging import get_logger, register_logger_name
 
 def create_parser():
     parser = argparse.ArgumentParser()
@@ -171,7 +171,7 @@ def main():
 Log at different levels dynamically:
 
 ```python
-from apathetic_logger import get_logger, register_logger_name
+from apathetic_logging import get_logger, register_logger_name
 
 register_logger_name("my_app")
 logger = get_logger()
@@ -193,7 +193,7 @@ logger.log_dynamic(logging.WARNING, "This is a warning")
 Work with colors directly:
 
 ```python
-from apathetic_logger import ApatheticLogging, ANSIColors
+from apathetic_logging import ApatheticLogging, ANSIColors
 
 # Create logger with explicit color control
 logger = ApatheticLogging("my_app", enable_color=True)
@@ -213,7 +213,7 @@ Example of using the logger in tests:
 
 ```python
 import pytest
-from apathetic_logger import get_logger, register_logger_name
+from apathetic_logging import get_logger, register_logger_name
 
 @pytest.fixture
 def logger():
@@ -234,7 +234,7 @@ def test_operation(logger):
 Completely disable logging:
 
 ```python
-from apathetic_logger import get_logger, register_logger_name
+from apathetic_logging import get_logger, register_logger_name
 
 register_logger_name("my_app")
 logger = get_logger()
@@ -258,7 +258,7 @@ Using the logger across multiple modules:
 
 ```main.py```
 ```python
-from apathetic_logger import register_logger_name
+from apathetic_logging import register_logger_name
 import module_a
 import module_b
 
@@ -272,7 +272,7 @@ module_b.do_something_else()
 
 ```module_a.py```
 ```python
-from apathetic_logger import get_logger
+from apathetic_logging import get_logger
 
 logger = get_logger()  # Gets the "my_app" logger
 
@@ -282,7 +282,7 @@ def do_something():
 
 ```module_b.py```
 ```python
-from apathetic_logger import get_logger
+from apathetic_logging import get_logger
 
 logger = get_logger()  # Gets the same "my_app" logger
 
@@ -295,7 +295,7 @@ def do_something_else():
 Use `safe_log` for critical error reporting:
 
 ```python
-from apathetic_logger import safe_log, get_logger, register_logger_name
+from apathetic_logging import safe_log, get_logger, register_logger_name
 
 register_logger_name("my_app")
 logger = get_logger()
@@ -319,7 +319,7 @@ def critical_operation():
 Only increase verbosity, never decrease:
 
 ```python
-from apathetic_logger import get_logger, register_logger_name
+from apathetic_logging import get_logger, register_logger_name
 
 register_logger_name("my_app")
 logger = get_logger()
