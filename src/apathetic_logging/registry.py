@@ -1,3 +1,4 @@
+# src/apathetic_logging/registry.py
 """Registry for configurable log level settings."""
 
 from __future__ import annotations

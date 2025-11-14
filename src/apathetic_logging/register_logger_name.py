@@ -1,3 +1,4 @@
+# src/apathetic_logging/register_logger_name.py
 """RegisterLoggerName functionality for Apathetic Logging."""
 
 from __future__ import annotations

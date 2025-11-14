@@ -1,3 +1,4 @@
+# src/apathetic_logging/__init__.py
 """Apathetic Logging implementation."""
 
 from .namespace import ApatheticLogging as _ApatheticLoggingNamespace

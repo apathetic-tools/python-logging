@@ -1,3 +1,4 @@
+# src/apathetic_logging/constants.py
 """Constants for Apathetic Logging."""
 
 from __future__ import annotations

@@ -1,3 +1,4 @@
+# tests/10_app_integration/test_custom_logger_basic.py
 """Tests for correct custom logger usage patterns from docs/custom-logger.md."""
 
 import argparse

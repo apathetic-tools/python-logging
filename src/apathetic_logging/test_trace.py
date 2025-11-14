@@ -1,3 +1,4 @@
+# src/apathetic_logging/test_trace.py
 """TestTrace functionality for Apathetic Logging."""
 
 from __future__ import annotations

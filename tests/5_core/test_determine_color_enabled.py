@@ -1,4 +1,4 @@
-# tests/0_independant/test_determine_color_enabled.py
+# tests/5_core/test_determine_color_enabled.py
 """Tests for ApatheticLogging.determine_color_enabled()."""
 
 import sys

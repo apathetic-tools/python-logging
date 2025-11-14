@@ -1,3 +1,4 @@
+# tests/10_app_integration/test_custom_logger_mistakes.py
 """Tests for common mistakes when using custom logger pattern."""
 
 import logging

@@ -1,3 +1,4 @@
+# src/apathetic_logging/get_logger.py
 """GetLogger functionality for Apathetic Logging."""
 
 from __future__ import annotations

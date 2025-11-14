@@ -1,4 +1,4 @@
-# tests/0_independant/test_no_from_app_imports.py
+# tests/0_tooling/test_lint__no_from_app_imports.py
 """Custom lint rule: Enforce `import <mod> as mod_<mod>` pattern in tests.
 
 This test acts as a "poor person's linter" since we can't create custom ruff rules yet.

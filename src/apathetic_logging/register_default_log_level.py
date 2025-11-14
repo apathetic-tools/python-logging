@@ -1,3 +1,4 @@
+# src/apathetic_logging/register_default_log_level.py
 """RegisterDefaultLogLevel functionality for Apathetic Logging."""
 
 from __future__ import annotations

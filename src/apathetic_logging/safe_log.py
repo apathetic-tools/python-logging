@@ -1,3 +1,4 @@
+# src/apathetic_logging/safe_log.py
 """SafeLog functionality for Apathetic Logging."""
 
 from __future__ import annotations

@@ -1,4 +1,4 @@
-# tests/0_independant/test_pytest__runs.py
+# tests/0_tooling/test_pytest__runs.py
 """Verify pytest configuration and basic functionality.
 
 This test verifies that pytest itself is functioning correctly with our project

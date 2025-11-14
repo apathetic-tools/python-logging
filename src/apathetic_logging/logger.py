@@ -1,3 +1,4 @@
+# src/apathetic_logging/logger.py
 """Logger class for Apathetic Logging."""
 
 from __future__ import annotations

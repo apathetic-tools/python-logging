@@ -1,4 +1,4 @@
-# tests/0_independant/test_logger.py
+# tests/5_core/test_logger.py
 
 import io
 import re

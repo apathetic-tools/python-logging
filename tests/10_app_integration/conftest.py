@@ -1,3 +1,4 @@
+# tests/10_app_integration/conftest.py
 """Shared fixtures and helper classes for custom logger integration tests."""
 
 import argparse

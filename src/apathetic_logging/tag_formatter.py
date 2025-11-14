@@ -1,3 +1,4 @@
+# src/apathetic_logging/tag_formatter.py
 """TagFormatter class for Apathetic Logging."""
 
 from __future__ import annotations

@@ -1,4 +1,4 @@
-# src/serger/utils/utils_logs.py
+# src/apathetic_logging/namespace.py
 """Shared Apathetic CLI logger implementation."""
 
 from __future__ import annotations

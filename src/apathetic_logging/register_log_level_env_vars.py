@@ -1,3 +1,4 @@
+# src/apathetic_logging/register_log_level_env_vars.py
 """RegisterLogLevelEnvVars functionality for Apathetic Logging."""
 
 from __future__ import annotations

@@ -1,3 +1,4 @@
+# src/apathetic_logging/dual_stream_handler.py
 """DualStreamHandler class for Apathetic Logging."""
 
 from __future__ import annotations
