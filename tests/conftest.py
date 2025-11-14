@@ -2,8 +2,8 @@
 """Shared test setup for project.
 
 Each pytest run now targets a single runtime mode:
-- Normal mode (default): uses src/apathetic_logger
-- Standalone mode: uses dist/apathetic_logger.py when RUNTIME_MODE=singlefile
+- Normal mode (default): uses src/apathetic_logging
+- Standalone mode: uses dist/apathetic_logging.py when RUNTIME_MODE=singlefile
 
 Switch mode with: RUNTIME_MODE=singlefile pytest
 """

@@ -85,10 +85,10 @@ Colors are disabled when:
 ### Manual Control
 
 ```python
-from apathetic_logger import ApatheticLogger
+from apathetic_logger import ApatheticLogging
 
 # Create logger with colors explicitly enabled/disabled
-logger = ApatheticLogger("my_app", enable_color=True)
+logger = ApatheticLogging("my_app", enable_color=True)
 ```
 
 ## Tag Formatting

@@ -2,8 +2,8 @@
 """Shared test setup for project.
 
 Each pytest run now targets a single runtime mode:
-- Normal mode (default): uses src/apathetic_logger
-- standalone mode: uses dist/apathetic_logger.py when RUNTIME_MODE=singlefile
+- Normal mode (default): uses src/apathetic_logging
+- standalone mode: uses dist/apathetic_logging.py when RUNTIME_MODE=singlefile
 
 Switch mode with: RUNTIME_MODE=singlefile pytest
 """
@@ -44,7 +44,7 @@ def _mode() -> str:
 # ⚙️ Auto-build helper for standalone script
 # ------------------------------------------------------------
 def ensure_standalone_script_up_to_date(root: Path) -> Path:
-    """Rebuild `dist/apathetic_logger.py` if missing or outdated."""
+    """Rebuild `dist/apathetic_logging.py` if missing or outdated."""
     bin_path = root / "dist" / f"{PROGRAM_SCRIPT}.py"
     src_dir = root / "src" / PROGRAM_PACKAGE
 
@@ -91,12 +91,12 @@ def runtime_swap() -> bool:
         )
         raise pytest.UsageError(xmsg)
 
-    # Nuke any already-imported apathetic_logger modules to avoid stale refs.
+    # Nuke any already-imported apathetic_logging modules to avoid stale refs.
     for name in list(sys.modules):
         if name == PROGRAM_PACKAGE or name.startswith(f"{PROGRAM_PACKAGE}."):
             del sys.modules[name]
 
-    # Load standalone script as the apathetic_logger package.
+    # Load standalone script as the apathetic_logging package.
     spec = importlib.util.spec_from_file_location(PROGRAM_PACKAGE, bin_path)
     if not spec or not spec.loader:
         xmsg = f"Could not create import spec for {bin_path}"

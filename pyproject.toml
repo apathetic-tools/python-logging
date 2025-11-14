@@ -23,7 +23,7 @@ check = ["lint", "typecheck",  "test"]
 lint = ["lint:ruff", "lint:compile"]
 "lint:ruff" = "ruff check ."
 "lint:compile" = []
-"lint:compile:script" = { shell = "if [ -f dist/apathetic_logger.py ]; then python -m py_compile dist/apathetic_logger.py; fi" }
+"lint:compile:script" = { shell = "if [ -f dist/apathetic_logging.py ]; then python -m py_compile dist/apathetic_logging.py; fi" }
 
 # 🧠 Type checking
 typecheck = ["typecheck:mypy", "typecheck:pyright"]
@@ -184,11 +184,11 @@ quote-style = "double"
 indent-style = "space"
 
 [tool.ruff.lint.flake8-import-conventions]
-banned-from = ["apathetic_logger"] # only in tests, see per-file ignores
+banned-from = ["apathetic_logging"] # only in tests, see per-file ignores
 
 [tool.ruff.lint.isort]
 combine-as-imports = true
-known-first-party = ["apathetic_logger"]
+known-first-party = ["apathetic_logging"]
 force-single-line = false
 lines-after-imports = 2
 
@@ -205,7 +205,7 @@ max-returns = 5
 profile = "black"                # Matches Ruff formatter style
 line_length = 88                 # Keep consistent with Ruff
 combine_as_imports = true        # Same as Ruff’s setting
-known_first_party = ["apathetic_logger"]
+known_first_party = ["apathetic_logging"]
 skip_gitignore = true            # Avoid touching ignored files
 force_single_line = false        # Don’t explode imports unnecessarily
 atomic = true                    # Fail instead of partial reordering if conflicts occur
@@ -225,7 +225,7 @@ typeCheckingMode = "strict"
 [tool.coverage.run]
 source = ["src"]
 omit = ["*/tests/*", "*/test_*.py"]
-# Enable subprocess coverage tracking (for python -m apathetic_logger calls)
+# Enable subprocess coverage tracking (for python -m apathetic_logging calls)
 concurrency = ["thread", "multiprocessing"]
 sigterm = true
 
@@ -259,7 +259,7 @@ skip-string-normalization = false
 
 # --- Poetry Build System ---
 [project.scripts]
-apathetic_logger = "apathetic_logger.__main__:main"
+apathetic_logger = "apathetic_logging.__main__:main"
 
 [build-system]
 requires = ["poetry-core>=2.0.0"]
@@ -267,4 +267,4 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
 package-mode = true
-packages = [{ include = "apathetic_logger", from = "src" }]
+packages = [{ include = "apathetic_logging", from = "src" }]

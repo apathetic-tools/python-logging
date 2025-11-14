@@ -1,4 +1,4 @@
-"""GetLogger functionality for Apathetic Logger."""
+"""GetLogger functionality for Apathetic Logging."""
 
 from __future__ import annotations
 
@@ -8,10 +8,10 @@ import sys
 from typing import Any, cast
 
 from .register_logger_name import (
-    _ApatheticLogger_RegisterLoggerName,  # pyright: ignore[reportPrivateUsage]
+    ApatheticLogging_Priv_RegisterLoggerName,  # pyright: ignore[reportPrivateUsage]
 )
 from .test_trace import (
-    _ApatheticLogger_TestTrace,  # pyright: ignore[reportPrivateUsage]
+    ApatheticLogging_Priv_TestTrace,  # pyright: ignore[reportPrivateUsage]
 )
 
 
@@ -22,22 +22,22 @@ def _get_namespace_module() -> Any:
     through the module system after it's been created.
     """
     # Access through sys.modules to avoid circular import
-    namespace_module = sys.modules.get("apathetic_logger.namespace")
+    namespace_module = sys.modules.get("apathetic_logging.namespace")
     if namespace_module is None:
         # Fallback: import if not yet loaded
-        namespace_module = sys.modules["apathetic_logger.namespace"]
+        namespace_module = sys.modules["apathetic_logging.namespace"]
     return namespace_module
 
 
-class _ApatheticLogger_GetLogger:  # noqa: N801  # pyright: ignore[reportUnusedClass]
+class ApatheticLogging_Priv_GetLogger:  # noqa: N801  # pyright: ignore[reportUnusedClass]
     """Mixin class that provides the get_logger static method.
 
     This class contains the get_logger implementation as a static method.
-    When mixed into ApatheticLogger, it provides ApatheticLogger.get_logger.
+    When mixed into ApatheticLogging, it provides ApatheticLogging.get_logger.
     """
 
     @staticmethod
-    def get_logger() -> Any:  # Returns ApatheticLogger.Logger
+    def get_logger() -> Any:  # Returns ApatheticLogging.Logger
         """Return the registered logger instance.
 
         Uses Python's built-in logging registry (logging.getLogger()) to retrieve
@@ -46,7 +46,7 @@ class _ApatheticLogger_GetLogger:  # noqa: N801  # pyright: ignore[reportUnusedC
 
         Returns:
             The logger instance from logging.getLogger()
-            (as ApatheticLogger.Logger type)
+            (as ApatheticLogging.Logger type)
 
         Raises:
             RuntimeError: If called before a logger name has been registered and
@@ -73,13 +73,13 @@ class _ApatheticLogger_GetLogger:  # noqa: N801  # pyright: ignore[reportUnusedC
                         caller_module = caller_frame.f_globals.get("__package__")
                         if caller_module:
                             _extract = (
-                                _ApatheticLogger_RegisterLoggerName._extract_top_level_package  # noqa: SLF001  # pyright: ignore[reportPrivateUsage]
+                                ApatheticLogging_Priv_RegisterLoggerName._extract_top_level_package  # noqa: SLF001  # pyright: ignore[reportPrivateUsage]
                             )
                             inferred_name = _extract(caller_module)
                             if inferred_name:
                                 namespace_module._registered_logger_name = inferred_name  # noqa: SLF001
                                 registered_logger_name = inferred_name
-                                _ApatheticLogger_TestTrace.TEST_TRACE(
+                                ApatheticLogging_Priv_TestTrace.TEST_TRACE(
                                     "get_logger() auto-inferred logger name",
                                     f"name={inferred_name}",
                                     f"from_module={caller_module}",
@@ -96,8 +96,8 @@ class _ApatheticLogger_GetLogger:  # noqa: N801  # pyright: ignore[reportUnusedC
             raise RuntimeError(_msg)
 
         logger = logging.getLogger(registered_logger_name)
-        typed_logger = cast("Any", logger)  # ApatheticLogger.Logger
-        _ApatheticLogger_TestTrace.TEST_TRACE(
+        typed_logger = cast("Any", logger)  # ApatheticLogging.Logger
+        ApatheticLogging_Priv_TestTrace.TEST_TRACE(
             "get_logger() called",
             f"name={typed_logger.name}",
             f"id={id(typed_logger)}",

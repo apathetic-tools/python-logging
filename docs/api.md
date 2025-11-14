@@ -10,14 +10,14 @@ Complete API documentation for Apathetic Python Logger.
 
 ## Core Functions
 
-### `get_logger() -> ApatheticLogger`
+### `get_logger() -> ApatheticLogging`
 
 Return the registered logger instance.
 
 Uses Python's built-in logging registry (`logging.getLogger()`) to retrieve the logger. If no logger name has been registered, attempts to auto-infer the logger name from the calling module's top-level package.
 
 **Returns:**
-- The logger instance from `logging.getLogger()` (as `ApatheticLogger` type)
+- The logger instance from `logging.getLogger()` (as `ApatheticLogging` type)
 
 **Raises:**
 - `RuntimeError`: If called before a logger name has been registered and auto-inference fails.
@@ -100,14 +100,14 @@ except Exception:
 
 ## Classes
 
-### `ApatheticLogger`
+### `ApatheticLogging`
 
 Logger class for all Apathetic tools. Extends Python's standard `logging.Logger`.
 
 #### Constructor
 
 ```python
-ApatheticLogger(
+ApatheticLogging(
     name: str,
     level: int = logging.NOTSET,
     *,
@@ -175,7 +175,7 @@ Checks:
 Extend Python's logging module with TRACE and SILENT levels.
 
 This method:
-- Sets `ApatheticLogger` as the default logger class
+- Sets `ApatheticLogging` as the default logger class
 - Adds `TRACE` and `SILENT` level names
 - Adds `logging.TRACE` and `logging.SILENT` constants
 

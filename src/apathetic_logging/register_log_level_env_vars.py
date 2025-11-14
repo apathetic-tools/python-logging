@@ -1,4 +1,4 @@
-"""RegisterLogLevelEnvVars functionality for Apathetic Logger."""
+"""RegisterLogLevelEnvVars functionality for Apathetic Logging."""
 
 from __future__ import annotations
 
@@ -6,7 +6,7 @@ import sys
 from typing import Any
 
 from .test_trace import (
-    _ApatheticLogger_TestTrace,  # pyright: ignore[reportPrivateUsage]
+    ApatheticLogging_Priv_TestTrace,  # pyright: ignore[reportPrivateUsage]
 )
 
 
@@ -17,19 +17,19 @@ def _get_namespace_module() -> Any:
     through the module system after it's been created.
     """
     # Access through sys.modules to avoid circular import
-    namespace_module = sys.modules.get("apathetic_logger.namespace")
+    namespace_module = sys.modules.get("apathetic_logging.namespace")
     if namespace_module is None:
         # Fallback: import if not yet loaded
-        namespace_module = sys.modules["apathetic_logger.namespace"]
+        namespace_module = sys.modules["apathetic_logging.namespace"]
     return namespace_module
 
 
-class _ApatheticLogger_RegisterLogLevelEnvVars:  # noqa: N801  # pyright: ignore[reportUnusedClass]
+class ApatheticLogging_Priv_RegisterLogLevelEnvVars:  # noqa: N801  # pyright: ignore[reportUnusedClass]
     """Mixin class that provides the register_log_level_env_vars static method.
 
     This class contains the register_log_level_env_vars implementation as a static
-    method. When mixed into ApatheticLogger, it provides
-    ApatheticLogger.register_log_level_env_vars.
+    method. When mixed into ApatheticLogging, it provides
+    ApatheticLogging.register_log_level_env_vars.
     """
 
     @staticmethod
@@ -44,14 +44,14 @@ class _ApatheticLogger_RegisterLogLevelEnvVars:  # noqa: N801  # pyright: ignore
                 (e.g., ["SERGER_LOG_LEVEL", "LOG_LEVEL"])
 
         Example:
-            >>> from apathetic_logger import ApatheticLogger
-            >>> ApatheticLogger.register_log_level_env_vars(
+            >>> from apathetic_logging import ApatheticLogging
+            >>> ApatheticLogging.register_log_level_env_vars(
             ...     ["MYAPP_LOG_LEVEL", "LOG_LEVEL"]
             ... )
         """
         namespace_module = _get_namespace_module()
         namespace_module._registered_log_level_env_vars = env_vars  # noqa: SLF001
-        _ApatheticLogger_TestTrace.TEST_TRACE(
+        ApatheticLogging_Priv_TestTrace.TEST_TRACE(
             "register_log_level_env_vars() called",
             f"env_vars={env_vars}",
         )

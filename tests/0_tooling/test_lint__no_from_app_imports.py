@@ -3,8 +3,8 @@
 
 This test acts as a "poor person's linter" since we can't create custom ruff rules yet.
 It enforces that ALL test files use
-`import apathetic_logger.module as mod_module` format
-instead of `from apathetic_logger.module import ...` when importing from our project.
+`import apathetic_logging.module as mod_module` format
+instead of `from apathetic_logging.module import ...` when importing from our project.
 
 CRITICAL: This rule applies to ALL imports from our project, including private
 functions (those starting with _). There are NO exceptions.
@@ -31,7 +31,7 @@ from pathlib import Path
 # `import <package>.<module> as mod_<module>` format
 DISALLOWED_PACKAGES = [
     "apathetic_utils",
-    "apathetic_logger",
+    "apathetic_logging",
 ]
 
 

@@ -1,4 +1,4 @@
-"""RegisterLoggerName functionality for Apathetic Logger."""
+"""RegisterLoggerName functionality for Apathetic Logging."""
 
 from __future__ import annotations
 
@@ -6,7 +6,7 @@ import sys
 from typing import Any
 
 from .test_trace import (
-    _ApatheticLogger_TestTrace,  # pyright: ignore[reportPrivateUsage]
+    ApatheticLogging_Priv_TestTrace,  # pyright: ignore[reportPrivateUsage]
 )
 
 
@@ -17,19 +17,19 @@ def _get_namespace_module() -> Any:
     through the module system after it's been created.
     """
     # Access through sys.modules to avoid circular import
-    namespace_module = sys.modules.get("apathetic_logger.namespace")
+    namespace_module = sys.modules.get("apathetic_logging.namespace")
     if namespace_module is None:
         # Fallback: import if not yet loaded
-        namespace_module = sys.modules["apathetic_logger.namespace"]
+        namespace_module = sys.modules["apathetic_logging.namespace"]
     return namespace_module
 
 
-class _ApatheticLogger_RegisterLoggerName:  # noqa: N801  # pyright: ignore[reportUnusedClass]
+class ApatheticLogging_Priv_RegisterLoggerName:  # noqa: N801  # pyright: ignore[reportUnusedClass]
     """Mixin class that provides the register_logger_name static method.
 
     This class contains the register_logger_name implementation as a static
-    method. When mixed into ApatheticLogger, it provides
-    ApatheticLogger.register_logger_name.
+    method. When mixed into ApatheticLogging, it provides
+    ApatheticLogging.register_logger_name.
     """
 
     @staticmethod
@@ -66,11 +66,11 @@ class _ApatheticLogger_RegisterLoggerName:  # noqa: N801  # pyright: ignore[repo
 
         Example:
             >>> # Explicit registration
-            >>> from apathetic_logger import ApatheticLogger
-            >>> ApatheticLogger.register_logger_name("myapp")
+            >>> from apathetic_logging import ApatheticLogging
+            >>> ApatheticLogging.register_logger_name("myapp")
 
             >>> # Auto-infer from __package__
-            >>> ApatheticLogger.register_logger_name()
+            >>> ApatheticLogging.register_logger_name()
             ...     # Uses top-level package from __package__
         """
         namespace_module = _get_namespace_module()
@@ -80,7 +80,7 @@ class _ApatheticLogger_RegisterLoggerName:  # noqa: N801  # pyright: ignore[repo
             package = getattr(namespace_module, "__package__", None)
             if package:
                 logger_name = (
-                    _ApatheticLogger_RegisterLoggerName._extract_top_level_package(
+                    ApatheticLogging_Priv_RegisterLoggerName._extract_top_level_package(
                         package
                     )
                 )
@@ -93,7 +93,7 @@ class _ApatheticLogger_RegisterLoggerName:  # noqa: N801  # pyright: ignore[repo
                 raise RuntimeError(_msg)
 
         namespace_module._registered_logger_name = logger_name  # noqa: SLF001
-        _ApatheticLogger_TestTrace.TEST_TRACE(
+        ApatheticLogging_Priv_TestTrace.TEST_TRACE(
             "register_logger_name() called",
             f"name={logger_name}",
             f"auto_inferred={auto_inferred}",

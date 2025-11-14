@@ -1,4 +1,4 @@
-"""SafeLog functionality for Apathetic Logger."""
+"""SafeLog functionality for Apathetic Logging."""
 
 from __future__ import annotations
 
@@ -7,11 +7,11 @@ from contextlib import suppress
 from typing import TextIO, cast
 
 
-class _ApatheticLogger_SafeLog:  # noqa: N801  # pyright: ignore[reportUnusedClass]
+class ApatheticLogging_Priv_SafeLog:  # noqa: N801  # pyright: ignore[reportUnusedClass]
     """Mixin class that provides the safe_log static method.
 
     This class contains the safe_log implementation as a static method.
-    When mixed into ApatheticLogger, it provides ApatheticLogger.safe_log.
+    When mixed into ApatheticLogging, it provides ApatheticLogging.safe_log.
     """
 
     @staticmethod

@@ -1,4 +1,4 @@
-"""DualStreamHandler class for Apathetic Logger."""
+"""DualStreamHandler class for Apathetic Logging."""
 
 from __future__ import annotations
 
@@ -6,11 +6,11 @@ import logging
 import sys
 
 
-class _ApatheticLogger_DualStreamHandler:  # noqa: N801  # pyright: ignore[reportUnusedClass]
+class ApatheticLogging_Priv_DualStreamHandler:  # noqa: N801  # pyright: ignore[reportUnusedClass]
     """Mixin class that provides the DualStreamHandler nested class.
 
     This class contains the DualStreamHandler implementation as a nested class.
-    When mixed into ApatheticLogger, it provides ApatheticLogger.DualStreamHandler.
+    When mixed into ApatheticLogging, it provides ApatheticLogging.DualStreamHandler.
     """
 
     class DualStreamHandler(logging.StreamHandler):  # type: ignore[type-arg]

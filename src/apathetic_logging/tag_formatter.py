@@ -1,19 +1,19 @@
-"""TagFormatter class for Apathetic Logger."""
+"""TagFormatter class for Apathetic Logging."""
 
 from __future__ import annotations
 
 import logging
 
 from .constants import (
-    _ApatheticLogger_Constants,  # pyright: ignore[reportPrivateUsage]
+    ApatheticLogging_Priv_Constants,  # pyright: ignore[reportPrivateUsage]
 )
 
 
-class _ApatheticLogger_TagFormatter:  # noqa: N801  # pyright: ignore[reportUnusedClass]
+class ApatheticLogging_Priv_TagFormatter:  # noqa: N801  # pyright: ignore[reportUnusedClass]
     """Mixin class that provides the TagFormatter nested class.
 
     This class contains the TagFormatter implementation as a nested class.
-    When mixed into ApatheticLogger, it provides ApatheticLogger.TagFormatter.
+    When mixed into ApatheticLogging, it provides ApatheticLogging.TagFormatter.
     """
 
     class TagFormatter(logging.Formatter):
@@ -21,7 +21,7 @@ class _ApatheticLogger_TagFormatter:  # noqa: N801  # pyright: ignore[reportUnus
             self,
             record: logging.LogRecord,
         ) -> str:
-            tag_color, tag_text = _ApatheticLogger_Constants.TAG_STYLES.get(
+            tag_color, tag_text = ApatheticLogging_Priv_Constants.TAG_STYLES.get(
                 record.levelname, ("", "")
             )
             msg = super().format(record)
@@ -29,7 +29,7 @@ class _ApatheticLogger_TagFormatter:  # noqa: N801  # pyright: ignore[reportUnus
                 if getattr(record, "enable_color", False) and tag_color:
                     prefix = (
                         f"{tag_color}{tag_text}"
-                        f"{_ApatheticLogger_Constants.ANSIColors.RESET}"
+                        f"{ApatheticLogging_Priv_Constants.ANSIColors.RESET}"
                     )
                 else:
                     prefix = tag_text

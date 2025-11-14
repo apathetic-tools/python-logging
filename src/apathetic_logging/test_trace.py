@@ -1,4 +1,4 @@
-"""TestTrace functionality for Apathetic Logger."""
+"""TestTrace functionality for Apathetic Logging."""
 
 from __future__ import annotations
 
@@ -9,7 +9,7 @@ from collections.abc import Callable
 from typing import Any
 
 from .constants import (
-    _ApatheticLogger_Constants,  # pyright: ignore[reportPrivateUsage]
+    ApatheticLogging_Priv_Constants,  # pyright: ignore[reportPrivateUsage]
 )
 
 
@@ -18,18 +18,18 @@ from .constants import (
 _real_time = importlib.import_module("time")
 
 
-class _ApatheticLogger_TestTrace:  # noqa: N801  # pyright: ignore[reportUnusedClass]
+class ApatheticLogging_Priv_TestTrace:  # noqa: N801  # pyright: ignore[reportUnusedClass]
     """Mixin class that provides the TEST_TRACE and make_test_trace static methods.
 
     This class contains the TEST_TRACE implementation as static methods.
-    When mixed into ApatheticLogger, it provides ApatheticLogger.TEST_TRACE
-    and ApatheticLogger.make_test_trace.
+    When mixed into ApatheticLogging, it provides ApatheticLogging.TEST_TRACE
+    and ApatheticLogging.make_test_trace.
     """
 
     @staticmethod
     def make_test_trace(icon: str = "🧪") -> Callable[..., Any]:
         def local_trace(label: str, *args: Any) -> Any:
-            return _ApatheticLogger_TestTrace.TEST_TRACE(label, *args, icon=icon)
+            return ApatheticLogging_Priv_TestTrace.TEST_TRACE(label, *args, icon=icon)
 
         return local_trace
 
@@ -43,7 +43,7 @@ class _ApatheticLogger_TestTrace:  # noqa: N801  # pyright: ignore[reportUnusedC
             icon: Emoji prefix/suffix for easier visual scanning.
 
         """
-        if not _ApatheticLogger_Constants.TEST_TRACE_ENABLED:
+        if not ApatheticLogging_Priv_Constants.TEST_TRACE_ENABLED:
             return
 
         ts = _real_time.monotonic()

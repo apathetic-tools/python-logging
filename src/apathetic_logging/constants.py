@@ -1,4 +1,4 @@
-"""Constants for Apathetic Logger."""
+"""Constants for Apathetic Logging."""
 
 from __future__ import annotations
 
@@ -7,10 +7,10 @@ import os
 from typing import ClassVar
 
 
-class _ApatheticLogger_Constants:  # noqa: N801  # pyright: ignore[reportUnusedClass]
+class ApatheticLogging_Priv_Constants:  # noqa: N801  # pyright: ignore[reportUnusedClass]
     """Constants for apathetic logger functionality.
 
-    This class contains all constant values used by ApatheticLogger.
+    This class contains all constant values used by ApatheticLogging.
     It's kept separate for organizational purposes.
     """
 

@@ -14,7 +14,7 @@ A complete example of a command-line application using Apathetic Python Logger:
 
 ```python
 #!/usr/bin/env python3
-"""Example CLI application with Apathetic Logger."""
+"""Example CLI application with Apathetic Logging."""
 
 import argparse
 import sys
@@ -193,10 +193,10 @@ logger.log_dynamic(logging.WARNING, "This is a warning")
 Work with colors directly:
 
 ```python
-from apathetic_logger import ApatheticLogger, ANSIColors
+from apathetic_logger import ApatheticLogging, ANSIColors
 
 # Create logger with explicit color control
-logger = ApatheticLogger("my_app", enable_color=True)
+logger = ApatheticLogging("my_app", enable_color=True)
 
 # Use colorize method
 colored_text = logger.colorize("Important message", ANSIColors.RED)
