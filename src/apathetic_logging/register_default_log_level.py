@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-import sys
-from typing import Any
-
+from .registry import (
+    ApatheticLogging_Priv_Registry,  # pyright: ignore[reportPrivateUsage]
+)
 from .test_trace import (
     ApatheticLogging_Priv_TestTrace,  # pyright: ignore[reportPrivateUsage]
 )
@@ -19,20 +19,6 @@ class ApatheticLogging_Priv_RegisterDefaultLogLevel:  # noqa: N801  # pyright: i
     """
 
     @staticmethod
-    def _RegisterDefaultLogLevel_get_nsmodule() -> Any:  # noqa: N802
-        """Get the namespace module at runtime.
-
-        This avoids circular import issues by accessing the namespace
-        through the module system after it's been created.
-        """
-        # Access through sys.modules to avoid circular import
-        namespace_module = sys.modules.get("apathetic_logging.namespace")
-        if namespace_module is None:
-            # Fallback: import if not yet loaded
-            namespace_module = sys.modules["apathetic_logging.namespace"]
-        return namespace_module
-
-    @staticmethod
     def register_default_log_level(default_level: str) -> None:
         """Register the default log level to use when no other source is found.
 
@@ -43,9 +29,7 @@ class ApatheticLogging_Priv_RegisterDefaultLogLevel:  # noqa: N801  # pyright: i
             >>> from apathetic_logging import ApatheticLogging
             >>> ApatheticLogging.register_default_log_level("warning")
         """
-        cls = ApatheticLogging_Priv_RegisterDefaultLogLevel
-        namespace_module = cls._RegisterDefaultLogLevel_get_nsmodule()
-        namespace_module._registered_default_log_level = default_level  # noqa: SLF001
+        ApatheticLogging_Priv_Registry.registered_priv_default_log_level = default_level
         ApatheticLogging_Priv_TestTrace.TEST_TRACE(
             "register_default_log_level() called",
             f"default_level={default_level}",

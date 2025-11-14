@@ -16,6 +16,9 @@ from .constants import (
 from .dual_stream_handler import (
     ApatheticLogging_Priv_DualStreamHandler,  # pyright: ignore[reportPrivateUsage]
 )
+from .registry import (
+    ApatheticLogging_Priv_Registry,  # pyright: ignore[reportPrivateUsage]
+)
 from .tag_formatter import (
     ApatheticLogging_Priv_TagFormatter,  # pyright: ignore[reportPrivateUsage]
 )
@@ -24,34 +27,12 @@ from .test_trace import (
 )
 
 
-# --- globals ---------------------------------------------------------------
-
-# Note: _registered_log_level_env_vars and _registered_default_log_level
-# are defined in namespace.py and accessed via _Logger_get_nsmodule() at runtime
-# to avoid circular import issues
-
-
 class ApatheticLogging_Priv_Logger:  # noqa: N801  # pyright: ignore[reportUnusedClass]
     """Mixin class that provides the Logger nested class.
 
     This class contains the Logger implementation as a nested class.
     When mixed into ApatheticLogging, it provides ApatheticLogging.Logger.
     """
-
-    @staticmethod
-    def _Logger_get_nsmodule() -> Any:  # noqa: N802
-        """Get the namespace module at runtime.
-
-        This avoids circular import issues by accessing the namespace
-        through the module system after it's been created.
-        """
-        # Access through sys.modules to avoid circular import
-        namespace_module = sys.modules.get("apathetic_logging.namespace")
-        if namespace_module is None:
-            # Fallback: import if not yet loaded
-
-            namespace_module = sys.modules["apathetic_logging.namespace"]
-        return namespace_module
 
     class Logger(logging.Logger):
         """Logger for all Apathetic tools."""
@@ -194,9 +175,8 @@ class ApatheticLogging_Priv_Logger:  # noqa: N801  # pyright: ignore[reportUnuse
                 return cast("str", args_level).upper()
 
             # Check registered environment variables, or fall back to "LOG_LEVEL"
-            namespace_module = ApatheticLogging_Priv_Logger._Logger_get_nsmodule()
-            registered_env_vars = getattr(
-                namespace_module, "_registered_log_level_env_vars", None
+            registered_env_vars = (
+                ApatheticLogging_Priv_Registry.registered_priv_log_level_env_vars
             )
             env_vars_to_check = (
                 registered_env_vars
@@ -211,9 +191,8 @@ class ApatheticLogging_Priv_Logger:  # noqa: N801  # pyright: ignore[reportUnuse
                 return root_log_level.upper()
 
             # Use registered default, or fall back to module default
-            namespace_module = ApatheticLogging_Priv_Logger._Logger_get_nsmodule()
-            registered_default = getattr(
-                namespace_module, "_registered_default_log_level", None
+            registered_default = (
+                ApatheticLogging_Priv_Registry.registered_priv_default_log_level
             )
             default_level: str = (
                 registered_default

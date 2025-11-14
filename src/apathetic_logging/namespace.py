@@ -22,6 +22,9 @@ from .register_log_level_env_vars import (
 from .register_logger_name import (
     ApatheticLogging_Priv_RegisterLoggerName,  # pyright: ignore[reportPrivateUsage]
 )
+from .registry import (
+    ApatheticLogging_Priv_Registry,  # pyright: ignore[reportPrivateUsage]
+)
 from .safe_log import (
     ApatheticLogging_Priv_SafeLog,  # pyright: ignore[reportPrivateUsage]
 )
@@ -31,15 +34,6 @@ from .tag_formatter import (
 from .test_trace import (
     ApatheticLogging_Priv_TestTrace,  # pyright: ignore[reportPrivateUsage]
 )
-
-
-# --- globals ---------------------------------------------------------------
-
-# Registry for configurable log level settings
-# These must be module-level for global state management
-_registered_log_level_env_vars: list[str] | None = None
-_registered_default_log_level: str | None = None
-_registered_logger_name: str | None = None
 
 
 # --- Apathetic Logging Namespace -------------------------------------------
@@ -53,6 +47,7 @@ class ApatheticLogging(  # pyright: ignore[reportPrivateUsage]
     ApatheticLogging_Priv_RegisterDefaultLogLevel,
     ApatheticLogging_Priv_RegisterLogLevelEnvVars,
     ApatheticLogging_Priv_RegisterLoggerName,
+    ApatheticLogging_Priv_Registry,
     ApatheticLogging_Priv_SafeLog,
     ApatheticLogging_Priv_TagFormatter,
     ApatheticLogging_Priv_TestTrace,

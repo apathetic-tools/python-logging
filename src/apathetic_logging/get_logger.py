@@ -4,11 +4,13 @@ from __future__ import annotations
 
 import inspect
 import logging
-import sys
 from typing import Any, cast
 
 from .register_logger_name import (
     ApatheticLogging_Priv_RegisterLoggerName,  # pyright: ignore[reportPrivateUsage]
+)
+from .registry import (
+    ApatheticLogging_Priv_Registry,  # pyright: ignore[reportPrivateUsage]
 )
 from .test_trace import (
     ApatheticLogging_Priv_TestTrace,  # pyright: ignore[reportPrivateUsage]
@@ -21,20 +23,6 @@ class ApatheticLogging_Priv_GetLogger:  # noqa: N801  # pyright: ignore[reportUn
     This class contains the get_logger implementation as a static method.
     When mixed into ApatheticLogging, it provides ApatheticLogging.get_logger.
     """
-
-    @staticmethod
-    def _GetLogger_get_nsmodule() -> Any:  # noqa: N802
-        """Get the namespace module at runtime.
-
-        This avoids circular import issues by accessing the namespace
-        through the module system after it's been created.
-        """
-        # Access through sys.modules to avoid circular import
-        namespace_module = sys.modules.get("apathetic_logging.namespace")
-        if namespace_module is None:
-            # Fallback: import if not yet loaded
-            namespace_module = sys.modules["apathetic_logging.namespace"]
-        return namespace_module
 
     @staticmethod
     def get_logger() -> Any:  # Returns ApatheticLogging.Logger
@@ -57,9 +45,8 @@ class ApatheticLogging_Priv_GetLogger:  # noqa: N801  # pyright: ignore[reportUn
             should use their app-specific getter (e.g., get_app_logger()) for
             better type hints.
         """
-        namespace_module = ApatheticLogging_Priv_GetLogger._GetLogger_get_nsmodule()
-        registered_logger_name = getattr(
-            namespace_module, "_registered_logger_name", None
+        registered_logger_name = (
+            ApatheticLogging_Priv_Registry.registered_priv_logger_name
         )
 
         if registered_logger_name is None:
@@ -77,7 +64,8 @@ class ApatheticLogging_Priv_GetLogger:  # noqa: N801  # pyright: ignore[reportUn
                             )
                             inferred_name = _extract(caller_module)
                             if inferred_name:
-                                namespace_module._registered_logger_name = inferred_name  # noqa: SLF001
+                                registry = ApatheticLogging_Priv_Registry
+                                registry.registered_priv_logger_name = inferred_name
                                 registered_logger_name = inferred_name
                                 ApatheticLogging_Priv_TestTrace.TEST_TRACE(
                                     "get_logger() auto-inferred logger name",
