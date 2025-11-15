@@ -24,7 +24,8 @@ Exploring bundling options for generating the single-file release:
 - Deploy action when I tag a release should create a release and attach it to the tagged release.
 
 ## 🔌 API
-
+- do we need to call extend before the get_logger() gets called? what about get_app_logger()?
+- if we call extend, does that mess up the app class?
 
 
 ## 📚 Documentation

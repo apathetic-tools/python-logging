@@ -17,7 +17,7 @@ def _suffix() -> str:
 
 
 @pytest.fixture
-def direct_logger() -> mod_alogs.apathetic_logging.Logger:
+def direct_logger() -> mod_alogs.Logger:
     """Create a brand-new ApatheticLogger with no shared state.
 
     Only for testing the logger itself.
@@ -27,13 +27,13 @@ def direct_logger() -> mod_alogs.apathetic_logging.Logger:
     """
     # Give each test's logger a unique name for debug clarity
     name = f"test_logger{_suffix()}"
-    return mod_alogs.apathetic_logging.Logger(name, enable_color=False)
+    return mod_alogs.Logger(name, enable_color=False)
 
 
 @pytest.fixture
 def module_logger(
     monkeypatch: pytest.MonkeyPatch,
-) -> mod_alogs.apathetic_logging.Logger:
+) -> mod_alogs.Logger:
     """Replace get_logger() everywhere with a new isolated instance.
 
     Ensures all modules calling get_logger()
@@ -41,9 +41,7 @@ def module_logger(
 
     Automatically reverts after test completion.
     """
-    new_logger = mod_alogs.apathetic_logging.Logger(
-        f"isolated_logger{_suffix()}", enable_color=False
-    )
+    new_logger = mod_alogs.Logger(f"isolated_logger{_suffix()}", enable_color=False)
     patch_everywhere(monkeypatch, mod_alogs, "get_logger", lambda: new_logger)
     TEST_TRACE(
         "module_logger fixture",

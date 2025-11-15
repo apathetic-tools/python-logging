@@ -106,19 +106,34 @@ class ApatheticLogging_Priv_Logger:  # noqa: N801  # pyright: ignore[reportUnuse
             super()._log(level, msg, args, **kwargs)
 
         def setLevel(self, level: int | str) -> None:  # noqa: N802
-            """Case insensitive version that handles custom level names."""
+            """Case insensitive version that resolves string level names.
+
+            Validates that custom levels (TEST, TRACE, SILENT) are not set to 0,
+            which would cause NOTSET inheritance from root logger.
+            """
+            # Resolve string to integer if needed
             if isinstance(level, str):
-                level_upper = level.upper()
-                # Handle custom level names (TRACE, SILENT) directly
-                if level_upper == "TRACE":
+                level_str = level.upper()
+                # Handle custom level names (TEST, TRACE, SILENT) directly
+                if level_str == "TEST":
+                    level = ApatheticLogging_Priv_Constants.TEST_LEVEL
+                elif level_str == "TRACE":
                     level = ApatheticLogging_Priv_Constants.TRACE_LEVEL
-                elif level_upper == "SILENT":
+                elif level_str == "SILENT":
                     level = ApatheticLogging_Priv_Constants.SILENT_LEVEL
                 else:
                     # Try to resolve via logging module (for standard levels)
-                    resolved = self.resolve_level_name(level_upper)
+                    resolved = self.resolve_level_name(level_str)
                     # Fall back to standard logging level names if not resolved
-                    level = resolved if resolved is not None else level_upper
+                    level = resolved if resolved is not None else level_str
+
+            # Validate any level <= 0 (prevents NOTSET inheritance)
+            # Built-in levels (DEBUG=10, INFO=20, etc.) are all > 0, so they pass
+            # _validate_level_positive() will raise if level <= 0
+            if isinstance(level, int):
+                level_name = logging.getLevelName(level) or str(level)
+                self._validate_level_positive(level, level_name)
+
             super().setLevel(level)
 
         @classmethod
@@ -132,6 +147,95 @@ class ApatheticLogging_Priv_Logger:  # noqa: N801  # pyright: ignore[reportUnuse
 
             # Auto-detect: use color if output is a TTY
             return sys.stdout.isatty()
+
+        @staticmethod
+        def _validate_level_positive(level: int, level_name: str | None = None) -> None:
+            """Validate that a level value is positive (> 0).
+
+            Custom levels with values <= 0 will inherit from the root logger,
+            causing NOTSET inheritance issues.
+
+            Args:
+                level: The numeric level value to validate
+                level_name: Optional name for the level (for error messages).
+                    If None, will attempt to get from logging.getLevelName()
+
+            Raises:
+                ValueError: If level <= 0
+
+            Example:
+                >>> Logger._validate_level_positive(5, "TRACE")
+                >>> Logger._validate_level_positive(0, "TEST")
+                ValueError: Level 'TEST' has value 0...
+            """
+            if level <= 0:
+                if level_name is None:
+                    level_name = logging.getLevelName(level) or str(level)
+                msg = (
+                    f"Level '{level_name}' has value {level}, "
+                    "which is <= 0. This causes NOTSET inheritance from root logger. "
+                    "Levels must be > 0."
+                )
+                raise ValueError(msg)
+
+        @staticmethod
+        def addLevelName(level: int, level_name: str) -> None:  # noqa: N802
+            """Safely add a custom logging level name with validation.
+
+            This is a wrapper around logging.addLevelName() that validates the level
+            value to prevent NOTSET inheritance issues. Custom levels with values <= 0
+            will inherit from the root logger, causing unexpected behavior.
+
+            Also sets logging.<LEVEL_NAME> attribute for convenience, matching the
+            pattern of built-in levels (logging.DEBUG, logging.INFO, etc.).
+
+            Args:
+                level: The numeric level value (must be > 0 for custom levels)
+                level_name: The name to associate with this level
+
+            Raises:
+                ValueError: If level <= 0 (which would cause NOTSET inheritance)
+                ValueError: If logging.<LEVEL_NAME> already exists with an invalid value
+                    (not a positive integer, or different from the provided level)
+
+            Example:
+                >>> Logger.addLevelName(5, "TRACE")
+                >>> # Now logging.TRACE = 5 (convenience attribute)
+                >>> # logging.addLevelName(5, "TRACE")  # Equivalent, but unsafe
+            """
+            # Validate level is positive
+            ApatheticLogging_Priv_Logger.Logger._validate_level_positive(  # noqa: SLF001
+                level, level_name
+            )
+
+            # Check if attribute already exists and validate it
+            existing_value = getattr(logging, level_name, None)
+            if existing_value is not None:
+                # If it exists, it must be a valid level value (positive integer)
+                if not isinstance(existing_value, int):
+                    msg = (
+                        f"Cannot set logging.{level_name}: attribute already exists "
+                        f"with non-integer value {existing_value!r}. "
+                        "Level attributes must be integers."
+                    )
+                    raise ValueError(msg)
+                # Validate existing value is positive
+                ApatheticLogging_Priv_Logger.Logger._validate_level_positive(  # noqa: SLF001
+                    existing_value, level_name
+                )
+                if existing_value != level:
+                    msg = (
+                        f"Cannot set logging.{level_name}: attribute already exists "
+                        f"with different value {existing_value} "
+                        f"(trying to set {level}). "
+                        "Level attributes must match the level value."
+                    )
+                    raise ValueError(msg)
+                # If it exists and matches, we can proceed (idempotent)
+
+            logging.addLevelName(level, level_name)
+            # Set convenience attribute matching built-in levels (logging.DEBUG, etc.)
+            setattr(logging, level_name, level)
 
         @classmethod
         def extend_logging_module(cls) -> bool:
@@ -155,11 +259,17 @@ class ApatheticLogging_Priv_Logger:  # noqa: N801  # pyright: ignore[reportUnuse
 
             logging.setLoggerClass(cls)
 
-            logging.addLevelName(ApatheticLogging_Priv_Constants.TRACE_LEVEL, "TRACE")
-            logging.addLevelName(ApatheticLogging_Priv_Constants.SILENT_LEVEL, "SILENT")
-
-            logging.TRACE = ApatheticLogging_Priv_Constants.TRACE_LEVEL  # type: ignore[attr-defined]
-            logging.SILENT = ApatheticLogging_Priv_Constants.SILENT_LEVEL  # type: ignore[attr-defined]
+            # Register custom levels with validation
+            # addLevelName() also sets logging.TEST, logging.TRACE, etc. attributes
+            cls.addLevelName(
+                ApatheticLogging_Priv_Constants.TEST_LEVEL, "TEST"
+            )
+            cls.addLevelName(
+                ApatheticLogging_Priv_Constants.TRACE_LEVEL, "TRACE"
+            )
+            cls.addLevelName(
+                ApatheticLogging_Priv_Constants.SILENT_LEVEL, "SILENT"
+            )
 
             return True
 
@@ -242,6 +352,13 @@ class ApatheticLogging_Priv_Logger:  # noqa: N801  # pyright: ignore[reportUnuse
             if self.isEnabledFor(ApatheticLogging_Priv_Constants.TRACE_LEVEL):
                 self._log(
                     ApatheticLogging_Priv_Constants.TRACE_LEVEL, msg, args, **kwargs
+                )
+
+        def test(self, msg: str, *args: Any, **kwargs: Any) -> None:
+            """Log a test-level message (most verbose, bypasses capture)."""
+            if self.isEnabledFor(ApatheticLogging_Priv_Constants.TEST_LEVEL):
+                self._log(
+                    ApatheticLogging_Priv_Constants.TEST_LEVEL, msg, args, **kwargs
                 )
 
         def resolve_level_name(self, level_name: str) -> int | None:

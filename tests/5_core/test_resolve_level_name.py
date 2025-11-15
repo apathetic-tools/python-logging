@@ -19,7 +19,7 @@ import apathetic_logging as mod_alogs
     ],
 )
 def test_resolve_level_name_standard_levels(
-    direct_logger: mod_alogs.apathetic_logging.Logger,
+    direct_logger: mod_alogs.Logger,
     level_name: str,
     expected: int,
 ) -> None:
@@ -32,7 +32,7 @@ def test_resolve_level_name_standard_levels(
 
 
 def test_resolve_level_name_case_insensitive(
-    direct_logger: mod_alogs.apathetic_logging.Logger,
+    direct_logger: mod_alogs.Logger,
 ) -> None:
     """resolve_level_name() should handle case-insensitive level names."""
     # --- execute ---
@@ -47,7 +47,7 @@ def test_resolve_level_name_case_insensitive(
 
 
 def test_resolve_level_name_unknown_level(
-    direct_logger: mod_alogs.apathetic_logging.Logger,
+    direct_logger: mod_alogs.Logger,
 ) -> None:
     """resolve_level_name() should return None for unknown level names."""
     # --- execute ---
@@ -58,7 +58,7 @@ def test_resolve_level_name_unknown_level(
 
 
 def test_resolve_level_name_custom_levels_resolved(
-    direct_logger: mod_alogs.apathetic_logging.Logger,
+    direct_logger: mod_alogs.Logger,
 ) -> None:
     """resolve_level_name() resolves TRACE/SILENT after extend_logging_module()."""
     # --- execute ---

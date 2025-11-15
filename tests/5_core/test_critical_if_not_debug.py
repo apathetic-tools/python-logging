@@ -11,7 +11,7 @@ import apathetic_logging as mod_alogs
 
 def test_critical_if_not_debug_logs_critical_when_not_debug(
     monkeypatch: pytest.MonkeyPatch,
-    direct_logger: mod_alogs.apathetic_logging.Logger,
+    direct_logger: mod_alogs.Logger,
 ) -> None:
     """critical_if_not_debug() should log critical when debug is not enabled."""
     # --- setup ---
@@ -33,7 +33,7 @@ def test_critical_if_not_debug_logs_critical_when_not_debug(
 
 def test_critical_if_not_debug_logs_exception_when_debug_enabled(
     monkeypatch: pytest.MonkeyPatch,
-    direct_logger: mod_alogs.apathetic_logging.Logger,
+    direct_logger: mod_alogs.Logger,
 ) -> None:
     """critical_if_not_debug() should log exception when debug is enabled."""
     # --- setup ---
@@ -63,7 +63,7 @@ def test_critical_if_not_debug_logs_exception_when_debug_enabled(
 
 def test_critical_if_not_debug_with_custom_exc_info(
     monkeypatch: pytest.MonkeyPatch,
-    direct_logger: mod_alogs.apathetic_logging.Logger,
+    direct_logger: mod_alogs.Logger,
 ) -> None:
     """critical_if_not_debug() should respect exc_info parameter."""
     # --- setup ---
@@ -85,7 +85,7 @@ def test_critical_if_not_debug_with_custom_exc_info(
 
 def test_critical_if_not_debug_with_args(
     monkeypatch: pytest.MonkeyPatch,
-    direct_logger: mod_alogs.apathetic_logging.Logger,
+    direct_logger: mod_alogs.Logger,
 ) -> None:
     """critical_if_not_debug() should handle format args."""
     # --- setup ---

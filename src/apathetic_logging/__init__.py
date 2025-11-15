@@ -1,25 +1,33 @@
 # src/apathetic_logging/__init__.py
 """Apathetic Logging implementation."""
 
+import logging
+from typing import TYPE_CHECKING, cast
+
+
+if TYPE_CHECKING:
+    from .namespace import apathetic_logging as _apathetic_logging_class
+
 # Get reference to the namespace class
 # In stitched mode: class is already defined in namespace.py (executed before this)
-# In installed mode: import from namespace module and initialize
+# In installed mode: import from namespace module
 _is_standalone = globals().get("__STANDALONE__", False)
 
 if _is_standalone:
     # Stitched mode: class already defined in namespace.py
     # Get reference to the class (it's already in globals from namespace.py)
-    _apathetic_logging_ns = globals().get("apathetic_logging")
-    if _apathetic_logging_ns is None:
+    _apathetic_logging_raw = globals().get("apathetic_logging")
+    if _apathetic_logging_raw is None:
         # Fallback: should not happen, but handle gracefully
         msg = "apathetic_logging class not found in standalone mode"
         raise RuntimeError(msg)
+    # Type cast to help mypy understand this is the apathetic_logging class
+    # The import gives us type[apathetic_logging], so cast to
+    # type[_apathetic_logging_class]
+    apathetic_logging = cast("type[_apathetic_logging_class]", _apathetic_logging_raw)
 else:
-    from .namespace import apathetic_logging as _apathetic_logging_ns
-
-    # Export the namespace class itself (only if not already defined)
-    if "apathetic_logging" not in globals():
-        apathetic_logging = _apathetic_logging_ns
+    # Installed mode: import from namespace module
+    from .namespace import apathetic_logging
 
 # Export all namespace items for convenience
 # These are aliases to apathetic_logging.*
@@ -27,31 +35,36 @@ else:
 # Note: In embedded builds, __init__.py is excluded from the stitch,
 # so this code never runs and no exports happen (only the class is available).
 # In singlefile/installed builds, __init__.py is included, so exports happen.
-DEFAULT_APATHETIC_LOG_LEVEL = _apathetic_logging_ns.DEFAULT_APATHETIC_LOG_LEVEL
+DEFAULT_APATHETIC_LOG_LEVEL = apathetic_logging.DEFAULT_APATHETIC_LOG_LEVEL
 DEFAULT_APATHETIC_LOG_LEVEL_ENV_VARS = (
-    _apathetic_logging_ns.DEFAULT_APATHETIC_LOG_LEVEL_ENV_VARS
+    apathetic_logging.DEFAULT_APATHETIC_LOG_LEVEL_ENV_VARS
 )
-LEVEL_ORDER = _apathetic_logging_ns.LEVEL_ORDER
-SILENT_LEVEL = _apathetic_logging_ns.SILENT_LEVEL
-TAG_STYLES = _apathetic_logging_ns.TAG_STYLES
-TEST_TRACE = _apathetic_logging_ns.TEST_TRACE
-TEST_TRACE_ENABLED = _apathetic_logging_ns.TEST_TRACE_ENABLED
-TRACE_LEVEL = _apathetic_logging_ns.TRACE_LEVEL
+LEVEL_ORDER = apathetic_logging.LEVEL_ORDER
+SILENT_LEVEL = apathetic_logging.SILENT_LEVEL
+TAG_STYLES = apathetic_logging.TAG_STYLES
+TEST_LEVEL = apathetic_logging.TEST_LEVEL
+TEST_TRACE = apathetic_logging.TEST_TRACE
+TEST_TRACE_ENABLED = apathetic_logging.TEST_TRACE_ENABLED
+TRACE_LEVEL = apathetic_logging.TRACE_LEVEL
 
 # ANSI Colors
-ANSIColors = _apathetic_logging_ns.ANSIColors
+ANSIColors = apathetic_logging.ANSIColors
 
 # Classes
-DualStreamHandler = _apathetic_logging_ns.DualStreamHandler
-TagFormatter = _apathetic_logging_ns.TagFormatter
+DualStreamHandler = apathetic_logging.DualStreamHandler
+TagFormatter = apathetic_logging.TagFormatter
+# Type cast to help mypy understand Logger is a proper class type
+# Logger is a nested class in ApatheticLogging_Priv_Logger that
+# inherits from logging.Logger
+Logger = cast("type[logging.Logger]", apathetic_logging.Logger)
 
 # Functions
-get_logger = _apathetic_logging_ns.get_logger
-make_test_trace = _apathetic_logging_ns.make_test_trace
-register_default_log_level = _apathetic_logging_ns.register_default_log_level
-register_log_level_env_vars = _apathetic_logging_ns.register_log_level_env_vars
-register_logger_name = _apathetic_logging_ns.register_logger_name
-safe_log = _apathetic_logging_ns.safe_log
+get_logger = apathetic_logging.get_logger
+make_test_trace = apathetic_logging.make_test_trace
+register_default_log_level = apathetic_logging.register_default_log_level
+register_log_level_env_vars = apathetic_logging.register_log_level_env_vars
+register_logger_name = apathetic_logging.register_logger_name
+safe_log = apathetic_logging.safe_log
 
 
 __all__ = [
@@ -60,11 +73,13 @@ __all__ = [
     "LEVEL_ORDER",
     "SILENT_LEVEL",
     "TAG_STYLES",
+    "TEST_LEVEL",
     "TEST_TRACE",
     "TEST_TRACE_ENABLED",
     "TRACE_LEVEL",
     "ANSIColors",
     "DualStreamHandler",
+    "Logger",
     "TagFormatter",
     "apathetic_logging",
     "get_logger",

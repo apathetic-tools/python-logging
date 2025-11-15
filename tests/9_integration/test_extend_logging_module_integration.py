@@ -24,11 +24,11 @@ def test_extend_logging_module_called_twice_is_safe() -> None:
     """Calling extend_logging_module() twice should be safe and idempotent."""
     # --- setup ---
     # First call (may have already been called at import)
-    mod_alogs.apathetic_logging.Logger.extend_logging_module()
+    mod_alogs.Logger.extend_logging_module()
 
     # --- execute ---
     # Second call
-    result2 = mod_alogs.apathetic_logging.Logger.extend_logging_module()
+    result2 = mod_alogs.Logger.extend_logging_module()
 
     # --- verify ---
     # Second call should return False (already extended)
@@ -70,7 +70,7 @@ def test_get_logger_works_after_extend_logging_module() -> None:
 
     # --- verify ---
     assert logger is not None
-    assert isinstance(logger, mod_alogs.apathetic_logging.Logger)
+    assert isinstance(logger, mod_alogs.Logger)
     # Should be able to use custom levels
     logger.setLevel(logging.TRACE)  # type: ignore[attr-defined]
     assert logger.level == mod_alogs.apathetic_logging.TRACE_LEVEL
@@ -81,7 +81,7 @@ def test_get_logger_works_after_extend_logging_module() -> None:
 def test_logger_can_use_trace_level_after_extend() -> None:
     """Logger should be able to use TRACE level after extend_logging_module()."""
     # --- setup ---
-    logger = mod_alogs.apathetic_logging.Logger("test_trace_logger")
+    logger = mod_alogs.Logger("test_trace_logger")
     logger.setLevel("TRACE")
 
     # --- verify ---
@@ -93,7 +93,7 @@ def test_logger_can_use_trace_level_after_extend() -> None:
 def test_logger_can_use_silent_level_after_extend() -> None:
     """Logger should be able to use SILENT level after extend_logging_module()."""
     # --- setup ---
-    logger = mod_alogs.apathetic_logging.Logger("test_silent_logger")
+    logger = mod_alogs.Logger("test_silent_logger")
 
     # --- execute ---
     logger.setLevel("SILENT")
@@ -127,7 +127,7 @@ def test_multiple_calls_to_extend_logging_module() -> None:
     # --- execute ---
     results: list[bool] = []
     for _ in range(5):
-        result = mod_alogs.apathetic_logging.Logger.extend_logging_module()
+        result = mod_alogs.Logger.extend_logging_module()
         results.append(result)
 
     # --- verify ---
@@ -143,12 +143,12 @@ def test_extend_logging_module_preserves_existing_loggers() -> None:
     """extend_logging_module() should not break existing loggers."""
     # --- setup ---
     # Create a logger before calling extend (though it's already called at import)
-    existing_logger = mod_alogs.apathetic_logging.Logger("existing_logger")
+    existing_logger = mod_alogs.Logger("existing_logger")
     existing_logger.setLevel("INFO")
 
     # --- execute ---
     # Call extend again (should be safe)
-    mod_alogs.apathetic_logging.Logger.extend_logging_module()
+    mod_alogs.Logger.extend_logging_module()
 
     # --- verify ---
     # Existing logger should still work
@@ -226,9 +226,9 @@ def test_extend_logging_module_idempotent_behavior() -> None:
 
     # --- execute ---
     # Call multiple times
-    mod_alogs.apathetic_logging.Logger.extend_logging_module()
-    result2 = mod_alogs.apathetic_logging.Logger.extend_logging_module()
-    result3 = mod_alogs.apathetic_logging.Logger.extend_logging_module()
+    mod_alogs.Logger.extend_logging_module()
+    result2 = mod_alogs.Logger.extend_logging_module()
+    result3 = mod_alogs.Logger.extend_logging_module()
 
     # --- verify ---
     # All calls after the first should return False

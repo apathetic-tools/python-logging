@@ -25,7 +25,7 @@ def clean_env(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 def test_colorize_explicit_true_false(
-    direct_logger: mod_alogs.apathetic_logging.Logger,
+    direct_logger: mod_alogs.Logger,
 ) -> None:
     """Explicit enable_color argument forces color on or off."""
     # --- setup ---
@@ -53,7 +53,7 @@ def test_colorize_explicit_true_false(
 
 
 def test_colorize_respects_instance_flag(
-    direct_logger: mod_alogs.apathetic_logging.Logger,
+    direct_logger: mod_alogs.Logger,
 ) -> None:
     """colorize() should honor logger.enable_color."""
     # --- setup ---
@@ -77,7 +77,7 @@ def test_colorize_respects_instance_flag(
 
 
 def test_colorize_does_not_mutate_text(
-    direct_logger: mod_alogs.apathetic_logging.Logger,
+    direct_logger: mod_alogs.Logger,
 ) -> None:
     """colorize() should not alter text content aside from color codes."""
     text = "safe!"
@@ -91,7 +91,7 @@ def test_colorize_does_not_mutate_text(
 
 
 def test_colorize_empty_text(
-    direct_logger: mod_alogs.apathetic_logging.Logger,
+    direct_logger: mod_alogs.Logger,
 ) -> None:
     """Empty strings should still produce proper output."""
     direct_logger.enable_color = True

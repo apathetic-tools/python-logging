@@ -140,3 +140,91 @@ def test_dual_stream_handler_has_enable_color_attribute() -> None:
 
     # --- verify ---
     assert handler.enable_color is True
+
+
+def test_dual_stream_handler_test_level_bypasses_capture(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """TEST level bypasses capsys via __stderr__ for TRACE/DEBUG/TEST messages."""
+    # --- setup ---
+    # Use a unique logger name to avoid conflicts
+    logger_name = "test_bypass_unique"
+    handler = mod_alogs.apathetic_logging.DualStreamHandler()
+    # Get logger through logging.getLogger to ensure handler sees the same instance
+    logger = logging.getLogger(logger_name)
+    # Ensure it's our Logger class
+    if not isinstance(logger, mod_alogs.Logger):
+        # Create a new logger if it's not our type
+        logger = mod_alogs.Logger(logger_name)
+    logger.setLevel("test")  # Set to TEST level
+    logger.addHandler(handler)
+
+    # Capture sys.__stderr__ to verify bypass messages are written there
+    bypass_buf = io.StringIO()
+    monkeypatch.setattr(sys, "__stderr__", bypass_buf)
+
+    # --- execute ---
+    logger.test("test level message")
+    logger.trace("trace level message")
+    logger.debug("debug level message")
+    logger.warning("warning level message")  # Should still go to normal stderr
+
+    # --- verify ---
+    # Check capsys - TRACE/DEBUG/TEST messages should NOT be captured here
+    captured = capsys.readouterr()
+    out = captured.out.lower()
+    err = captured.err.lower()
+
+    # Check bypass buffer - TRACE/DEBUG/TEST messages SHOULD be written here
+    bypass_output = bypass_buf.getvalue().lower()
+
+    # Verify TRACE/DEBUG/TEST messages are NOT in capsys (they bypass capture)
+    assert "[test" not in out, (
+        "TEST messages should bypass capsys and write to sys.__stderr__ instead. "
+        f"Found in capsys.out: {out[:200]}"
+    )
+    assert "[trace" not in out, (
+        "TRACE messages should bypass capsys and write to sys.__stderr__ instead. "
+        f"Found in capsys.out: {out[:200]}"
+    )
+    assert "[debug" not in out, (
+        "DEBUG messages should bypass capsys and write to sys.__stderr__ instead. "
+        f"Found in capsys.out: {out[:200]}"
+    )
+    assert "[test" not in err, (
+        "TEST messages should bypass capsys and write to sys.__stderr__ instead. "
+        f"Found in capsys.err: {err[:200]}"
+    )
+    assert "[trace" not in err, (
+        "TRACE messages should bypass capsys and write to sys.__stderr__ instead. "
+        f"Found in capsys.err: {err[:200]}"
+    )
+    assert "[debug" not in err, (
+        "DEBUG messages should bypass capsys and write to sys.__stderr__ instead. "
+        f"Found in capsys.err: {err[:200]}"
+    )
+
+    # Verify TRACE/DEBUG/TEST messages ARE in the bypass buffer (sys.__stderr__)
+    assert "test level message" in bypass_output, (
+        "TEST messages should appear in sys.__stderr__ bypass buffer. "
+        f"Bypass buffer length: {len(bypass_output)} chars"
+    )
+    assert "trace level message" in bypass_output, (
+        "TRACE messages should appear in sys.__stderr__ bypass buffer. "
+        f"Bypass buffer length: {len(bypass_output)} chars"
+    )
+    assert "debug level message" in bypass_output, (
+        "DEBUG messages should appear in sys.__stderr__ bypass buffer. "
+        f"Bypass buffer length: {len(bypass_output)} chars"
+    )
+
+    # Verify WARNING still goes to normal stderr (not bypassed)
+    assert "warning level message" in err, (
+        "WARNING messages should still go to normal stderr, not bypassed. "
+        f"Found in capsys.err: {err[:200]}"
+    )
+    assert "warning level message" not in bypass_output, (
+        "WARNING messages should not be in bypass buffer. "
+        f"Bypass buffer: {bypass_output[:200]}"
+    )

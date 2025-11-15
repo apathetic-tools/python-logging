@@ -24,7 +24,7 @@ def strip_ansi(s: str) -> str:
 
 def capture_log_output(
     monkeypatch: pytest.MonkeyPatch,
-    logger: mod_alogs.apathetic_logging.Logger,
+    logger: mod_alogs.Logger,
     msg_level: str,
     *,
     msg: str | None = None,
@@ -83,7 +83,7 @@ def test_log_routes_correct_stream(
     monkeypatch: pytest.MonkeyPatch,
     msg_level: str,
     expected_stream: str,
-    direct_logger: mod_alogs.apathetic_logging.Logger,
+    direct_logger: mod_alogs.Logger,
 ) -> None:
     """Ensure messages go to the correct stream based on severity."""
     # --- setup, patch, and execute ---
@@ -105,14 +105,17 @@ def test_log_routes_correct_stream(
 
 def test_formatter_includes_expected_tags(
     capsys: pytest.CaptureFixture[str],
-    direct_logger: mod_alogs.apathetic_logging.Logger,
+    direct_logger: mod_alogs.Logger,
 ) -> None:
     """Each log level should include its corresponding prefix/tag."""
     # --- setup ---
-    direct_logger.setLevel("trace")
+    direct_logger.setLevel("test")  # most verbose to see all levels
 
     # --- execute, and verify ---
     for level_name, (_, expected_tag) in mod_alogs.apathetic_logging.TAG_STYLES.items():
+        # Skip TEST level - it bypasses capture so won't appear in capsys
+        if level_name == "TEST":
+            continue
         method = getattr(direct_logger, level_name.lower(), None)
         if callable(method):
             method("sample")
@@ -125,7 +128,7 @@ def test_formatter_includes_expected_tags(
 
 def test_formatter_adds_ansi_when_color_enabled(
     monkeypatch: pytest.MonkeyPatch,
-    direct_logger: mod_alogs.apathetic_logging.Logger,
+    direct_logger: mod_alogs.Logger,
 ) -> None:
     """When color is enabled, ANSI codes should appear in output."""
     # --- patch and execute ---
@@ -139,7 +142,7 @@ def test_formatter_adds_ansi_when_color_enabled(
 
 def test_log_dynamic_unknown_level(
     capsys: pytest.CaptureFixture[str],
-    direct_logger: mod_alogs.apathetic_logging.Logger,
+    direct_logger: mod_alogs.Logger,
 ) -> None:
     """Unknown string levels are handled gracefully."""
     # --- execute ---
@@ -151,7 +154,7 @@ def test_log_dynamic_unknown_level(
 
 
 def test_use_level_context_manager_changes_temporarily(
-    direct_logger: mod_alogs.apathetic_logging.Logger,
+    direct_logger: mod_alogs.Logger,
 ) -> None:
     """use_level() should temporarily change the logger level."""
     # --- setup ---
@@ -164,7 +167,7 @@ def test_use_level_context_manager_changes_temporarily(
 
 
 def test_use_level_minimum_prevents_downgrade(
-    direct_logger: mod_alogs.apathetic_logging.Logger,
+    direct_logger: mod_alogs.Logger,
 ) -> None:
     """use_level(minimum=True) should not downgrade from more verbose levels."""
     # --- setup ---
@@ -197,7 +200,7 @@ def test_use_level_minimum_prevents_downgrade(
 
 def test_log_dynamic_accepts_numeric_level(
     capsys: pytest.CaptureFixture[str],
-    direct_logger: mod_alogs.apathetic_logging.Logger,
+    direct_logger: mod_alogs.Logger,
 ) -> None:
     """log_dynamic() should work with int levels too."""
     # --- execute ---

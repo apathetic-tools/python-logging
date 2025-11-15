@@ -7,7 +7,7 @@ import apathetic_logging as mod_alogs
 
 
 def test_set_level_with_trace_string(
-    direct_logger: mod_alogs.apathetic_logging.Logger,
+    direct_logger: mod_alogs.Logger,
 ) -> None:
     """setLevel() should accept 'TRACE' as a string."""
     # --- execute ---
@@ -19,7 +19,7 @@ def test_set_level_with_trace_string(
 
 
 def test_set_level_with_trace_lowercase(
-    direct_logger: mod_alogs.apathetic_logging.Logger,
+    direct_logger: mod_alogs.Logger,
 ) -> None:
     """setLevel() should accept 'trace' (lowercase) as a string."""
     # --- execute ---
@@ -31,7 +31,7 @@ def test_set_level_with_trace_lowercase(
 
 
 def test_set_level_with_silent_string(
-    direct_logger: mod_alogs.apathetic_logging.Logger,
+    direct_logger: mod_alogs.Logger,
 ) -> None:
     """setLevel() should accept 'SILENT' as a string."""
     # --- execute ---
@@ -43,7 +43,7 @@ def test_set_level_with_silent_string(
 
 
 def test_set_level_with_silent_lowercase(
-    direct_logger: mod_alogs.apathetic_logging.Logger,
+    direct_logger: mod_alogs.Logger,
 ) -> None:
     """setLevel() should accept 'silent' (lowercase) as a string."""
     # --- execute ---
@@ -55,7 +55,7 @@ def test_set_level_with_silent_lowercase(
 
 
 def test_set_level_with_standard_levels_string(
-    direct_logger: mod_alogs.apathetic_logging.Logger,
+    direct_logger: mod_alogs.Logger,
 ) -> None:
     """setLevel() should accept standard level names as strings."""
     # --- execute and verify ---
@@ -76,7 +76,7 @@ def test_set_level_with_standard_levels_string(
 
 
 def test_set_level_with_numeric_level(
-    direct_logger: mod_alogs.apathetic_logging.Logger,
+    direct_logger: mod_alogs.Logger,
 ) -> None:
     """setLevel() should accept numeric level values."""
     # --- execute ---
@@ -87,7 +87,7 @@ def test_set_level_with_numeric_level(
 
 
 def test_set_level_case_insensitive(
-    direct_logger: mod_alogs.apathetic_logging.Logger,
+    direct_logger: mod_alogs.Logger,
 ) -> None:
     """setLevel() should be case-insensitive for level names."""
     # --- execute and verify ---

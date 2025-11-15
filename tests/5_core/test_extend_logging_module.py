@@ -14,7 +14,7 @@ def test_extend_logging_module_adds_trace_level() -> None:
 
     # --- execute ---
     # Call extend_logging_module (may have already been called)
-    result = mod_alogs.apathetic_logging.Logger.extend_logging_module()
+    result = mod_alogs.Logger.extend_logging_module()
 
     # --- verify ---
     # Should have TRACE level defined
@@ -27,7 +27,7 @@ def test_extend_logging_module_adds_trace_level() -> None:
 def test_extend_logging_module_adds_silent_level() -> None:
     """extend_logging_module() should add SILENT level to logging module."""
     # --- execute ---
-    mod_alogs.apathetic_logging.Logger.extend_logging_module()
+    mod_alogs.Logger.extend_logging_module()
 
     # --- verify ---
     # Should have SILENT level defined
@@ -38,12 +38,12 @@ def test_extend_logging_module_adds_silent_level() -> None:
 def test_extend_logging_module_adds_level_names() -> None:
     """extend_logging_module() should add level names to logging module."""
     # --- execute ---
-    mod_alogs.apathetic_logging.Logger.extend_logging_module()
+    mod_alogs.Logger.extend_logging_module()
 
     # --- verify ---
     # Should be able to get level names
-    trace_name = logging.getLevelName(mod_alogs.apathetic_logging.TRACE_LEVEL)
-    silent_name = logging.getLevelName(mod_alogs.apathetic_logging.SILENT_LEVEL)
+    trace_name = logging.getLevelName(mod_alogs.apathetic_logging.TRACE_LEVEL)  # pyright: ignore[reportDeprecated]
+    silent_name = logging.getLevelName(mod_alogs.apathetic_logging.SILENT_LEVEL)  # pyright: ignore[reportDeprecated]
     assert trace_name == "TRACE"
     assert silent_name == "SILENT"
 
@@ -51,7 +51,7 @@ def test_extend_logging_module_adds_level_names() -> None:
 def test_extend_logging_module_sets_logger_class() -> None:
     """extend_logging_module() should set the logger class."""
     # --- execute ---
-    mod_alogs.apathetic_logging.Logger.extend_logging_module()
+    mod_alogs.Logger.extend_logging_module()
 
     # --- verify ---
     # The logger class should be set (though we can't easily test this

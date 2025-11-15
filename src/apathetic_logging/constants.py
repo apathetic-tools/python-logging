@@ -26,6 +26,8 @@ class ApatheticLogging_Priv_Constants:  # noqa: N801  # pyright: ignore[reportUn
     }
 
     # Logger levels
+    # most verbose, bypasses capture (2, not 0 to avoid NOTSET)
+    TEST_LEVEL: int = logging.DEBUG - 8
     TRACE_LEVEL: int = logging.DEBUG - 5
     # DEBUG      - builtin # verbose
     # INFO       - builtin
@@ -35,6 +37,7 @@ class ApatheticLogging_Priv_Constants:  # noqa: N801  # pyright: ignore[reportUn
     SILENT_LEVEL: int = logging.CRITICAL + 1  # one above the highest builtin level
 
     LEVEL_ORDER: ClassVar[list[str]] = [
+        "test",  # most verbose, bypasses capture for debugging tests
         "trace",
         "debug",
         "info",
@@ -55,6 +58,7 @@ class ApatheticLogging_Priv_Constants:  # noqa: N801  # pyright: ignore[reportUn
         GRAY: str = "\033[90m"
 
     TAG_STYLES: ClassVar[dict[str, tuple[str, str]]] = {
+        "TEST": (ANSIColors.GRAY, "[TEST]"),
         "TRACE": (ANSIColors.GRAY, "[TRACE]"),
         "DEBUG": (ANSIColors.CYAN, "[DEBUG]"),
         "WARNING": ("", "⚠️ "),

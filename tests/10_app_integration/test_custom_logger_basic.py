@@ -44,7 +44,7 @@ def test_custom_logger_correct_usage_pattern() -> None:
     # --- verify ---
     assert logger is not None
     assert logger.name == app_name
-    assert isinstance(logger, mod_alogs.apathetic_logging.Logger)
+    assert isinstance(logger, mod_alogs.Logger)
     # Should be able to use custom levels
     logger.setLevel("TRACE")
     assert logger.level_name == "TRACE"
@@ -70,7 +70,7 @@ def test_custom_logger_with_typed_getter() -> None:
     # --- verify ---
     assert logger is not None
     assert logger.name == app_name
-    assert isinstance(logger, mod_alogs.apathetic_logging.Logger)
+    assert isinstance(logger, mod_alogs.Logger)
 
 
 def test_custom_logger_determine_log_level_override() -> None:

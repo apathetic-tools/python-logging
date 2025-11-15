@@ -240,11 +240,11 @@ def test_multiple_child_classes_independent() -> None:
     """Test that multiple child classes can coexist independently."""
 
     # --- setup ---
-    class LoggerA(mod_alogs.apathetic_logging.Logger):
+    class LoggerA(mod_alogs.Logger):
         def determine_log_level(self, **_kwargs: object) -> str:
             return "DEBUG"
 
-    class LoggerB(mod_alogs.apathetic_logging.Logger):
+    class LoggerB(mod_alogs.Logger):
         def determine_log_level(self, **_kwargs: object) -> str:
             return "WARNING"
 

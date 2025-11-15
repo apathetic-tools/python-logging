@@ -77,6 +77,7 @@ class apathetic_logging(  # pyright: ignore[reportPrivateUsage] # noqa: N801
     - ``DEFAULT_APATHETIC_LOG_LEVEL`` → ``ApatheticLogging_Priv_Constants``
     - ``DEFAULT_APATHETIC_LOG_LEVEL_ENV_VARS`` → ``ApatheticLogging_Priv_Constants``
     - ``TEST_TRACE_ENABLED`` → ``ApatheticLogging_Priv_Constants``
+    - ``TEST_LEVEL`` → ``ApatheticLogging_Priv_Constants``
     - ``TRACE_LEVEL`` → ``ApatheticLogging_Priv_Constants``
     - ``SILENT_LEVEL`` → ``ApatheticLogging_Priv_Constants``
     - ``LEVEL_ORDER`` → ``ApatheticLogging_Priv_Constants``
@@ -85,7 +86,7 @@ class apathetic_logging(  # pyright: ignore[reportPrivateUsage] # noqa: N801
     """
 
 
-# Ensure logging module is extended with TRACE and SILENT levels
+# Ensure logging module is extended with TEST, TRACE, and SILENT levels
 # This must be called before any loggers are created
 # This runs when namespace.py is executed (both installed and stitched modes)
 # The method is idempotent, so safe to call multiple times if needed
