@@ -1,29 +1,20 @@
 #!/usr/bin/env python3
 # Serger — Stitch your module into a single file.
+# ============LICENSE============
 # License: MIT-aNOAI
 # Full text: https://github.com/apathetic-tools/serger/blob/main/LICENSE
+# ================================
 # Version: 0.1.0
 # Commit: unknown (local build)
-# Build Date: 2025-11-14 07:24:39 UTC
+# Build Date: 2025-11-18 08:19:54 UTC
 # Repo: https://github.com/apathetic-tools/serger
 
-# ruff: noqa: E402
 
 from __future__ import annotations
-
-
-"""
-Serger — Stitch your module into a single file.
-This single-file version is auto-generated from modular sources.
-Version: 0.1.0
-Commit: unknown (local build)
-Built: 2025-11-14 07:24:39 UTC
-"""
 
 import argparse
 import ast
 import builtins
-import contextlib
 import graphlib
 import importlib
 import inspect
@@ -67,15 +58,24 @@ from typing import (
 from typing_extensions import NotRequired
 
 
+"""
+Serger — Stitch your module into a single file.
+This single-file version is auto-generated from modular sources.
+Version: 0.1.0
+Commit: unknown (local build)
+Built: 2025-11-18 08:19:54 UTC
+"""
+
+
 __version__ = "0.1.0"
 __commit__ = "unknown (local build)"
-__build_date__ = "2025-11-14 07:24:39 UTC"
+__build_date__ = "2025-11-18 08:19:54 UTC"
 __STANDALONE__ = True
 __STITCH_SOURCE__ = "serger"
 __package__ = "serger"
 
 
-# === apathetic_logs.logs ===
+# === serger.apathetic_logs.logs ===
 # src/serger/utils/utils_logs.py
 """Shared Apathetic CLI logger implementation."""
 
@@ -101,22 +101,21 @@ GREEN = "\033[92m"  # or \033[32m
 GRAY = "\033[90m"
 
 # Logger levels
+# most verbose, bypasses capture (2, not 0 to avoid NOTSET)
+TEST_LEVEL = logging.DEBUG - 8
 TRACE_LEVEL = logging.DEBUG - 5
 # DEBUG      - builtin # verbose
-DETAIL_LEVEL = logging.INFO - 5
 # INFO       - builtin
-MINIMAL_LEVEL = logging.INFO + 5
 # WARNING    - builtin
 # ERROR      - builtin
 # CRITICAL   - builtin # quiet mode
 SILENT_LEVEL = logging.CRITICAL + 1  # one above the highest builtin level
 
 LEVEL_ORDER = [
+    "test",  # most verbose, bypasses capture for debugging tests
     "trace",
     "debug",
-    "detail",
     "info",
-    "minimal",
     "warning",
     "error",
     "critical",
@@ -124,10 +123,9 @@ LEVEL_ORDER = [
 ]
 
 TAG_STYLES = {
+    "TEST": (GRAY, "[TEST]"),
     "TRACE": (GRAY, "[TRACE]"),
     "DEBUG": (CYAN, "[DEBUG]"),
-    "DETAIL": (CYAN, "[DETAIL]"),
-    "MINIMAL": (GREEN, "[MINIMAL]"),
     "WARNING": ("", "⚠️ "),
     "ERROR": ("", "❌ "),
     "CRITICAL": ("", "💥 "),
@@ -261,9 +259,30 @@ class ApatheticCLILogger(logging.Logger):
         super()._log(level, msg, args, **kwargs)
 
     def setLevel(self, level: int | str) -> None:  # noqa: N802
-        """Case insensitive version"""
+        """Case insensitive version that resolves string level names.
+
+        Validates that custom levels (TEST, TRACE, SILENT) are not set to 0,
+        which would cause NOTSET inheritance from root logger.
+        """
+        # Resolve string to integer if needed
         if isinstance(level, str):
-            level = level.upper()
+            level_str = level.upper()
+            # Resolve string level name to integer for Python 3.10 compatibility
+            resolved = self.resolve_level_name(level_str)
+            if resolved is not None:
+                level = resolved
+            else:
+                # Fall back to logging's built-in resolution (Python 3.11+)
+                # This will raise if the level name is invalid
+                pass
+
+        # Validate any level <= 0 (prevents NOTSET inheritance)
+        # Built-in levels (DEBUG=10, INFO=20, etc.) are all > 0, so they pass
+        # _validate_level_positive() will raise if level <= 0
+        if isinstance(level, int):
+            level_name = logging.getLevelName(level) or str(level)
+            self._validate_level_positive(level, level_name)
+
         super().setLevel(level)
 
     @classmethod
@@ -278,6 +297,90 @@ class ApatheticCLILogger(logging.Logger):
         # Auto-detect: use color if output is a TTY
         return sys.stdout.isatty()
 
+    @staticmethod
+    def _validate_level_positive(level: int, level_name: str | None = None) -> None:
+        """Validate that a level value is positive (> 0).
+
+        Custom levels with values <= 0 will inherit from the root logger,
+        causing NOTSET inheritance issues.
+
+        Args:
+            level: The numeric level value to validate
+            level_name: Optional name for the level (for error messages).
+                If None, will attempt to get from logging.getLevelName()
+
+        Raises:
+            ValueError: If level <= 0
+
+        Example:
+            >>> ApatheticCLILogger._validate_level_positive(5, "TRACE")
+            >>> ApatheticCLILogger._validate_level_positive(0, "TEST")
+            ValueError: Custom level 'TEST' has value 0...
+        """
+        if level <= 0:
+            if level_name is None:
+                level_name = logging.getLevelName(level) or str(level)
+            msg = (
+                f"Level '{level_name}' has value {level}, "
+                "which is <= 0. This causes NOTSET inheritance from root logger. "
+                "Levels must be > 0."
+            )
+            raise ValueError(msg)
+
+    @staticmethod
+    def addLevelName(level: int, level_name: str) -> None:  # noqa: N802
+        """Safely add a custom logging level name with validation.
+
+        This is a wrapper around logging.addLevelName() that validates the level
+        value to prevent NOTSET inheritance issues. Custom levels with values <= 0
+        will inherit from the root logger, causing unexpected behavior.
+
+        Also sets logging.<LEVEL_NAME> attribute for convenience, matching the
+        pattern of built-in levels (logging.DEBUG, logging.INFO, etc.).
+
+        Args:
+            level: The numeric level value (must be > 0 for custom levels)
+            level_name: The name to associate with this level
+
+        Raises:
+            ValueError: If level <= 0 (which would cause NOTSET inheritance)
+            ValueError: If logging.<LEVEL_NAME> already exists with an invalid value
+                (not a positive integer, or different from the provided level)
+
+        Example:
+            >>> ApatheticCLILogger.addLevelName(5, "TRACE")
+            >>> # Now logging.TRACE = 5 (convenience attribute)
+            >>> # logging.addLevelName(5, "TRACE")  # Equivalent, but unsafe
+        """
+        # Validate level is positive
+        ApatheticCLILogger._validate_level_positive(level, level_name)
+
+        # Check if attribute already exists and validate it
+        existing_value = getattr(logging, level_name, None)
+        if existing_value is not None:
+            # If it exists, it must be a valid level value (positive integer)
+            if not isinstance(existing_value, int):
+                msg = (
+                    f"Cannot set logging.{level_name}: attribute already exists "
+                    f"with non-integer value {existing_value!r}. "
+                    "Level attributes must be integers."
+                )
+                raise ValueError(msg)
+            # Validate existing value is positive
+            ApatheticCLILogger._validate_level_positive(existing_value, level_name)
+            if existing_value != level:
+                msg = (
+                    f"Cannot set logging.{level_name}: attribute already exists "
+                    f"with different value {existing_value} (trying to set {level}). "
+                    "Level attributes must match the level value."
+                )
+                raise ValueError(msg)
+            # If it exists and matches, we can proceed (idempotent)
+
+        logging.addLevelName(level, level_name)
+        # Set convenience attribute matching built-in levels (logging.DEBUG, etc.)
+        setattr(logging, level_name, level)
+
     @classmethod
     def extend_logging_module(cls) -> bool:
         """The return value tells you if we ran or not.
@@ -290,15 +393,11 @@ class ApatheticCLILogger(logging.Logger):
 
         logging.setLoggerClass(cls)
 
-        logging.addLevelName(TRACE_LEVEL, "TRACE")
-        logging.addLevelName(DETAIL_LEVEL, "DETAIL")
-        logging.addLevelName(MINIMAL_LEVEL, "MINIMAL")
-        logging.addLevelName(SILENT_LEVEL, "SILENT")
-
-        logging.TRACE = TRACE_LEVEL  # type: ignore[attr-defined]
-        logging.DETAIL = DETAIL_LEVEL  # type: ignore[attr-defined]
-        logging.MINIMAL = MINIMAL_LEVEL  # type: ignore[attr-defined]
-        logging.SILENT = SILENT_LEVEL  # type: ignore[attr-defined]
+        # Register custom levels with validation
+        # addLevelName() also sets logging.TEST, logging.TRACE, etc. attributes
+        cls.addLevelName(TEST_LEVEL, "TEST")
+        cls.addLevelName(TRACE_LEVEL, "TRACE")
+        cls.addLevelName(SILENT_LEVEL, "SILENT")
 
         return True
 
@@ -367,15 +466,10 @@ class ApatheticCLILogger(logging.Logger):
         if self.isEnabledFor(TRACE_LEVEL):
             self._log(TRACE_LEVEL, msg, args, **kwargs)
 
-    def detail(self, msg: str, *args: Any, **kwargs: Any) -> None:
-        """Log a detail-level message (more detailed than INFO)."""
-        if self.isEnabledFor(DETAIL_LEVEL):
-            self._log(DETAIL_LEVEL, msg, args, **kwargs)
-
-    def minimal(self, msg: str, *args: Any, **kwargs: Any) -> None:
-        """Log a minimal-level message (less detailed than INFO)."""
-        if self.isEnabledFor(MINIMAL_LEVEL):
-            self._log(MINIMAL_LEVEL, msg, args, **kwargs)
+    def test(self, msg: str, *args: Any, **kwargs: Any) -> None:
+        """Log a test-level message (most verbose, bypasses capture)."""
+        if self.isEnabledFor(TEST_LEVEL):
+            self._log(TEST_LEVEL, msg, args, **kwargs)
 
     def resolve_level_name(self, level_name: str) -> int | None:
         """logging.getLevelNamesMapping() is only introduced in 3.11"""
@@ -468,8 +562,13 @@ class TagFormatter(logging.Formatter):
 class DualStreamHandler(logging.StreamHandler):  # type: ignore[type-arg]
     """Send info to stdout, everything else to stderr.
 
-    TRACE, DEBUG, and DETAIL always go to stderr.
-    INFO and MINIMAL go to stdout.
+    TRACE, DEBUG, WARNING, ERROR, and CRITICAL all go to stderr.
+    Only INFO goes to stdout.
+
+    When logger level is TEST, TRACE/DEBUG/TEST messages bypass capture
+    by writing to sys.__stderr__ instead of sys.stderr.
+    This allows debugging tests without breaking output assertions while
+    still being capturable by subprocess.run(capture_output=True).
     """
 
     enable_color: bool = False
@@ -480,13 +579,31 @@ class DualStreamHandler(logging.StreamHandler):  # type: ignore[type-arg]
 
     def emit(self, record: logging.LogRecord) -> None:
         level = record.levelno
+
+        # Check if logger is in TEST mode (bypass capture for verbose levels)
+        logger_name = record.name
+        logger_instance = logging.getLogger(logger_name)
+        is_test_mode = (
+            isinstance(logger_instance, ApatheticCLILogger)
+            and logger_instance.level == TEST_LEVEL
+        )
+
+        # Determine target stream
         if level >= logging.WARNING:
+            # Warnings and errors always go to stderr (normal behavior)
+            # This ensures they still break tests as expected
+            # Even in TEST mode, warnings/errors use normal stderr
             self.stream = sys.stderr
-        elif level in {logging.DEBUG, TRACE_LEVEL, DETAIL_LEVEL}:
-            # TRACE, DEBUG, and DETAIL always go to stderr
-            self.stream = sys.stderr
+        elif level <= logging.DEBUG:
+            # TEST/TRACE/DEBUG in TEST mode: use bypass stream
+            # Use __stderr__ so they bypass pytest capsys but are still
+            # capturable by subprocess.run(capture_output=True)
+            if is_test_mode:
+                self.stream = sys.__stderr__
+            else:
+                self.stream = sys.stderr
         else:
-            # INFO, MINIMAL, and other levels go to stdout
+            # INFO goes to stdout (normal program output)
             self.stream = sys.stdout
 
         # used by TagFormatter
@@ -669,7 +786,7 @@ def get_logger() -> ApatheticCLILogger:
     return typed_logger
 
 
-# === apathetic_schema.schema ===
+# === serger.apathetic_schema.schema ===
 # src/serger/utils/utils_schema.py
 
 
@@ -790,7 +907,7 @@ def _get_example_for_field(
 
     Args:
         field_path: The full field path
-            (e.g. "root.builds.*.include" or "root.watch_interval")
+            (e.g. "root.include" or "root.watch_interval")
         field_examples: Optional dict mapping field patterns to example values.
         If None, returns None (no examples available).
     """
@@ -1242,7 +1359,7 @@ def check_schema_conformance(
     )
 
 
-# === apathetic_utils.system ===
+# === serger.apathetic_utils.system ===
 # src/serger/utils/utils_system.py
 
 
@@ -1298,7 +1415,7 @@ def is_running_under_pytest() -> bool:
     )
 
 
-def detect_runtime_mode() -> str:
+def detect_runtime_mode() -> str:  # noqa: PLR0911
     if getattr(sys, "frozen", False):
         return "frozen"
     if "__main__" in sys.modules and getattr(
@@ -1307,8 +1424,20 @@ def detect_runtime_mode() -> str:
         "",
     ).endswith(".pyz"):
         return "zipapp"
+    # Check for standalone mode in multiple locations
+    # 1. Current module's globals (for when called from within standalone script)
     if "__STANDALONE__" in globals():
         return "standalone"
+    # 2. Check package module's globals (when loaded via importlib)
+    # The standalone script is loaded as the "serger" package
+    pkg_mod = sys.modules.get("serger")
+    if pkg_mod is not None and hasattr(pkg_mod, "__STANDALONE__"):
+        return "standalone"
+    # 3. Check __main__ module's globals (for script execution)
+    if "__main__" in sys.modules:
+        main_mod = sys.modules["__main__"]
+        if hasattr(main_mod, "__STANDALONE__"):
+            return "standalone"
     return "installed"
 
 
@@ -1356,7 +1485,7 @@ def capture_output() -> Iterator[CapturedOutput]:
         sys.stdout, sys.stderr = old_out, old_err
 
 
-# === apathetic_utils.text ===
+# === serger.apathetic_utils.text ===
 # src/serger/utils/utils_text.py
 
 
@@ -1415,14 +1544,14 @@ def remove_path_in_error_message(inner_msg: str, path: Path) -> str:
     return clean_msg
 
 
-# === apathetic_utils.types ===
+# === serger.apathetic_utils.types ===
 # src/serger/utils/utils_types.py
 
 
 T = TypeVar("T")
 
 
-def cast_hint(_typ: type[T], value: Any) -> T:
+def cast_hint(typ: type[T], value: Any) -> T:  # noqa: ARG001
     """Explicit cast that documents intent but is purely for type hinting.
 
     A drop-in replacement for `typing.cast`, meant for places where:
@@ -1441,6 +1570,50 @@ def cast_hint(_typ: type[T], value: Any) -> T:
 def schema_from_typeddict(td: type[Any]) -> dict[str, Any]:
     """Extract field names and their annotated types from a TypedDict."""
     return get_type_hints(td, include_extras=True)
+
+
+def literal_to_set(literal_type: Any) -> set[Any]:
+    """Extract values from a Literal type as a set.
+
+    Example:
+        StitchMode = Literal["raw", "package"]
+        valid_modes = literal_to_set(StitchMode)  # Returns set with literal values
+
+    Args:
+        literal_type: A Literal type (e.g., Literal["a", "b"])
+
+    Returns:
+        A set containing all values from the Literal type.
+        Returns set[Any] to allow flexible operations without requiring
+        casts. The actual values are constrained by the Literal type at
+        runtime validation.
+
+    Type Safety Tradeoffs:
+        This function returns set[Any] after considering three approaches:
+
+        1. set[Any] (current): Allows flexible operations (e.g., sorted(),
+           membership checks) without requiring casts. Less type-safe but
+           more ergonomic for common use cases.
+
+        2. set[str | int | float | bool | None]: More type-safe, but requires
+           casts for operations like sorted() that expect specific types,
+           creating noise and potential for errors.
+
+        3. TypeVar (like cast_hint): Would provide perfect type inference,
+           but Python's type system cannot extract the union of literal
+           values from a Literal type at the type level.
+
+        The current approach prioritizes ergonomics while still providing
+        runtime validation that the input is a Literal type.
+
+    Raises:
+        TypeError: If the input is not a Literal type
+    """
+    origin = get_origin(literal_type)
+    if origin is not Literal:
+        msg = f"Expected Literal type, got {literal_type}"
+        raise TypeError(msg)
+    return set(get_args(literal_type))
 
 
 def _isinstance_generics(  # noqa: PLR0911
@@ -1545,42 +1718,156 @@ def safe_isinstance(value: Any, expected_type: Any) -> bool:  # noqa: PLR0911
         return False
 
 
-# === serger.meta ===
-# src/serger/meta.py
-
-"""Centralized program identity constants for Serger."""
+# === serger.utils.utils_validation ===
+# src/serger/utils/utils_validation.py
 
 
-_BASE = "serger"
+def validate_required_keys(
+    config: dict[str, Any] | Any,
+    required_keys: set[str],
+    param_name: str,
+) -> None:
+    """Validate that a config dict contains all required keys.
 
-# CLI script name (the executable or `poetry run` entrypoint)
-PROGRAM_SCRIPT = _BASE
+    Args:
+        config: The config dict to validate (TypedDict or dict)
+        required_keys: Set of required key names
+        param_name: Name of the parameter (for error messages)
 
-# config file name
-PROGRAM_CONFIG = _BASE
+    Raises:
+        TypeError: If any required keys are missing
+    """
+    if not required_keys:
+        return
 
-# Human-readable name for banners, help text, etc.
-PROGRAM_DISPLAY = _BASE.replace("-", " ").title()
+    # TypedDict is a dict at runtime, but type checkers need help
+    config_dict = cast("dict[str, Any]", config)
+    missing = required_keys - config_dict.keys()
+    if missing:
+        missing_str = ", ".join(sorted(missing))
+        xmsg = (
+            f"Missing required keys in {param_name}: {missing_str}. "
+            f"Required keys: {', '.join(sorted(required_keys))}"
+        )
+        raise TypeError(xmsg)
 
-# Python package / import name
-PROGRAM_PACKAGE = _BASE.replace("-", "_")
 
-# Environment variable prefix (used for <APP>_BUILD_LOG_LEVEL, etc.)
-PROGRAM_ENV = _BASE.replace("-", "_").upper()
-
-# Short tagline or __DESCRIPTION for help screens and metadata
-DESCRIPTION = "Stitch your module into a single file."
+# === serger.constants ===
+# src/serger/constants.py
+"""Central constants used across the project."""
 
 
-@dataclass(frozen=True)
-class Metadata:
-    """Lightweight result from get_metadata(), containing version and commit info."""
+RUNTIME_MODES = {
+    "standalone",  # single stitched file
+    "installed",  # poetry-installed / pip-installed / importable
+    "zipapp",  # .pyz bundle
+}
 
-    version: str
-    commit: str
+# --- env keys ---
+DEFAULT_ENV_LOG_LEVEL: str = "LOG_LEVEL"
+DEFAULT_ENV_RESPECT_GITIGNORE: str = "RESPECT_GITIGNORE"
+DEFAULT_ENV_WATCH_INTERVAL: str = "WATCH_INTERVAL"
+DEFAULT_ENV_DISABLE_BUILD_TIMESTAMP: str = "DISABLE_BUILD_TIMESTAMP"
 
-    def __str__(self) -> str:
-        return f"{self.version} ({self.commit})"
+# --- program defaults ---
+DEFAULT_LOG_LEVEL: str = "info"
+DEFAULT_WATCH_INTERVAL: float = 1.0  # seconds
+DEFAULT_RESPECT_GITIGNORE: bool = True
+
+# --- config defaults ---
+DEFAULT_STRICT_CONFIG: bool = True
+DEFAULT_OUT_DIR: str = "dist"
+DEFAULT_DRY_RUN: bool = False
+DEFAULT_USE_PYPROJECT_METADATA: bool = True
+
+# Import handling defaults keyed by stitch mode
+# These defaults are chosen based on how each stitching mode works:
+
+# INTERNAL_IMPORTS:
+#   - "raw": "force_strip" - Raw mode concatenates all files into a single namespace.
+#     Internal imports (e.g., "from .utils import helper") are stripped because all
+#     code is in the same namespace and can reference each other directly.
+#   - "class": "assign" - Class mode wraps each module in a class namespace.
+#     Internal imports must be transformed to class attribute access (e.g.,
+#     "from .utils import helper" becomes "helper = _Module_utils.helper").
+#     The "assign" mode handles this transformation automatically.
+#   - "exec": "keep" - Exec mode uses exec() with separate module objects in
+#     sys.modules, each with proper __package__ attributes. Relative imports work
+#     correctly in this setup, so they should be kept as-is.
+DEFAULT_INTERNAL_IMPORTS: dict[str, str] = {
+    "raw": "force_strip",
+    "class": "assign",
+    "exec": "keep",
+}
+
+# EXTERNAL_IMPORTS:
+#   - All modes use "top" - External imports (e.g., "import os", "from pathlib
+#     import Path") must be available at module level for all stitching modes.
+#     Hoisting them to the top ensures they're accessible throughout the stitched
+#     file, whether code is concatenated (raw), wrapped in classes (class), or
+#     executed in separate namespaces (exec).
+DEFAULT_EXTERNAL_IMPORTS: dict[str, str] = {
+    "raw": "top",
+    "class": "top",
+    "exec": "top",
+}
+DEFAULT_STITCH_MODE: str = "raw"  # Raw concatenation (default stitching mode)
+DEFAULT_MODULE_MODE: str = "multi"  # Generate shims for all detected packages
+DEFAULT_SHIM: str = "all"  # Generate shims for all modules (default shim setting)
+DEFAULT_COMMENTS_MODE: str = "keep"  # Keep all comments (default comments mode)
+DEFAULT_DOCSTRING_MODE: str = "keep"  # Keep all docstrings (default docstring mode)
+DEFAULT_MODULE_BASES: list[str] = ["src"]  # Default directories to search for packages
+DEFAULT_MAIN_MODE: str = "auto"  # Automatically detect and generate __main__ block
+DEFAULT_MAIN_NAME: str | None = None  # Auto-detect main function (default)
+DEFAULT_DISABLE_BUILD_TIMESTAMP: bool = False  # Use real timestamps by default
+BUILD_TIMESTAMP_PLACEHOLDER: str = "<build-timestamp>"  # Placeholder
+DEFAULT_LICENSE_FALLBACK: str = (
+    "All rights reserved. See additional license files if distributed "
+    "alongside this file for additional terms."
+)
+
+# --- post-processing defaults ---
+DEFAULT_CATEGORY_ORDER: list[str] = ["static_checker", "formatter", "import_sorter"]
+
+# Type: dict[str, dict[str, Any]] - matches PostCategoryConfig structure
+# All tool commands are defined in tools dict for consistency (supports custom labels)
+# Note: This is the raw default structure; it gets resolved to
+# PostCategoryConfigResolved
+DEFAULT_CATEGORIES: dict[str, dict[str, Any]] = {
+    "static_checker": {
+        "enabled": True,
+        "priority": ["ruff"],
+        "tools": {
+            "ruff": {
+                "args": ["check", "--fix"],
+            },
+        },
+    },
+    "formatter": {
+        "enabled": True,
+        "priority": ["ruff", "black"],
+        "tools": {
+            "ruff": {
+                "args": ["format"],
+            },
+            "black": {
+                "args": ["format"],
+            },
+        },
+    },
+    "import_sorter": {
+        "enabled": True,
+        "priority": ["ruff", "isort"],
+        "tools": {
+            "ruff": {
+                "args": ["check", "--select", "I", "--fix"],
+            },
+            "isort": {
+                "args": ["--fix"],
+            },
+        },
+    },
+}
 
 
 # === serger.config.config_types ===
@@ -1588,6 +1875,47 @@ class Metadata:
 
 
 OriginType = Literal["cli", "config", "plugin", "default", "code", "gitignore", "test"]
+
+
+InternalImportMode = Literal["force_strip", "strip", "keep", "assign"]
+ExternalImportMode = Literal["force_top", "top", "keep", "force_strip", "strip"]
+StitchMode = Literal["raw", "class", "exec"]
+ModuleMode = Literal[
+    "none", "multi", "force", "force_flat", "unify", "unify_preserve", "flat"
+]
+ShimSetting = Literal["all", "public", "none"]
+MainMode = Literal["none", "auto"]
+# Module actions configuration types
+ModuleActionType = Literal["move", "copy", "delete", "rename", "none"]
+ModuleActionMode = Literal["preserve", "flatten"]
+ModuleActionScope = Literal["original", "shim"]
+ModuleActionAffects = Literal["shims", "stitching", "both"]
+ModuleActionCleanup = Literal["auto", "error", "ignore"]
+
+
+class ModuleActionFull(TypedDict, total=False):
+    source: str  # required
+    source_path: NotRequired[str]  # optional filesystem path
+    dest: NotRequired[str]  # required for move/copy
+    action: NotRequired[ModuleActionType]  # default: "move"
+    mode: NotRequired[ModuleActionMode]  # default: "preserve"
+    # default: "shim" for user, "original" for mode-generated
+    scope: NotRequired[ModuleActionScope]
+    affects: NotRequired[ModuleActionAffects]  # default: "shims"
+    cleanup: NotRequired[ModuleActionCleanup]  # default: "auto"
+
+
+# Simple format: dict[str, str | None]
+ModuleActionSimple = dict[str, str | None]
+
+# Union type for config
+ModuleActions = ModuleActionSimple | list[ModuleActionFull]
+
+CommentsMode = Literal["keep", "ignores", "inline", "strip"]
+# DocstringMode can be a simple string mode or a dict for per-location control
+DocstringModeSimple = Literal["keep", "strip", "public"]
+DocstringModeLocation = Literal["module", "class", "function", "method"]
+DocstringMode = DocstringModeSimple | dict[DocstringModeLocation, DocstringModeSimple]
 
 
 # Post-processing configuration types
@@ -1654,162 +1982,194 @@ class IncludeConfig(TypedDict):
     dest: NotRequired[str]
 
 
-class BuildConfig(TypedDict, total=False):
+class RootConfig(TypedDict, total=False):
     include: list[str | IncludeConfig]
     exclude: list[str]
 
-    # optional per-build override
+    # Optional per-build overrides
     strict_config: bool
     out: str
     respect_gitignore: bool
     log_level: str
 
-    # Single-build convenience (propagated upward)
+    # Runtime behavior
     watch_interval: float
     post_processing: PostProcessingConfig  # Post-processing configuration
 
     # Pyproject.toml integration
-    use_pyproject: bool  # Whether to pull metadata from pyproject.toml
+    use_pyproject_metadata: bool  # Whether to pull metadata from pyproject.toml
     pyproject_path: str  # Path to pyproject.toml (overrides root default)
+
+    # Version (overrides pyproject version)
+    version: str  # Version string (optional, falls back to pyproject.toml if not set)
 
     # Stitching configuration
     package: str  # Package name for imports (e.g., "serger")
     # Explicit module order for stitching (optional; auto-discovered if not provided)
     order: list[str]
-    license_header: str  # License header text for stitched output
+    # License text or dict with file/text/expression
+    license: str | dict[str, str | list[str]]
+    license_files: list[str]  # Additional license files (glob patterns)
     display_name: str  # Display name for header (defaults to package)
     description: str  # Description for header (defaults to blank)
+    authors: str  # Authors for header (optional, can fallback to pyproject.toml)
     repo: str  # Repository URL for header (optional)
+    custom_header: str  # Custom header text (overrides display_name/description)
+    file_docstring: str  # Custom file docstring (overrides auto-generated docstring)
+    # Import handling configuration
+    internal_imports: InternalImportMode  # How to handle internal package imports
+    external_imports: ExternalImportMode  # How to handle external imports
+    # Stitching mode: how to combine modules into a single file
+    # - "raw": Concatenate all files together (default)
+    # - "class": Namespace files within classes (not yet implemented)
+    # - "exec": Namespace files within module shims using exec() (not yet implemented)
+    stitch_mode: StitchMode
+    # Module mode: how to generate import shims for single-file runtime
+    # - "none": No shims generated
+    # - "multi": Generate shims for all detected packages (default)
+    # - "force": Replace root package but keep subpackages (e.g., pkg1.sub -> mypkg.sub)
+    # - "force_flat": Flatten everything to configured package (e.g., pkg1.sub -> mypkg)
+    # - "unify": Place all detected packages under package, combine if package matches
+    # - "unify_preserve": Like unify but preserves structure when package matches
+    # - "flat": Treat loose files as top-level modules (not under package)
+    module_mode: ModuleMode
+    # Shim setting: controls whether shims are generated and which modules get shims
+    # - "all": Generate shims for all modules (default)
+    # - "public": Only generate shims for public modules
+    #   (future: based on _ prefix or __all__)
+    # - "none": Don't generate shims at all
+    shim: ShimSetting
+    # Module actions: custom module transformations (move, copy, delete)
+    # - dict[str, str | None]: Simple format mapping source -> dest
+    # - list[ModuleActionFull]: Full format with detailed options
+    module_actions: NotRequired[ModuleActions]
+    # Comments mode: how to handle comments in stitched output
+    # - "keep": Keep all comments (default)
+    # - "ignores": Only keep comments that specify ignore rules
+    #   (e.g., "noqa:", "type: ignore")
+    # - "inline": Only keep inline comments (comments on the same line as code)
+    # - "strip": Remove all comments
+    comments_mode: CommentsMode
+    # Docstring mode: how to handle docstrings in stitched output
+    # - "keep": Keep all docstrings (default)
+    # - "strip": Remove all docstrings
+    # - "public": Keep only public docstrings (not prefixed with underscore)
+    # - dict: Per-location control, e.g., {"module": "keep", "class": "strip"}
+    #   Valid locations: "module", "class", "function", "method"
+    #   Each location value can be "keep", "strip", or "public"
+    #   Omitted locations default to "keep"
+    docstring_mode: DocstringMode
+    # Module bases: ordered list of directories where packages can be found
+    # - str: Single directory (convenience, converted to list[str] on resolve)
+    # - list[str]: Ordered list of directories (default: ["src"])
+    module_bases: str | list[str]
+    # Main function configuration
+    # - "none": Don't generate __main__ block
+    # - "auto": Automatically detect and generate __main__ block (default)
+    main_mode: NotRequired[MainMode]
+    # Main function name specification
+    # - None: Auto-detect main function (default)
+    # - str: Explicit main function specification (see docs for syntax)
+    main_name: NotRequired[str | None]
+    # Build timestamp control
+    # - False: Use real timestamps (default)
+    # - True: Use placeholder for deterministic builds
+    disable_build_timestamp: NotRequired[bool]
 
 
-class RootConfig(TypedDict, total=False):
-    builds: list[BuildConfig]
-
-    # Defaults that cascade into each build
-    log_level: str
-    out: str
-    respect_gitignore: bool
-
-    # runtime behavior
-    strict_config: bool
-    watch_interval: float
-    post_processing: PostProcessingConfig  # Post-processing configuration
-
-    # Pyproject.toml integration
-    use_pyproject: bool  # Whether to pull metadata from pyproject.toml (default: true)
-    pyproject_path: str  # Path to pyproject.toml (fallback for single builds)
-
-
-class BuildConfigResolved(TypedDict):
+class RootConfigResolved(TypedDict):
     include: list[IncludeResolved]
     exclude: list[PathResolved]
 
-    # optional per-build override
+    # Optional per-build overrides
     strict_config: bool
     out: PathResolved
     respect_gitignore: bool
     log_level: str
 
-    # runtime flag (CLI only, not persisted in normal configs)
+    # Runtime behavior
+    watch_interval: float
+
+    # Runtime flag (CLI only, not persisted in normal configs)
     dry_run: bool
 
-    # global provenance (optional, for audit/debug)
+    # Global provenance (optional, for audit/debug)
     __meta__: MetaBuildConfigResolved
+
+    # Internal metadata fields (not user-configurable)
+    version: NotRequired[str]  # Version (user -> pyproject, resolved in config)
 
     # Stitching fields (optional - present if this is a stitch build)
     package: NotRequired[str]
     order: NotRequired[list[str]]
-    license_header: NotRequired[str]
+    # Metadata fields (optional, resolved to user -> pyproject -> None)
+    license: str  # License text (mandatory, always present with fallback)
     display_name: NotRequired[str]
     description: NotRequired[str]
+    authors: NotRequired[str]
     repo: NotRequired[str]
-    post_processing: NotRequired[
-        PostProcessingConfigResolved
-    ]  # Post-processing configuration
+    custom_header: NotRequired[str]  # Custom header (overrides display_name)
+    file_docstring: NotRequired[str]  # Custom docstring (overrides auto-generated)
+    post_processing: PostProcessingConfigResolved  # Post-processing configuration
+    internal_imports: InternalImportMode  # How to handle internal imports
+    external_imports: ExternalImportMode  # How to handle external imports
+    stitch_mode: StitchMode  # How to combine modules into a single file
+    module_mode: ModuleMode  # How to generate import shims for single-file runtime
+    shim: ShimSetting  # Controls shim generation and which modules get shims
+    # Module transformations (normalized to list format, always present)
+    module_actions: list[ModuleActionFull]
+    comments_mode: CommentsMode  # How to handle comments in stitched output
+    docstring_mode: DocstringMode  # How to handle docstrings in stitched output
+    # Module bases: ordered list of directories where packages can be found
+    # (always present, resolved to list[str])
+    module_bases: list[str]
+    # Main function configuration (always present, resolved with defaults)
+    main_mode: MainMode
+    # Main function name specification (always present, resolved with defaults)
+    main_name: str | None
+    # Build timestamp control (always present, resolved with defaults)
+    disable_build_timestamp: bool
 
 
-class RootConfigResolved(TypedDict):
-    builds: list[BuildConfigResolved]
+# === serger.meta ===
+# src/serger/meta.py
 
-    # runtime behavior
-    log_level: str
-    strict_config: bool
-    watch_interval: float
-    post_processing: PostProcessingConfigResolved
+"""Centralized program identity constants for Serger."""
 
 
-# === serger.constants ===
-# src/serger/constants.py
-"""Central constants used across the project."""
+_BASE = "serger"
+
+# CLI script name (the executable or `poetry run` entrypoint)
+PROGRAM_SCRIPT = _BASE
+
+# config file name
+PROGRAM_CONFIG = _BASE
+
+# Human-readable name for banners, help text, etc.
+PROGRAM_DISPLAY = _BASE.replace("-", " ").title()
+
+# Python package / import name
+PROGRAM_PACKAGE = _BASE.replace("-", "_")
+
+# Environment variable prefix (used for <APP>_BUILD_LOG_LEVEL, etc.)
+PROGRAM_ENV = _BASE.replace("-", "_").upper()
+
+# Short tagline or __DESCRIPTION for help screens and metadata
+DESCRIPTION = "Stitch your module into a single file."
 
 
-RUNTIME_MODES = {
-    "standalone",  # single stitched file
-    "installed",  # poetry-installed / pip-installed / importable
-    "zipapp",  # .pyz bundle
-}
+@dataclass(frozen=True)
+class Metadata:
+    """Lightweight result from get_metadata(), containing version and commit info."""
 
-# --- env keys ---
-DEFAULT_ENV_LOG_LEVEL: str = "LOG_LEVEL"
-DEFAULT_ENV_RESPECT_GITIGNORE: str = "RESPECT_GITINGORE"
-DEFAULT_ENV_WATCH_INTERVAL: str = "WATCH_INTERVAL"
+    version: str
+    commit: str
 
-# --- program defaults ---
-DEFAULT_LOG_LEVEL: str = "info"
-DEFAULT_WATCH_INTERVAL: float = 1.0  # seconds
-DEFAULT_RESPECT_GITIGNORE: bool = True
-
-# --- config defaults ---
-DEFAULT_STRICT_CONFIG: bool = True
-DEFAULT_OUT_DIR: str = "dist"
-DEFAULT_DRY_RUN: bool = False
-DEFAULT_USE_PYPROJECT: bool = True
-
-# --- post-processing defaults ---
-DEFAULT_CATEGORY_ORDER: list[str] = ["static_checker", "formatter", "import_sorter"]
-
-# Type: dict[str, dict[str, Any]] - matches PostCategoryConfig structure
-# All tool commands are defined in tools dict for consistency (supports custom labels)
-# Note: This is the raw default structure; it gets resolved to
-# PostCategoryConfigResolved
-DEFAULT_CATEGORIES: dict[str, dict[str, Any]] = {
-    "static_checker": {
-        "enabled": True,
-        "priority": ["ruff"],
-        "tools": {
-            "ruff": {
-                "args": ["check", "--fix"],
-            },
-        },
-    },
-    "formatter": {
-        "enabled": True,
-        "priority": ["ruff", "black"],
-        "tools": {
-            "ruff": {
-                "args": ["format"],
-            },
-            "black": {
-                "args": ["format"],
-            },
-        },
-    },
-    "import_sorter": {
-        "enabled": True,
-        "priority": ["ruff", "isort"],
-        "tools": {
-            "ruff": {
-                "args": ["check", "--select", "I", "--fix"],
-            },
-            "isort": {
-                "args": ["--fix"],
-            },
-        },
-    },
-}
+    def __str__(self) -> str:
+        return f"{self.version} ({self.commit})"
 
 
-# === apathetic_utils.files ===
+# === serger.apathetic_utils.files ===
 # src/serger/utils/utils_files.py
 
 
@@ -1939,7 +2299,7 @@ def load_toml(path: Path, *, required: bool = False) -> dict[str, Any] | None:
             xmsg = (
                 "TOML parsing requires 'tomli' package on Python 3.10. "
                 "Install it with: pip install tomli, or disable pyproject.toml support "
-                "by setting 'use_pyproject: false' in your config."
+                "by setting 'use_pyproject_metadata: false' in your config."
             )
             raise RuntimeError(xmsg) from None
         return None
@@ -1994,7 +2354,7 @@ def load_jsonc(path: Path) -> dict[str, Any] | list[Any] | None:
     return result
 
 
-# === apathetic_utils.paths ===
+# === serger.apathetic_utils.paths ===
 # src/serger/utils/utils_paths.py
 
 
@@ -2059,7 +2419,7 @@ def get_glob_root(pattern: str) -> Path:
     return Path(*parts) if parts else Path()
 
 
-# === apathetic_utils.matching ===
+# === serger.apathetic_utils.matching ===
 # src/serger/utils/utils_matching.py
 
 
@@ -2421,7 +2781,7 @@ class AppLogger(ApatheticCLILogger):
 
 # Force the logging module to use our subclass globally.
 # This must happen *before* any loggers are created.
-# logging.setLoggerClass(AppLogger)
+logging.setLoggerClass(AppLogger)
 
 # Force registration of TRACE and SILENT levels
 AppLogger.extend_logging_module()
@@ -2433,8 +2793,12 @@ register_log_level_env_vars(
 )
 register_default_log_level(DEFAULT_LOG_LEVEL)
 
-# Now this will actually return an AppLogger instance.
-# The logging module acts as the registry, so we just need to register the name.
+# Register the logger name so get_logger() can find it
+register_logger_name(PROGRAM_PACKAGE)
+
+# Create the app logger instance via logging.getLogger()
+# This ensures it's registered with the logging module and can be retrieved
+# by other code that uses logging.getLogger()
 _APP_LOGGER = cast("AppLogger", logging.getLogger(PROGRAM_PACKAGE))
 
 
@@ -2448,15 +2812,14 @@ def get_app_logger() -> AppLogger:
     Use this in application code instead of utils_logs.get_logger() for
     better type hints.
     """
-    logger = cast("AppLogger", get_logger())
     TEST_TRACE(
-        "get_logger() called",
-        f"id={id(logger)}",
-        f"name={logger.name}",
-        f"level={logger.level_name}",
-        f"handlers={[type(h).__name__ for h in logger.handlers]}",
+        "get_app_logger() called",
+        f"id={id(_APP_LOGGER)}",
+        f"name={_APP_LOGGER.name}",
+        f"level={_APP_LOGGER.level_name}",
+        f"handlers={[type(h).__name__ for h in _APP_LOGGER.handlers]}",
     )
-    return logger
+    return _APP_LOGGER
 
 
 # === serger.config.config_validate ===
@@ -2478,11 +2841,13 @@ ROOT_ONLY_MSG = "Ignored {keys} {ctx}: these options only apply at the root leve
 # Dict format: {field_pattern: example_value}
 # Wildcard patterns (with *) are supported for matching multiple fields
 FIELD_EXAMPLES: dict[str, str] = {
-    "root.builds.*.include": '["src/", "lib/"]',
-    "root.builds.*.out": '"dist/script.py"',
-    "root.builds.*.display_name": '"MyProject"',
-    "root.builds.*.description": '"A description of the project"',
-    "root.builds.*.repo": '"https://github.com/user/project"',
+    "root.include": '["src/", "lib/"]',
+    "root.out": '"dist/script.py"',
+    "root.display_name": '"MyProject"',
+    "root.description": '"A description of the project"',
+    "root.repo": '"https://github.com/user/project"',
+    "root.internal_imports": '"force_strip"',
+    "root.external_imports": '"top"',
     "root.watch_interval": "1.5",
     "root.log_level": '"debug"',
     "root.strict_config": "true",
@@ -2567,105 +2932,24 @@ def _validate_root(
 def _validate_builds(
     parsed_cfg: dict[str, Any],
     *,
-    strict_arg: bool | None,
+    strict_arg: bool | None,  # noqa: ARG001
     summary: ValidationSummary,  # modified
     agg: SchemaErrorAggregator,  # modified
 ) -> ValidationSummary | None:
+    """Validate that 'builds' key is not present (multi-build not supported)."""
     logger = get_app_logger()
-    builds_raw: Any = parsed_cfg.get("builds", [])
-    logger.trace("[validate_builds] Validating builds")
+    logger.trace("[validate_builds] Checking for unsupported 'builds' key")
 
-    root_strict = summary.valid
-    if not isinstance(builds_raw, list):
+    if "builds" in parsed_cfg:
         collect_msg(
-            "`builds` must be a list of builds.",
+            "The 'builds' key is not supported. "
+            "Please use a single flat configuration object with all options "
+            "at the root level.",
             strict=True,
             summary=summary,
             is_error=True,
         )
         return _set_valid_and_return(summary=summary, agg=agg)
-
-    if not builds_raw:
-        msg = "No `builds` key defined"
-        if not (summary.errors or summary.strict_warnings):
-            msg = msg + ";  continuing with empty configuration"
-        else:
-            msg = msg + "."
-        collect_msg(
-            msg,
-            strict=False,
-            summary=summary,
-        )
-        return _set_valid_and_return(summary=summary, agg=agg)
-
-    builds = cast_hint(list[Any], builds_raw)
-    build_schema = schema_from_typeddict(BuildConfig)
-
-    for i, b in enumerate(builds):
-        logger.trace(f"[validate_builds] Checking build #{i + 1}")
-        if not isinstance(b, dict):
-            collect_msg(
-                f"Build #{i + 1} must be an object"
-                " with named keys (not a list or value)",
-                strict=True,
-                summary=summary,
-                is_error=True,
-            )
-            summary.valid = False
-            continue
-        b_dict = cast_hint(dict[str, Any], b)
-
-        # strict from arg, build, or root
-        strict_config = root_strict
-        strict_from_build: Any = b_dict.get("strict_config")
-        if strict_arg is not None:
-            strict_config = strict_arg
-        elif strict_arg is None and isinstance(strict_from_build, bool):
-            strict_config = strict_from_build
-
-        prewarn_build: set[str] = set()
-        ok, found = warn_keys_once(
-            "dry-run",
-            DRYRUN_KEYS,
-            b_dict,
-            f"in build #{i + 1}",
-            DRYRUN_MSG,
-            strict_config=strict_config,
-            summary=summary,
-            agg=agg,
-        )
-        prewarn_build |= found
-
-        ok, found = warn_keys_once(
-            "root-only",
-            ROOT_ONLY_KEYS,
-            b_dict,
-            f"in build #{i + 1}",
-            ROOT_ONLY_MSG,
-            strict_config=strict_config,
-            summary=summary,
-            agg=agg,
-        )
-        prewarn_build |= found
-
-        ok = check_schema_conformance(
-            b_dict,
-            build_schema,
-            f"in build #{i + 1}",
-            strict_config=strict_config,
-            summary=summary,
-            prewarn=prewarn_build,
-            base_path="root.builds.*",
-            field_examples=FIELD_EXAMPLES,
-        )
-        if not ok and not (summary.errors or summary.strict_warnings):
-            collect_msg(
-                f"Build #{i + 1} schema invalid",
-                strict=True,
-                summary=summary,
-                is_error=True,
-            )
-            summary.valid = False
 
     return None
 
@@ -2727,6 +3011,9 @@ def is_excluded(path_entry: PathResolved, exclude_patterns: list[PathResolved]) 
     """High-level helper for internal use.
     Accepts PathResolved entries and delegates to the smart matcher.
     """
+    validate_required_keys(path_entry, {"path", "root"}, "path_entry")
+    for exc in exclude_patterns:
+        validate_required_keys(exc, {"path", "root"}, "exclude_patterns item")
     logger = get_app_logger()
     path = path_entry["path"]
     root = path_entry["root"]
@@ -2898,6 +3185,8 @@ def derive_module_name(
     package_root_resolved = package_root.resolve()
 
     # Check if include has dest override
+    if include:
+        validate_required_keys(include, {"path", "root"}, "include")
     if include and include.get("dest"):
         dest_raw = include.get("dest")
         # dest is Path | None, but we know it's truthy from the if check
@@ -3069,7 +3358,7 @@ def load_config(config_path: Path) -> dict[str, Any] | list[Any] | None:
     """Load configuration data from a file.
 
     Supports:
-      - Python configs: .py files exporting either `config`, `builds`, or `includes`
+      - Python configs: .py files exporting either `config` or `includes`
       - JSON/JSONC configs: .json, .jsonc files
 
     Returns:
@@ -3116,7 +3405,7 @@ def load_config(config_path: Path) -> dict[str, Any] | list[Any] | None:
             if added_to_sys_path and sys.path[0] == parent_dir:
                 sys.path.pop(0)
 
-        for key in ("config", "builds", "includes"):
+        for key in ("config", "includes"):
             if key in config_globals:
                 result = config_globals[key]
                 if not isinstance(result, (dict, list, type(None))):
@@ -3129,7 +3418,7 @@ def load_config(config_path: Path) -> dict[str, Any] | list[Any] | None:
                 # Explicitly narrow the loaded config to its expected union type.
                 return cast("dict[str, Any] | list[Any] | None", result)
 
-        xmsg = f"{config_path.name} did not define `config` or `builds` or `includes`"
+        xmsg = f"{config_path.name} did not define `config` or `includes`"
         raise ValueError(xmsg)
 
     # JSONC / JSON fallback
@@ -3146,121 +3435,31 @@ def load_config(config_path: Path) -> dict[str, Any] | list[Any] | None:
 def _parse_case_2_list_of_strings(
     raw_config: list[str],
 ) -> dict[str, Any]:
-    # --- Case 2: naked list of strings → single build's include ---
-    return {"builds": [{"include": list(raw_config)}]}
+    # --- Case 2: naked list of strings → flat config with include ---
+    return {"include": list(raw_config)}
 
 
-def _parse_case_3_list_of_dicts(
-    raw_config: list[dict[str, Any]],
-) -> dict[str, Any]:
-    # --- Case 3: naked list of dicts (no root) → multi-build shorthand ---
-    root: dict[str, Any]  # type it once
-    builds = [dict(b) for b in raw_config]
-
-    # Lift watch_interval from the first build that defines it (convenience),
-    # then remove it from ALL builds to avoid ambiguity.
-    first_watch = next(
-        (b.get("watch_interval") for b in builds if "watch_interval" in b),
-        None,
-    )
-    root = {"builds": builds}
-    if first_watch is not None:
-        root["watch_interval"] = first_watch
-        for b in builds:
-            b.pop("watch_interval", None)
-    return root
-
-
-def _parse_case_4_dict_multi_builds(
-    raw_config: dict[str, Any],
-    *,
-    build_val: Any,
-) -> dict[str, Any]:
-    # --- Case 4: dict with "build(s)" key → root with multi-builds ---
-    logger = get_app_logger()
-    root = dict(raw_config)  # preserve all user keys
-
-    # we might have a "builds" key that is a list, then nothing to do
-
-    # If user used "build" with a list → coerce, warn
-    if isinstance(build_val, list) and "builds" not in raw_config:
-        logger.warning("Config key 'build' was a list — treating as 'builds'.")
-        root["builds"] = build_val
-        root.pop("build", None)
-
-    return root
-
-
-def _parse_case_5_dict_single_build(
-    raw_config: dict[str, Any],
-    *,
-    builds_val: Any,
-) -> dict[str, Any]:
-    # --- Case 5: dict with "build(s)" key → root with single-build ---
-    logger = get_app_logger()
-    root = dict(raw_config)  # preserve all user keys
-
-    # If user used "builds" with a dict → coerce, warn
-    if isinstance(builds_val, dict):
-        logger.warning("Config key 'builds' was a dict — treating as 'build'.")
-        root["builds"] = [builds_val]
-        # keep the 'builds' key — it's now properly normalized
-    else:
-        root["builds"] = [dict(root.pop("build"))]
-
-    # no hoisting since they specified a root
-    return root
-
-
-def _parse_case_6_root_single_build(
+def _parse_case_flat_config(
     raw_config: dict[str, Any],
 ) -> dict[str, Any]:
-    # --- Case 6: single build fields (hoist only shared keys) ---
+    # --- Flat config: all fields at root level ---
     # The user gave a flat single-build config.
-    # We move only the overlapping fields (shared between Root and Build)
-    # up to the root; all build-only fields stay inside the build entry.
-    build = dict(raw_config)
-    hoisted: dict[str, Any] = {}
-
-    # Keys on both Root and Build are what we want to hoist up
-    root_keys = set(schema_from_typeddict(RootConfig))
-    build_keys = set(schema_from_typeddict(BuildConfig))
-    hoist_keys = root_keys & build_keys
-
-    # Move shared keys to the root
-    for k in hoist_keys:
-        if k in build:
-            hoisted[k] = build.pop(k)
-
-    # Preserve any extra unknown root-level fields from raw_config
-    for k, v in raw_config.items():
-        if k not in hoisted:
-            build.setdefault(k, v)
-
-    # Construct normalized root
-    root: dict[str, Any] = dict(hoisted)
-    root["builds"] = [build]
-
-    return root
+    # No hoisting needed - all fields are already at the root level.
+    return dict(raw_config)
 
 
-def parse_config(  # noqa: PLR0911
+def parse_config(
     raw_config: dict[str, Any] | list[Any] | None,
 ) -> dict[str, Any] | None:
     """Normalize user config into canonical RootConfig shape (no filesystem work).
 
     Accepted forms:
-      - #1 [] / {}                   → single build with `include` = []
-      - #2 ["src/**", "assets/**"]   → single build with those includes
-      - #3 [{...}, {...}]            → multi-build list
-      - #4 {"builds": [...]}         → multi-build config (returned shape)
-      - #5 {"build": {...}}          → single build config with root config
-      - #6 {...}                     → single build config
+      - None / [] / {}                → None (empty config)
+      - ["src/**", "assets/**"]       → flat config with those includes
+      - {...}                         → flat config (all fields at root level)
 
      After normalization:
-      - Always returns {"builds": [ ... ]} (at least one empty {} build).
-      - Root-level defaults may be present:
-          log_level, out, respect_gitignore, watch_interval.
+      - Returns flat dict with all fields at root level, or None for empty config.
       - Preserves all unknown keys for later validation.
     """
     # NOTE: This function only normalizes shape — it does NOT validate or restrict keys.
@@ -3269,26 +3468,21 @@ def parse_config(  # noqa: PLR0911
     logger = get_app_logger()
     logger.trace(f"[parse_config] Parsing {type(raw_config).__name__}")
 
-    # --- Case 1: empty config → one blank build ---
+    # --- Case 1: empty config → None ---
     # Includes None (empty file / config = None), [] (no builds), and {} (empty object)
     if not raw_config or raw_config == {}:  # handles None, [], {}
         return None
 
-    # --- Case 2: naked list of strings → single build's include ---
+    # --- Case 2: naked list of strings → flat config with include ---
     if isinstance(raw_config, list) and all(isinstance(x, str) for x in raw_config):
         logger.trace("[parse_config] Detected case: list of strings")
         return _parse_case_2_list_of_strings(raw_config)
 
-    # --- Case 3: naked list of dicts (no root) → multi-build shorthand ---
-    if isinstance(raw_config, list) and all(isinstance(x, dict) for x in raw_config):
-        logger.trace("[parse_config] Detected case: list of dicts")
-        return _parse_case_3_list_of_dicts(raw_config)
-
-    # --- better error message for mixed lists ---
+    # --- Invalid list types (not all strings) ---
     if isinstance(raw_config, list):
         xmsg = (
-            "Invalid mixed-type list: "
-            "all elements must be strings or all must be objects."
+            "Invalid list configuration: "
+            "all elements must be strings (for include patterns)."
         )
         raise TypeError(xmsg)
 
@@ -3298,33 +3492,13 @@ def parse_config(  # noqa: PLR0911
     if not isinstance(raw_config, dict):  # pyright: ignore[reportUnnecessaryIsInstance]
         xmsg = (
             f"Invalid top-level value: {type(raw_config).__name__} "
-            "(expected object, list of objects, or list of strings)",
+            "(expected object or list of strings)",
         )
         raise TypeError(xmsg)
 
-    builds_val = raw_config.get("builds")
-    build_val = raw_config.get("build")
-
-    # --- Case 4: dict with "build(s)" key → root with multi-builds ---
-    if isinstance(builds_val, list) or (
-        isinstance(build_val, list) and "builds" not in raw_config
-    ):
-        return _parse_case_4_dict_multi_builds(
-            raw_config,
-            build_val=build_val,
-        )
-
-    # --- Case 5: dict with "build(s)" key → root with single-build ---
-    if isinstance(build_val, dict) or isinstance(builds_val, dict):
-        return _parse_case_5_dict_single_build(
-            raw_config,
-            builds_val=builds_val,
-        )
-
-    # --- Case 6: single build fields (hoist only shared keys) ---
-    return _parse_case_6_root_single_build(
-        raw_config,
-    )
+    # --- Flat config: all fields at root level ---
+    # Note: build/builds keys will be rejected as unknown keys by validation
+    return _parse_case_flat_config(raw_config)
 
 
 def _validation_summary(
@@ -3415,7 +3589,7 @@ def load_and_validate_config(
     # Handles:
     #   - Root configs with "log_level"
     #   - Single-build dicts with "log_level"
-    # Skips empty, list, or multi-build roots.
+    # Skips empty or list configs.
     if isinstance(raw_config, dict):
         raw_log_level = raw_config.get("log_level")
         if isinstance(raw_log_level, str) and raw_log_level:
@@ -3434,17 +3608,1268 @@ def load_and_validate_config(
 
     # --- Validate schema ---
     validation_result = validate_config(parsed_cfg)
-    _validation_summary(validation_result, config_path)
     if not validation_result.valid:
-        xmsg = f"Configuration file {config_path.name} contains validation errors."
+        # Build comprehensive error message with all details
+        mode = "strict mode" if validation_result.strict else "lenient mode"
+        counts: list[str] = []
+        if validation_result.errors:
+            error_count = len(validation_result.errors)
+            counts.append(f"{error_count} error{plural(validation_result.errors)}")
+        if validation_result.strict_warnings:
+            warning_count = len(validation_result.strict_warnings)
+            counts.append(
+                f"{warning_count} strict warning"
+                f"{plural(validation_result.strict_warnings)}"
+            )
+        counts_msg = f"\nFound {', '.join(counts)}." if counts else ""
+
+        # Build detailed error message with newlines
+        error_parts: list[str] = []
+        error_parts.append(
+            f"Failed to validate configuration file {config_path.name} "
+            f"({mode}).{counts_msg}"
+        )
+
+        if validation_result.errors:
+            msg_summary = "\n  • ".join(validation_result.errors)
+            error_parts.append(f"\nErrors:\n  • {msg_summary}")
+
+        if validation_result.strict_warnings:
+            msg_summary = "\n  • ".join(validation_result.strict_warnings)
+            error_parts.append(
+                f"\nStrict warnings (treated as errors):\n  • {msg_summary}"
+            )
+
+        xmsg = "".join(error_parts)
         exception = ValueError(xmsg)
-        exception.silent = True  # type: ignore[attr-defined]
         exception.data = validation_result  # type: ignore[attr-defined]
         raise exception
+
+    # Log validation summary (only if valid or has warnings)
+    _validation_summary(validation_result, config_path)
 
     # --- Upgrade to RootConfig type ---
     root_cfg: RootConfig = cast_hint(RootConfig, parsed_cfg)
     return config_path, root_cfg, validation_result
+
+
+# === serger.module_actions ===
+"""Module actions processing for renaming, moving, copying, and deleting modules."""
+
+
+def extract_module_name_from_source_path(
+    source_path: Path,
+    package_root: Path,
+    expected_source: str,
+) -> str:
+    """Extract module name from source_path and verify it matches expected_source.
+
+    Args:
+        source_path: Path to Python file
+        package_root: Root directory for module name derivation
+        expected_source: Expected module name from action source field
+
+    Returns:
+        Extracted module name
+
+    Raises:
+        ValueError: If module name doesn't match expected_source or file is invalid
+    """
+    logger = get_app_logger()
+
+    # Validate file exists
+    if not source_path.exists():
+        msg = f"source_path file does not exist: {source_path}"
+        raise ValueError(msg)
+
+    # Validate is Python file
+    if source_path.suffix != ".py":
+        msg = f"source_path must be a Python file (.py extension), got: {source_path}"
+        raise ValueError(msg)
+
+    # Extract module name using derive_module_name
+    # Use None for include since source_path files don't have include metadata
+    extracted_module_name = derive_module_name(source_path, package_root, include=None)
+
+    # Verify extracted module name matches expected_source
+    # Allow exact match or derivable (e.g., if package is "internal" and file
+    # has module "internal.utils", source can be "internal.utils" or just "utils")
+    if extracted_module_name == expected_source:
+        # Exact match
+        logger.trace(
+            f"[source_path] Module name matches: "
+            f"{extracted_module_name} == {expected_source}"
+        )
+        return extracted_module_name
+
+    # Check if expected_source is a suffix of extracted_module_name
+    # (e.g., extracted="internal.utils", expected="utils")
+    # Also check if extracted_module_name ends with expected_source
+    # (e.g., extracted="other.utils", expected="utils")
+    if extracted_module_name.endswith((f".{expected_source}", expected_source)):
+        # Suffix match - this is allowed
+        logger.trace(
+            f"[source_path] Module name suffix matches: "
+            f"{extracted_module_name} ends with {expected_source}"
+        )
+        return extracted_module_name
+
+    # Check if extracted_module_name is a prefix of expected_source
+    # (e.g., extracted="utils", expected="internal.utils")
+    # This means the file has a shorter module name than expected
+    # We don't allow this - the file's module name should match or be longer
+    # (e.g., file has "internal.utils", source can be "internal.utils" or "utils")
+
+    # No match - raise error
+    msg = (
+        f"Module name extracted from source_path ({extracted_module_name}) "
+        f"does not match expected source ({expected_source}). "
+        f"File: {source_path}, package_root: {package_root}"
+    )
+    raise ValueError(msg)
+
+
+def set_mode_generated_action_defaults(
+    action: ModuleActionFull,
+) -> ModuleActionFull:
+    """Set default values for mode-generated actions.
+
+    Mode-generated actions are created fresh (not from config), so they need
+    defaults applied. All mode-generated actions have:
+    - action: "move" (if not specified)
+    - mode: "preserve" (if not specified)
+    - scope: "original" (always set for mode-generated)
+    - affects: "shims" (if not specified)
+    - cleanup: "auto" (if not specified)
+
+    Note: User actions from RootConfigResolved already have all defaults
+    applied (including scope: "shim") from config resolution (iteration 04).
+
+    Args:
+        action: Action dict that may be missing some fields
+
+    Returns:
+        Action dict with all fields present (defaults applied)
+    """
+    # Create a copy to avoid mutating the input
+    result: ModuleActionFull = dict(action)  # type: ignore[assignment]
+
+    # Set defaults for fields that may be missing
+    if "action" not in result:
+        result["action"] = "move"
+    if "mode" not in result:
+        result["mode"] = "preserve"
+    # Always set scope to "original" for mode-generated actions
+    result["scope"] = "original"
+    if "affects" not in result:
+        result["affects"] = "shims"
+    if "cleanup" not in result:
+        result["cleanup"] = "auto"
+
+    return result
+
+
+def validate_action_source_exists(
+    action: ModuleActionFull,
+    available_modules: set[str],
+    *,
+    scope: ModuleActionScope | None = None,
+) -> None:
+    """Validate that action source exists in available modules.
+
+    Args:
+        action: Action to validate
+        available_modules: Set of available module names
+        scope: Optional scope for error message context
+
+    Raises:
+        ValueError: If source does not exist in available modules
+    """
+    source = action["source"]  # pyright: ignore[reportTypedDictNotRequiredAccess]
+    if source not in available_modules:
+        scope_str = f" (scope: '{scope}')" if scope else ""
+        msg = (
+            f"Module action source '{source}' does not exist in available modules"
+            f"{scope_str}"
+        )
+        raise ValueError(msg)
+
+
+def validate_rename_action(
+    action: ModuleActionFull,
+    *,
+    scope: ModuleActionScope | None = None,
+) -> None:
+    """Validate rename action constraints.
+
+    Rename actions can only rename the last node in the dot sequence.
+    The dest must be just the new name (no dots allowed).
+
+    Args:
+        action: Rename action to validate
+        scope: Optional scope for error message context
+
+    Raises:
+        ValueError: If rename action is invalid
+    """
+    dest = action.get("dest")
+    scope_str = f" (scope: '{scope}')" if scope else ""
+
+    if dest is None:
+        msg = (
+            f"Module action 'rename' requires 'dest' field, "
+            f"but it is missing{scope_str}"
+        )
+        raise ValueError(msg)
+
+    # Dest must not contain dots (only the new name for the last node)
+    if "." in dest:
+        msg = (
+            f"Module action 'rename' dest must not contain dots. "
+            f"Got dest='{dest}'. Use 'move' action to move modules down the tree"
+            f"{scope_str}"
+        )
+        raise ValueError(msg)
+
+
+def validate_action_dest(
+    action: ModuleActionFull,
+    existing_modules: set[str],
+    *,
+    allowed_destinations: set[str] | None = None,
+    scope: ModuleActionScope | None = None,
+) -> None:
+    """Validate action destination (conflicts, required for move/copy, etc.).
+
+    Args:
+        action: Action to validate
+        existing_modules: Set of existing module names (for conflict checking)
+        allowed_destinations: Optional set of destinations that are allowed
+            even if they exist in existing_modules (e.g., target package for
+            mode-generated actions). If None, no special exceptions.
+        scope: Optional scope for error message context
+
+    Raises:
+        ValueError: If destination is invalid
+    """
+    action_type = action.get("action", "move")
+    dest = action.get("dest")
+    scope_str = f" (scope: '{scope}')" if scope else ""
+
+    # Delete actions must not have dest
+    if action_type == "delete" and dest is not None:
+        msg = (
+            f"Module action 'delete' must not have 'dest' field, but got dest='{dest}'"
+            f"{scope_str}"
+        )
+        raise ValueError(msg)
+    if action_type == "delete":
+        return
+
+    # Rename actions have special validation
+    if action_type == "rename":
+        validate_rename_action(action, scope=scope)
+        # After validating rename constraints, check if the constructed
+        # destination conflicts with existing modules
+        source = action["source"]  # pyright: ignore[reportTypedDictNotRequiredAccess]
+        if dest is not None:
+            # Construct full destination path: replace last component of source
+            if "." in source:
+                parent = ".".join(source.split(".")[:-1])
+                full_dest = f"{parent}.{dest}"
+            else:
+                # Top-level module: just use dest
+                full_dest = dest
+
+            # Check for conflicts (rename acts like move - can't conflict)
+            if full_dest in existing_modules and (
+                allowed_destinations is None or full_dest not in allowed_destinations
+            ):
+                msg = (
+                    f"Module action 'rename' destination '{full_dest}' "
+                    f"(from source '{source}' + dest '{dest}') "
+                    f"conflicts with existing module{scope_str}"
+                )
+                raise ValueError(msg)
+        return
+
+    # Move and copy actions require dest
+    if action_type in ("move", "copy"):
+        if dest is None:
+            msg = (
+                f"Module action '{action_type}' requires 'dest' field, "
+                f"but it is missing{scope_str}"
+            )
+            raise ValueError(msg)
+
+        # For move, dest must not conflict with existing modules
+        # Exception: if dest is in allowed_destinations, it's allowed
+        # (e.g., target package for mode-generated actions)
+        # For copy, dest can conflict (it's allowed to overwrite)
+        if (
+            action_type == "move"
+            and dest in existing_modules
+            and (allowed_destinations is None or dest not in allowed_destinations)
+        ):
+            msg = (
+                f"Module action 'move' destination '{dest}' "
+                f"conflicts with existing module{scope_str}"
+            )
+            raise ValueError(msg)
+
+
+def validate_no_circular_moves(  # noqa: C901, PLR0912
+    actions: list[ModuleActionFull],
+) -> None:
+    """Validate no circular move operations.
+
+    Detects direct and indirect circular move chains (e.g., A -> B, B -> A
+    or A -> B, B -> C, C -> A). Includes rename actions (which act like moves).
+
+    Args:
+        actions: List of actions to validate
+
+    Raises:
+        ValueError: If circular move chain is detected
+    """
+    # Build a mapping of source -> dest for move and rename operations
+    move_map: dict[str, str] = {}
+    for action in actions:
+        action_type = action.get("action", "move")
+        if action_type in ("move", "rename"):
+            source = action["source"]  # pyright: ignore[reportTypedDictNotRequiredAccess]
+            dest = action.get("dest")
+            if dest is not None:
+                # For rename, construct full destination path
+                if action_type == "rename":
+                    if "." in source:
+                        parent = ".".join(source.split(".")[:-1])
+                        full_dest = f"{parent}.{dest}"
+                    else:
+                        full_dest = dest
+                    move_map[source] = full_dest
+                else:
+                    move_map[source] = dest
+
+    # Check for circular chains using DFS
+    visited: set[str] = set()
+    path: set[str] = set()
+
+    def has_cycle(node: str) -> bool:
+        """Check if there's a cycle starting from node."""
+        if node in path:
+            return True  # Found a cycle
+        if node in visited:
+            return False  # Already checked, no cycle from here
+
+        visited.add(node)
+        path.add(node)
+
+        # Follow the move chain
+        if node in move_map:
+            next_node = move_map[node]
+            if has_cycle(next_node):
+                return True
+
+        path.remove(node)
+        return False
+
+    # Check each node for cycles
+    for source in move_map:
+        if source not in visited and has_cycle(source):
+            # Find the cycle path for error message
+            cycle_path: list[str] = []
+            current = source
+            seen_in_cycle: set[str] = set()
+            while current not in seen_in_cycle:
+                seen_in_cycle.add(current)
+                cycle_path.append(current)
+                if current in move_map:
+                    current = move_map[current]
+                else:
+                    break
+            # Add the closing link
+            if cycle_path:
+                cycle_path.append(cycle_path[0])
+            cycle_str = " -> ".join(cycle_path)
+            msg = f"Circular move chain detected: {cycle_str}"
+            raise ValueError(msg)
+
+
+def validate_no_conflicting_operations(  # noqa: C901, PLR0912, PLR0915
+    actions: list[ModuleActionFull],
+) -> None:
+    """Validate no conflicting operations (delete then move, etc.).
+
+    Checks for conflicts like:
+    - Can't delete something that's being moved/copied
+    - Can't move/copy to something that's being deleted
+    - Can't move/copy to something that's being moved/copied from
+      (unless it's a copy, which allows overwriting)
+
+    Args:
+        actions: List of actions to validate
+
+    Raises:
+        ValueError: If conflicting operations are detected
+    """
+    # Collect all sources and destinations
+    sources: set[str] = set()
+    dests: set[str] = set()
+    deleted: set[str] = set()
+    moved_from: set[str] = set()
+    copied_from: set[str] = set()
+
+    for action in actions:
+        source = action["source"]  # pyright: ignore[reportTypedDictNotRequiredAccess]
+        action_type = action.get("action", "move")
+        dest = action.get("dest")
+
+        sources.add(source)
+
+        if action_type == "delete":
+            deleted.add(source)
+        elif action_type in ("move", "rename"):
+            moved_from.add(source)
+            if dest is not None:
+                # For rename, construct full destination path
+                if action_type == "rename":
+                    if "." in source:
+                        parent = ".".join(source.split(".")[:-1])
+                        full_dest = f"{parent}.{dest}"
+                    else:
+                        full_dest = dest
+                    dests.add(full_dest)
+                else:
+                    dests.add(dest)
+        elif action_type == "copy":
+            copied_from.add(source)
+            if dest is not None:
+                dests.add(dest)
+
+    # Check: Can't delete something that's being moved/copied
+    for action in actions:
+        source = action["source"]  # pyright: ignore[reportTypedDictNotRequiredAccess]
+        action_type = action.get("action", "move")
+        if action_type == "delete" and (source in moved_from or source in copied_from):
+            msg = (
+                f"Cannot delete module '{source}' because it is "
+                f"being moved or copied in another action"
+            )
+            raise ValueError(msg)
+
+    # Check: Can't move/copy to something that's being deleted
+    for action in actions:
+        action_type = action.get("action", "move")
+        dest = action.get("dest")
+        if dest is not None and dest in deleted:
+            msg = (
+                f"Cannot {action_type} to '{dest}' because it is "
+                f"being deleted in another action"
+            )
+            raise ValueError(msg)
+
+    # Check: Can't move to something that's being moved/copied from
+    # (copy is allowed to overwrite, but move is not)
+    # Exception: If a module is only a destination (not a source) in other
+    # actions, it's allowed to move it (e.g., moving target package after
+    # mode actions have moved things into it)
+    for action in actions:
+        action_type = action.get("action", "move")
+        dest = action.get("dest")
+        # For rename, construct full destination path
+        computed_dest: str | None
+        if action_type == "rename" and dest is not None:
+            source = action["source"]  # pyright: ignore[reportTypedDictNotRequiredAccess]
+            if "." in source:
+                parent = ".".join(source.split(".")[:-1])
+                computed_dest = f"{parent}.{dest}"
+            else:
+                computed_dest = dest
+        else:
+            computed_dest = dest
+        # Check if dest is being moved/copied FROM (not just TO)
+        # Only error if dest is a source of another action
+        if (
+            action_type in ("move", "rename")
+            and computed_dest is not None
+            and (computed_dest in moved_from or computed_dest in copied_from)
+        ):
+            # But allow if dest is also a destination in other actions
+            # (it's being moved into, then moved from - this is valid)
+            # Only error if dest is ONLY a source (not also a destination)
+            # Check if dest appears as a destination in any other action
+            dest_is_also_destination = False
+            for other_action in actions:
+                if other_action is action:
+                    continue
+                other_dest = other_action.get("dest")
+                if other_dest is not None:
+                    # For rename actions, construct full destination path
+                    other_action_type = other_action.get("action", "move")
+                    if other_action_type == "rename":
+                        other_source = other_action["source"]  # pyright: ignore[reportTypedDictNotRequiredAccess]
+                        if "." in other_source:
+                            other_parent = ".".join(other_source.split(".")[:-1])
+                            other_computed_dest = f"{other_parent}.{other_dest}"
+                        else:
+                            other_computed_dest = other_dest
+                        if other_computed_dest == computed_dest:
+                            dest_is_also_destination = True
+                            break
+                    elif other_dest == computed_dest:
+                        dest_is_also_destination = True
+                        break
+            if not dest_is_also_destination:
+                msg = (
+                    f"Cannot {action_type} to '{computed_dest}' because it is being "
+                    f"moved or copied from in another action"
+                )
+                raise ValueError(msg)
+
+
+def validate_module_actions(
+    actions: list[ModuleActionFull],
+    original_modules: set[str],
+    detected_packages: set[str],  # noqa: ARG001
+    *,
+    scope: ModuleActionScope | None = None,
+) -> None:
+    """Validate module actions upfront.
+
+    For scope: "original" actions, validates against original module tree.
+    For scope: "shim" actions, validates incrementally (call after each action).
+
+    Args:
+        actions: List of actions to validate
+        original_modules: Set of original module names (for upfront validation)
+        detected_packages: Set of detected package names (for context)
+        scope: Optional scope filter - if provided, only validate actions
+            with this scope. If None, validate all actions.
+
+    Raises:
+        ValueError: For invalid operations
+    """
+    # Filter by scope if provided
+    filtered_actions = actions
+    if scope is not None:
+        filtered_actions = [
+            action for action in actions if action.get("scope") == scope
+        ]
+
+    if not filtered_actions:
+        return
+
+    # Determine available modules based on scope
+    # For "original" scope, use original_modules
+    # For "shim" scope, this will be called incrementally with current state
+    # For incremental validation, available_modules should be passed
+    # as the current state. For now, we'll use original_modules as
+    # a fallback, but this should be called with current state.
+    # This is a design note: incremental validation should be called
+    # with the current transformed module set.
+    available_modules = original_modules
+
+    # Validate each action's source exists
+    for action in filtered_actions:
+        action_scope = action.get("scope") or scope
+        validate_action_source_exists(action, available_modules, scope=action_scope)
+
+    # Validate no circular moves first (before dest conflicts)
+    # Circular moves can cause false dest conflicts
+    validate_no_circular_moves(filtered_actions)
+
+    # Validate each action's destination
+    # For mode-generated actions (scope: "original"), allow moving into
+    # the target package even if it exists. Extract target packages from
+    # actions that have scope: "original" and dest in existing_modules.
+    allowed_destinations: set[str] | None = None
+    if scope == "original" or scope is None:
+        # Check if any action is moving into an existing module
+        # This is allowed for mode-generated actions (target package)
+        for action in filtered_actions:
+            if action.get("scope") == "original":
+                dest = action.get("dest")
+                if dest is not None and dest in available_modules:
+                    if allowed_destinations is None:
+                        allowed_destinations = set()
+                    allowed_destinations.add(dest)
+
+    for action in filtered_actions:
+        action_scope = action.get("scope") or scope
+        validate_action_dest(
+            action,
+            available_modules,
+            allowed_destinations=allowed_destinations,
+            scope=action_scope,
+        )
+
+    # Validate no conflicting operations
+    validate_no_conflicting_operations(filtered_actions)
+
+
+def _transform_module_name(  # noqa: PLR0911
+    module_name: str,
+    source: str,
+    dest: str,
+    mode: ModuleActionMode,
+) -> str | None:
+    """Transform a single module name based on action.
+
+    Handles preserve vs flatten modes:
+    - preserve: Keep structure (apathetic_logs.utils -> grinch.utils)
+    - flatten: Remove intermediate levels (apathetic_logs.utils -> grinch)
+
+    Args:
+        module_name: The module name to transform
+        source: Source module path (e.g., "apathetic_logs")
+        dest: Destination module path (e.g., "grinch")
+        mode: Transformation mode ("preserve" or "flatten")
+
+    Returns:
+        Transformed module name, or None if module doesn't match source
+    """
+    # Check if module_name starts with source
+    if not module_name.startswith(source):
+        # Try component matching: check if all source components appear in module_name
+        # (e.g., "mypkg.module" should match "mypkg.pkg1.module")
+        source_parts = source.split(".")
+        module_parts = module_name.split(".")
+        # Check if first and last components of source match first and last of module
+        min_components_for_match = 2
+        if (
+            len(source_parts) >= min_components_for_match
+            and len(module_parts) >= min_components_for_match
+            and source_parts[0] == module_parts[0]
+            and source_parts[-1] == module_parts[-1]
+        ):
+            # Component matching: extract middle part(s) from module_name
+            # For "mypkg.module" matching "mypkg.pkg1.module":
+            # - source_parts = ["mypkg", "module"]
+            # - module_parts = ["mypkg", "pkg1", "module"]
+            # - middle_parts = ["pkg1"]
+            middle_parts = module_parts[1:-1]
+            if mode == "preserve":
+                # Preserve structure: dest + middle + last component
+                if middle_parts:
+                    return f"{dest}.{'.'.join(middle_parts)}.{source_parts[-1]}"
+                return f"{dest}.{source_parts[-1]}"
+            # mode == "flatten"
+            # Flatten: just dest (remove middle parts and last component)
+            return dest
+        return None
+
+    # Exact match: source -> dest
+    if module_name == source:
+        return dest
+
+    # Check if it's a submodule (must have a dot after source)
+    if not module_name.startswith(f"{source}."):
+        return None
+
+    # Extract the suffix (everything after source.)
+    suffix = module_name[len(source) + 1 :]
+
+    if mode == "preserve":
+        # Preserve structure: dest + suffix
+        return f"{dest}.{suffix}"
+
+    # mode == "flatten"
+    # Flatten: dest + last component only
+    # e.g., "apathetic_logs.utils.text" -> "grinch.text"
+    # e.g., "apathetic_logs.utils.schema.validator" -> "grinch.validator"
+    if "." in suffix:
+        # Multiple levels: take only the last component
+        last_component = suffix.split(".")[-1]
+        return f"{dest}.{last_component}"
+
+    # Single level: dest + suffix
+    return f"{dest}.{suffix}"
+
+
+def _apply_move_action(
+    module_names: list[str],
+    action: ModuleActionFull,
+) -> list[str]:
+    """Apply move action with preserve or flatten mode.
+
+    Moves modules from source to dest, removing source modules.
+    Handles preserve vs flatten modes.
+
+    Args:
+        module_names: List of module names to transform
+        action: Move action with source, dest, and mode
+
+    Returns:
+        Transformed list of module names
+    """
+    source = action["source"]  # pyright: ignore[reportTypedDictNotRequiredAccess]
+    dest = action.get("dest")
+    if dest is None:
+        msg = "Move action requires 'dest' field"
+        raise ValueError(msg)
+
+    mode = action.get("mode", "preserve")
+    if mode not in ("preserve", "flatten"):
+        msg = f"Invalid mode '{mode}', must be 'preserve' or 'flatten'"
+        raise ValueError(msg)
+
+    result: list[str] = []
+    for module_name in module_names:
+        transformed = _transform_module_name(module_name, source, dest, mode)
+        if transformed is not None:
+            # Replace source module with transformed name
+            result.append(transformed)
+        else:
+            # Keep modules that don't match source
+            result.append(module_name)
+
+    return result
+
+
+def _apply_copy_action(
+    module_names: list[str],
+    action: ModuleActionFull,
+) -> list[str]:
+    """Apply copy action (source remains, also appears at dest).
+
+    Copies modules from source to dest, keeping source modules.
+    Handles preserve vs flatten modes.
+
+    Args:
+        module_names: List of module names to transform
+        action: Copy action with source, dest, and mode
+
+    Returns:
+        Transformed list of module names (includes both original and copied)
+    """
+    source = action["source"]  # pyright: ignore[reportTypedDictNotRequiredAccess]
+    dest = action.get("dest")
+    if dest is None:
+        msg = "Copy action requires 'dest' field"
+        raise ValueError(msg)
+
+    mode = action.get("mode", "preserve")
+    if mode not in ("preserve", "flatten"):
+        msg = f"Invalid mode '{mode}', must be 'preserve' or 'flatten'"
+        raise ValueError(msg)
+
+    result: list[str] = []
+    for module_name in module_names:
+        # Always keep the original
+        result.append(module_name)
+
+        # Also add transformed version if it matches source
+        transformed = _transform_module_name(module_name, source, dest, mode)
+        if transformed is not None:
+            result.append(transformed)
+
+    return result
+
+
+def _apply_rename_action(
+    module_names: list[str],
+    action: ModuleActionFull,
+) -> list[str]:
+    """Apply rename action (rename only the last node in the dot sequence).
+
+    Renames the last component of the source module path. The dest field
+    contains only the new name (no dots). For example:
+    - source: "foo.bar.baz", dest: "new_name" -> "foo.bar.new_name"
+    - source: "foo", dest: "new_name" -> "new_name"
+
+    This is essentially a move action with validation that only allows
+    renaming the last node.
+
+    Args:
+        module_names: List of module names to transform
+        action: Rename action with source and dest (new name only)
+
+    Returns:
+        Transformed list of module names
+    """
+    source = action["source"]  # pyright: ignore[reportTypedDictNotRequiredAccess]
+    dest = action.get("dest")
+    if dest is None:
+        msg = "Rename action requires 'dest' field"
+        raise ValueError(msg)
+
+    # Construct full destination path: replace last component of source
+    if "." in source:
+        parent = ".".join(source.split(".")[:-1])
+        full_dest = f"{parent}.{dest}"
+    else:
+        # Top-level module: just use dest
+        full_dest = dest
+
+    # Rename acts like a move with preserve mode (keep structure)
+    # We use _transform_module_name with preserve mode to handle submodules
+    result: list[str] = []
+    for module_name in module_names:
+        transformed = _transform_module_name(module_name, source, full_dest, "preserve")
+        if transformed is not None:
+            # Replace source module with transformed name
+            result.append(transformed)
+        else:
+            # Keep modules that don't match source
+            result.append(module_name)
+
+    return result
+
+
+def _apply_delete_action(
+    module_names: list[str],
+    action: ModuleActionFull,
+) -> list[str]:
+    """Apply delete action (remove module and all submodules).
+
+    Removes the source module and all modules that start with source.
+
+    Args:
+        module_names: List of module names to transform
+        action: Delete action with source
+
+    Returns:
+        Filtered list of module names (deleted modules removed)
+    """
+    source = action["source"]  # pyright: ignore[reportTypedDictNotRequiredAccess]
+
+    result: list[str] = []
+    for module_name in module_names:
+        # Keep modules that don't match source
+        # Check exact match, starts with source., or source appears as component
+        if module_name == source:
+            # Exact match: delete it
+            continue
+        if module_name.startswith(f"{source}."):
+            # Submodule: delete it
+            continue
+        # Check if source appears as a component in module_name
+        # (e.g., "mypkg.pkg1" contains "pkg1" as a component)
+        if source in module_name.split("."):
+            # Source is a component: delete it
+            continue
+        # Keep this module
+        result.append(module_name)
+
+    return result
+
+
+def apply_single_action(
+    module_names: list[str],
+    action: ModuleActionFull,
+    detected_packages: set[str],  # noqa: ARG001
+) -> list[str]:
+    """Apply a single action to module names.
+
+    Routes to the appropriate action handler based on action type.
+
+    Args:
+        module_names: List of module names to transform
+        action: Action to apply
+        detected_packages: Set of detected package names (for context)
+
+    Returns:
+        Transformed list of module names
+
+    Raises:
+        ValueError: If action type is invalid or missing required fields
+    """
+    action_type = action.get("action", "move")
+
+    if action_type == "move":
+        return _apply_move_action(module_names, action)
+    if action_type == "copy":
+        return _apply_copy_action(module_names, action)
+    if action_type == "rename":
+        return _apply_rename_action(module_names, action)
+    if action_type == "delete":
+        return _apply_delete_action(module_names, action)
+    if action_type == "none":
+        # No-op action
+        return module_names
+
+    msg = (
+        f"Invalid action type '{action_type}', must be "
+        "'move', 'copy', 'delete', 'rename', or 'none'"
+    )
+    raise ValueError(msg)
+
+
+def apply_module_actions(
+    module_names: list[str],
+    actions: list[ModuleActionFull],
+    detected_packages: set[str],
+) -> list[str]:
+    """Apply module actions to transform module names.
+
+    Applies all actions in sequence to transform the module names list.
+    Each action is applied to the result of the previous action.
+
+    Args:
+        module_names: Initial list of module names
+        actions: List of actions to apply in order
+        detected_packages: Set of detected package names (for context)
+
+    Returns:
+        Transformed list of module names
+
+    Raises:
+        ValueError: For invalid operations
+    """
+    result = list(module_names)
+
+    # Apply each action in sequence
+    for action in actions:
+        result = apply_single_action(result, action, detected_packages)
+
+    return result
+
+
+def _generate_force_actions(  # noqa: PLR0912
+    detected_packages: set[str],
+    package_name: str,
+    mode: ModuleActionMode,
+    *,
+    module_names: list[str] | None = None,
+) -> list[ModuleActionFull]:
+    """Generate actions for force/force_flat modes.
+
+    For "preserve" mode: Only generates actions for top-level root packages.
+    For "flatten" mode: Generates actions for all first components of multi-level
+    module names to flatten all intermediate levels.
+
+    Args:
+        detected_packages: Set of all detected package names
+        package_name: Target package name (excluded from actions)
+        mode: "preserve" or "flatten"
+        module_names: Optional list of module names (required for flatten mode
+            to identify all first components that need flattening)
+
+    Returns:
+        List of actions for packages/modules to transform
+    """
+    actions: list[ModuleActionFull] = []
+
+    if mode == "flatten" and module_names is not None:
+        # For flatten mode, generate actions for all first components of
+        # multi-level module names to flatten all intermediate levels
+        first_components: set[str] = set()
+        for mod_name in module_names:
+            if "." in mod_name:
+                first_part = mod_name.split(".", 1)[0]
+                if first_part != package_name:
+                    first_components.add(first_part)
+
+        # Also include detected root packages that aren't package_name
+        root_packages = {pkg for pkg in detected_packages if "." not in pkg}
+        for pkg in root_packages:
+            if pkg != package_name:
+                first_components.add(pkg)
+
+        for component in sorted(first_components):
+            component_action: ModuleActionFull = {
+                "source": component,
+                "dest": package_name,
+                "mode": "flatten",
+            }
+            actions.append(set_mode_generated_action_defaults(component_action))
+    else:
+        # For preserve mode, only generate actions for top-level root packages
+        root_packages = {pkg for pkg in detected_packages if "." not in pkg}
+        # Filter to only top-level root packages (not nested under other packages)
+        top_level_packages: set[str] = set()
+        for pkg in root_packages:
+            if pkg == package_name:
+                continue
+            # Check if this package is nested under any other detected package
+            is_nested = False
+            for other_pkg in detected_packages:
+                # Check if pkg is nested under other_pkg
+                # e.g., if other_pkg="pkg1" and pkg="sub", check if "pkg1.sub"
+                # exists
+                if other_pkg not in (pkg, package_name) and (
+                    f"{other_pkg}.{pkg}" in detected_packages
+                    or any(
+                        mod.startswith(f"{other_pkg}.{pkg}.")
+                        for mod in detected_packages
+                    )
+                ):
+                    is_nested = True
+                    break
+            if not is_nested:
+                top_level_packages.add(pkg)
+
+        for pkg in sorted(top_level_packages):
+            action: ModuleActionFull = {
+                "source": pkg,
+                "dest": package_name,
+                "mode": mode,
+            }
+            actions.append(set_mode_generated_action_defaults(action))
+
+    return actions
+
+
+def _generate_unify_actions(
+    detected_packages: set[str],
+    package_name: str,
+) -> list[ModuleActionFull]:
+    """Generate actions for unify/unify_preserve modes.
+
+    Args:
+        detected_packages: Set of all detected package names
+        package_name: Target package name (excluded from actions)
+
+    Returns:
+        List of actions for all packages
+    """
+    actions: list[ModuleActionFull] = []
+    for pkg in sorted(detected_packages):
+        if pkg != package_name:
+            action: ModuleActionFull = {
+                "source": pkg,
+                "dest": f"{package_name}.{pkg}",
+                "mode": "preserve",
+            }
+            actions.append(set_mode_generated_action_defaults(action))
+    return actions
+
+
+def generate_actions_from_mode(
+    module_mode: str,
+    detected_packages: set[str],
+    package_name: str,
+    *,
+    module_names: list[str] | None = None,
+) -> list[ModuleActionFull]:
+    """Generate module_actions equivalent to a module_mode.
+
+    Converts module_mode presets into explicit actions that are prepended to
+    user-specified actions. Returns list of actions that would produce the
+    same result as the mode.
+
+    All generated actions have scope: "original".
+
+    Args:
+        module_mode: Mode value ("force", "force_flat", "unify", "multi", etc.)
+        detected_packages: Set of all detected package names
+        package_name: Target package name (excluded from actions)
+        module_names: Optional list of module names (required for flatten mode
+            to identify all first components that need flattening)
+
+    Returns:
+        List of actions equivalent to the mode
+
+    Raises:
+        ValueError: For invalid mode values
+    """
+    if module_mode == "force":
+        return _generate_force_actions(detected_packages, package_name, "preserve")
+
+    if module_mode == "force_flat":
+        return _generate_force_actions(
+            detected_packages, package_name, "flatten", module_names=module_names
+        )
+
+    if module_mode in ("unify", "unify_preserve"):
+        return _generate_unify_actions(detected_packages, package_name)
+
+    if module_mode in ("multi", "none", "flat"):
+        # multi: no actions needed (default behavior)
+        # none: no shims (handled separately via shim setting)
+        # flat: cannot be expressed as actions (requires file-level detection)
+        return []
+
+    msg = (
+        f"Invalid module_mode: {module_mode!r}. "
+        f"Must be one of: 'none', 'multi', 'force', 'force_flat', "
+        f"'unify', 'unify_preserve', 'flat'"
+    )
+    raise ValueError(msg)
+
+
+def separate_actions_by_affects(
+    actions: list[ModuleActionFull],
+) -> tuple[list[ModuleActionFull], list[ModuleActionFull], list[ModuleActionFull]]:
+    """Separate actions by affects value.
+
+    Args:
+        actions: List of actions to separate
+
+    Returns:
+        Tuple of (shims_only_actions, stitching_only_actions, both_actions)
+    """
+    shims_only: list[ModuleActionFull] = []
+    stitching_only: list[ModuleActionFull] = []
+    both: list[ModuleActionFull] = []
+
+    for action in actions:
+        affects = action.get("affects", "shims")
+        if affects == "shims":
+            shims_only.append(action)
+        elif affects == "stitching":
+            stitching_only.append(action)
+        elif affects == "both":
+            both.append(action)
+        else:
+            # Default to shims for backward compatibility
+            shims_only.append(action)
+
+    return shims_only, stitching_only, both
+
+
+def get_deleted_modules_from_actions(
+    actions: list[ModuleActionFull],
+    initial_modules: list[str],
+    detected_packages: set[str],  # noqa: ARG001
+) -> set[str]:
+    """Get set of modules that are deleted by actions.
+
+    Applies delete actions to determine which modules are removed.
+
+    Args:
+        actions: List of actions to apply
+        initial_modules: Initial list of module names
+        detected_packages: Set of detected package names (for context)
+
+    Returns:
+        Set of module names that are deleted
+    """
+    # Start with all initial modules
+    current_modules = set(initial_modules)
+
+    # Apply delete actions to track what gets deleted
+    for action in actions:
+        action_type = action.get("action", "move")
+        if action_type == "delete":
+            source = action["source"]  # pyright: ignore[reportTypedDictNotRequiredAccess]
+            # Remove source and all submodules
+            to_remove: set[str] = set()
+            for mod in current_modules:
+                if mod == source or mod.startswith(f"{source}."):
+                    to_remove.add(mod)
+            current_modules -= to_remove
+
+    # Return the difference (what was deleted)
+    initial_set = set(initial_modules)
+    return initial_set - current_modules
+
+
+def check_shim_stitching_mismatches(
+    shim_modules: set[str],
+    stitched_modules: set[str],
+    actions: list[ModuleActionFull],
+) -> list[tuple[ModuleActionFull, set[str]]]:
+    """Check for shims pointing to modules deleted from stitching.
+
+    Args:
+        shim_modules: Set of module names that have shims
+        stitched_modules: Set of module names that are in stitched code
+        actions: List of actions that were applied
+
+    Returns:
+        List of tuples (action, broken_shims) where broken_shims is the set
+        of shim module names that point to deleted modules
+    """
+    mismatches: list[tuple[ModuleActionFull, set[str]]] = []
+
+    # Find modules that have shims but are not in stitched code
+    broken_shims = shim_modules - stitched_modules
+
+    if not broken_shims:
+        return mismatches
+
+    # For each action, check if it could have caused the mismatch
+    # (i.e., if it deleted from stitching but not from shims)
+    for action in actions:
+        affects = action.get("affects", "shims")
+        action_type = action.get("action", "move")
+
+        # Only actions that affect stitching (but not shims) can cause mismatches
+        if affects in ("stitching", "both") and action_type == "delete":
+            source = action["source"]  # pyright: ignore[reportTypedDictNotRequiredAccess]
+            # Check if any broken shims match this action's source
+            # broken_shim is a full module path (e.g., "mypkg.pkg1.module"),
+            # source is a package/module name (e.g., "pkg1")
+            # We need to check if the broken shim belongs to the deleted package
+            action_broken_shims: set[str] = set()
+            for broken_shim in broken_shims:
+                # Check if broken shim matches source exactly
+                # Also check if source appears as a path component in broken_shim
+                # (e.g., "mypkg.pkg1.module" contains "pkg1" as a component)
+                if (
+                    broken_shim == source
+                    or broken_shim.endswith(f".{source}")
+                    or f".{source}." in broken_shim
+                    or broken_shim.startswith(f"{source}.")
+                    or source in broken_shim.split(".")
+                ):
+                    action_broken_shims.add(broken_shim)
+
+            if action_broken_shims:
+                mismatches.append((action, action_broken_shims))
+
+    return mismatches
+
+
+def apply_cleanup_behavior(
+    mismatches: list[tuple[ModuleActionFull, set[str]]],
+    shim_modules: set[str],
+) -> tuple[set[str], list[str]]:
+    """Apply cleanup behavior for shim-stitching mismatches.
+
+    Args:
+        mismatches: List of tuples (action, broken_shims) from
+            check_shim_stitching_mismatches
+        shim_modules: Set of all shim module names (will be modified)
+
+    Returns:
+        Tuple of (updated_shim_modules, warnings) where warnings is a list
+        of warning messages
+
+    Raises:
+        ValueError: If cleanup: "error" and mismatches exist
+    """
+    logger = get_app_logger()
+    warnings: list[str] = []
+    shims_to_remove: set[str] = set()
+
+    for action, broken_shims in mismatches:
+        cleanup = action.get("cleanup", "auto")
+        source = action["source"]  # pyright: ignore[reportTypedDictNotRequiredAccess]
+
+        if cleanup == "error":
+            # Raise error with clear message
+            broken_list = sorted(broken_shims)
+            affects_val = action.get("affects", "shims")
+            msg = (
+                f"Module action on '{source}' with affects='{affects_val}' "
+                f"and cleanup='error' created broken shims pointing to "
+                f"deleted modules: {', '.join(broken_list)}"
+            )
+            raise ValueError(msg)
+
+        if cleanup == "auto":
+            # Auto-delete broken shims
+            shims_to_remove.update(broken_shims)
+            if broken_shims:
+                broken_list = sorted(broken_shims)
+                warning_msg = (
+                    f"Auto-deleting broken shims for action on '{source}': "
+                    f"{', '.join(broken_list)}"
+                )
+                warnings.append(warning_msg)
+                logger.warning(warning_msg)
+
+        elif cleanup == "ignore":
+            # Keep broken shims (no action)
+            pass
+
+    # Remove broken shims
+    updated_shims = shim_modules - shims_to_remove
+
+    return updated_shims, warnings
 
 
 # === serger.config.config_resolve ===
@@ -3463,11 +4888,439 @@ class PyprojectMetadata:
     name: str = ""
     version: str = ""
     description: str = ""
-    license_text: str = ""
+    license_text: str = ""  # Combined license text
+    license_files: list[str] | None = None  # Additional license files (glob patterns)
+    authors: str = ""
 
     def has_any(self) -> bool:
         """Check if any metadata was found."""
-        return bool(self.name or self.version or self.description or self.license_text)
+        return bool(
+            self.name
+            or self.version
+            or self.description
+            or self.license_text
+            or self.authors
+        )
+
+
+def _extract_authors_from_project(project: dict[str, Any]) -> str:
+    """Extract authors from project dict and format as string.
+
+    Args:
+        project: Project section from pyproject.toml
+
+    Returns:
+        Formatted authors string (empty if no authors found)
+    """
+    authors_text = ""
+    authors_val = project.get("authors", [])
+    if isinstance(authors_val, list) and authors_val:
+        author_parts: list[str] = []
+        for author in authors_val:  # pyright: ignore[reportUnknownVariableType]
+            if isinstance(author, dict):  # pyright: ignore[reportUnnecessaryIsInstance]
+                author_name = author.get("name", "")  # pyright: ignore[reportUnknownVariableType,reportUnknownMemberType]
+                author_email = author.get("email", "")  # pyright: ignore[reportUnknownVariableType,reportUnknownMemberType]
+                if isinstance(author_name, str) and author_name:
+                    if isinstance(author_email, str) and author_email:
+                        author_parts.append(f"{author_name} <{author_email}>")
+                    else:
+                        author_parts.append(author_name)
+        if author_parts:
+            authors_text = ", ".join(author_parts)
+    return authors_text
+
+
+def _resolve_single_license_pattern(
+    pattern_str: str,
+    base_dir: Path,
+) -> list[Path]:
+    """Resolve a single license pattern to list of file paths.
+
+    Args:
+        pattern_str: Single file/glob pattern
+        base_dir: Base directory for resolving relative paths and globs
+
+    Returns:
+        List of resolved file paths (empty if no matches)
+    """
+    logger = get_app_logger()
+    if Path(pattern_str).is_absolute():
+        # Absolute path - use as-is but resolve
+        pattern_path = Path(pattern_str).resolve()
+        if pattern_path.is_file():
+            return [pattern_path]
+        if pattern_path.is_dir():
+            # Directory - skip (only files)
+            logger.warning(
+                "License pattern %r resolved to directory, skipping",
+                pattern_str,
+            )
+        return []
+    if has_glob_chars(pattern_str):
+        # Glob pattern - resolve relative to base_dir
+        all_matches = list(base_dir.glob(pattern_str))
+        return [p.resolve() for p in all_matches if p.is_file()]
+    # Literal file path - resolve relative to base_dir
+    file_path = (base_dir / pattern_str).resolve()
+    if file_path.exists() and file_path.is_file():
+        return [file_path]
+    return []
+
+
+def _check_duplicate_license_files(
+    pattern_to_files: dict[str, list[Path]],
+) -> None:
+    """Check for and log duplicate license files matched by multiple patterns.
+
+    Args:
+        pattern_to_files: Mapping of patterns to their matched files
+    """
+    logger = get_app_logger()
+    # Build reverse mapping: file -> patterns that matched it
+    file_to_patterns: dict[Path, list[str]] = {}
+    for pattern_str, files in pattern_to_files.items():
+        for file_path in files:
+            if file_path not in file_to_patterns:
+                file_to_patterns[file_path] = []
+            file_to_patterns[file_path].append(pattern_str)
+
+    # Find duplicates
+    duplicates = {
+        file_path: pattern_list
+        for file_path, pattern_list in file_to_patterns.items()
+        if len(pattern_list) > 1
+    }
+    if duplicates:
+        for file_path, pattern_list in sorted(duplicates.items()):
+            logger.warning(
+                "License file %s matched by multiple patterns: %s. Using file once.",
+                file_path,
+                ", ".join(sorted(pattern_list)),
+            )
+
+
+def _read_license_files(matched_files: set[Path]) -> list[str]:
+    """Read contents of all matched license files.
+
+    Args:
+        matched_files: Set of file paths to read
+
+    Returns:
+        List of file contents (empty strings for failed reads)
+    """
+    logger = get_app_logger()
+    text_parts: list[str] = []
+    for file_path in sorted(matched_files):
+        try:
+            content = file_path.read_text(encoding="utf-8")
+            text_parts.append(content)
+        except (OSError, UnicodeDecodeError) as e:  # noqa: PERF203
+            # PERF203: try/except in loop is intentional - we need to handle
+            # errors per file and continue processing other files
+            logger.warning(
+                "Failed to read license file %s: %s. Skipping file.",
+                file_path,
+                e,
+            )
+    return text_parts
+
+
+def _handle_missing_license_patterns(
+    patterns: list[str],
+    pattern_to_files: dict[str, list[Path]],
+    base_dir: Path,
+) -> list[str]:
+    """Handle missing license patterns and return warning messages.
+
+    Args:
+        patterns: Original list of patterns
+        pattern_to_files: Mapping of patterns to their matched files
+        base_dir: Base directory for logging
+
+    Returns:
+        List of warning messages for missing patterns
+    """
+    logger = get_app_logger()
+    missing_patterns = [
+        pattern_str
+        for pattern_str in patterns
+        if pattern_str not in pattern_to_files or not pattern_to_files[pattern_str]
+    ]
+
+    if not missing_patterns:
+        return []
+
+    warning_messages: list[str] = []
+    for pattern_str in sorted(missing_patterns):
+        logger.warning(
+            "License file/pattern not found: %s (resolved from %s)",
+            pattern_str,
+            base_dir,
+        )
+        warning_messages.append(
+            f"See {pattern_str} if distributed alongside this file "
+            "for additional terms."
+        )
+    return warning_messages
+
+
+def _resolve_license_file_or_pattern(
+    pattern: str | list[str],
+    base_dir: Path,
+) -> str:
+    """Resolve license file(s) or glob pattern(s) to combined text.
+
+    Resolves glob patterns to actual files (only files, not directories),
+    deduplicates if same file matched multiple times, follows symlinks,
+    and reads file contents (UTF-8 encoding).
+
+    Args:
+        pattern: Single file/glob pattern or list of file/glob patterns
+        base_dir: Base directory for resolving relative paths and globs
+
+    Returns:
+        Combined text from all matched files, or warning message for missing
+        files/patterns
+    """
+    patterns: list[str] = [pattern] if isinstance(pattern, str) else pattern
+
+    if not patterns:
+        return ""
+
+    # Collect all matched files (deduplicated)
+    matched_files: set[Path] = set()
+    pattern_to_files: dict[str, list[Path]] = {}
+
+    for pattern_str in patterns:
+        files = _resolve_single_license_pattern(pattern_str, base_dir)
+        matched_files.update(files)
+        pattern_to_files[pattern_str] = files
+
+    # Check for duplicates
+    _check_duplicate_license_files(pattern_to_files)
+
+    # Read all matched files
+    text_parts = _read_license_files(matched_files)
+
+    # Handle missing patterns/files
+    warning_messages = _handle_missing_license_patterns(
+        patterns, pattern_to_files, base_dir
+    )
+    text_parts.extend(warning_messages)
+
+    return "\n\n".join(text_parts) if text_parts else ""
+
+
+def _resolve_license_files_patterns(  # pyright: ignore[reportUnusedFunction]
+    patterns: list[str],
+    base_dir: Path,
+) -> str:
+    """Resolve list of license file glob patterns to combined text.
+
+    Resolves glob patterns to actual files (only files, not directories),
+    deduplicates if same file matched multiple times, follows symlinks,
+    and reads file contents (UTF-8 encoding).
+
+    Args:
+        patterns: List of glob patterns for license files
+        base_dir: Base directory for resolving relative paths and globs
+
+    Returns:
+        Combined text from all matched files (to be appended to license text)
+
+    Note: This function will be used in Phase 3 and Phase 4 of license
+    support implementation.
+    """
+    return _resolve_license_file_or_pattern(patterns, base_dir)
+
+
+def _resolve_license_file_value(file_val: Any, base_dir: Path) -> str:
+    """Resolve license file value (str or list[str]) to text.
+
+    Args:
+        file_val: File value from license dict (str or list[str])
+        base_dir: Base directory for resolving relative paths and globs
+
+    Returns:
+        Combined text from resolved files (empty string if none found)
+    """
+    if file_val is None:
+        return ""
+
+    if isinstance(file_val, str):
+        return _resolve_license_file_or_pattern(file_val, base_dir)
+
+    if isinstance(file_val, list):
+        # Convert to list of strings
+        pattern_list: list[str] = []
+        for item in file_val:  # pyright: ignore[reportUnknownVariableType]
+            if isinstance(item, str):
+                pattern_list.append(item)
+            elif item is not None:
+                pattern_list.append(str(item))  # pyright: ignore[reportUnknownArgumentType]
+        if pattern_list:
+            return _resolve_license_file_or_pattern(pattern_list, base_dir)
+
+    return ""
+
+
+def _extract_license_from_project(license_val: Any, base_dir: Path) -> str:
+    """Extract license text from project license field.
+
+    Handles string format and dict format with file/text/expression keys.
+    Priority: text > expression > file.
+
+    Args:
+        license_val: License value from project dict (str or dict)
+        base_dir: Base directory for resolving relative paths and globs
+
+    Returns:
+        Combined license text (empty string if no license found)
+    """
+    if isinstance(license_val, str):
+        # String format: Store as-is
+        return license_val
+
+    if not isinstance(license_val, dict):
+        return ""
+
+    # Dict format: Handle text, expression, and file keys
+    # Priority: text > expression > file
+    text_parts: list[str] = []
+
+    # Check for text key (highest priority)
+    if "text" in license_val:
+        text_val = license_val.get("text")  # pyright: ignore[reportUnknownVariableType,reportUnknownMemberType]
+        if isinstance(text_val, str) and text_val:
+            text_parts.append(text_val)
+    # Check for expression key (alias for text, second priority)
+    elif "expression" in license_val:
+        expr_val = license_val.get("expression")  # pyright: ignore[reportUnknownVariableType,reportUnknownMemberType]
+        if isinstance(expr_val, str) and expr_val:
+            text_parts.append(expr_val)
+
+    # Check for file key (lowest priority, only if text/expression not present)
+    if not text_parts and "file" in license_val:
+        file_val = license_val.get("file")  # pyright: ignore[reportUnknownVariableType,reportUnknownMemberType]
+        resolved_text = _resolve_license_file_value(file_val, base_dir)
+        if resolved_text:
+            text_parts.append(resolved_text)
+
+    # Combine all text parts
+    if text_parts:
+        return "\n\n".join(text_parts)
+
+    return ""
+
+
+def _extract_license_files_from_project(
+    license_files_val: Any,
+) -> list[str] | None:
+    """Extract license-files field from project dict.
+
+    Args:
+        license_files_val: License-files value from project dict
+
+    Returns:
+        List of license file patterns, or None if not present
+    """
+    if license_files_val is None:
+        return None
+
+    if isinstance(license_files_val, list):
+        # Convert to list of strings
+        license_files: list[str] = []
+        for item in license_files_val:  # pyright: ignore[reportUnknownVariableType]
+            if isinstance(item, str):
+                license_files.append(item)
+            elif item is not None:
+                license_files.append(str(item))  # pyright: ignore[reportUnknownArgumentType]
+        return license_files if license_files else None
+
+    if isinstance(license_files_val, str):
+        # Single string pattern
+        return [license_files_val]
+
+    return None
+
+
+def _resolve_license_dict_value(
+    license_dict: dict[str, str | list[str]], base_dir: Path
+) -> str:
+    """Resolve license dict to text using priority: text > expression > file.
+
+    Args:
+        license_dict: License dict with text/expression/file keys
+        base_dir: Base directory for resolving relative paths and globs
+
+    Returns:
+        Resolved license text (empty string if none found)
+    """
+    # Check for text key (highest priority)
+    if "text" in license_dict:
+        text_val = license_dict.get("text")  # pyright: ignore[reportUnknownVariableType,reportUnknownMemberType]
+        if isinstance(text_val, str) and text_val:
+            return text_val
+    # Check for expression key (alias for text, second priority)
+    if "expression" in license_dict:
+        expr_val = license_dict.get("expression")  # pyright: ignore[reportUnknownVariableType,reportUnknownMemberType]
+        if isinstance(expr_val, str) and expr_val:
+            return expr_val
+    # Check for file key (lowest priority, only if text/expression not present)
+    if "file" in license_dict:
+        file_val = license_dict.get("file")  # pyright: ignore[reportUnknownVariableType,reportUnknownMemberType]
+        return _resolve_license_file_value(file_val, base_dir)
+    return ""
+
+
+def _resolve_license_field(
+    license_val: str | dict[str, str | list[str]] | None,
+    license_files_val: list[str] | None,
+    base_dir: Path,
+) -> str:
+    """Resolve license field (string or dict) and license_files to combined text.
+
+    Processing order: license field first, then license_files.
+
+    Args:
+        license_val: License value from config (str or dict)
+        license_files_val: License files patterns from config (list of glob patterns)
+        base_dir: Base directory for resolving relative paths and globs
+
+    Returns:
+        Combined license text (always non-empty, uses fallback if needed)
+    """
+    text_parts: list[str] = []
+
+    # Process license field first
+    if license_val is not None:
+        if isinstance(license_val, str):
+            # String format: Store as-is
+            if license_val:
+                text_parts.append(license_val)
+        else:
+            # Dict format: Resolve using priority
+            # pyright: ignore[reportUnnecessaryIsInstance] - needed for type narrowing
+            resolved_text = _resolve_license_dict_value(license_val, base_dir)
+            if resolved_text:
+                text_parts.append(resolved_text)
+
+    # Then process license_files field (append to license result)
+    if license_files_val:
+        resolved_files_text = _resolve_license_files_patterns(
+            license_files_val, base_dir
+        )
+        if resolved_files_text:
+            text_parts.append(resolved_files_text)
+
+    # Combine all text parts
+    combined_text = "\n\n".join(text_parts) if text_parts else ""
+
+    # Final fallback: If empty, use DEFAULT_LICENSE_FALLBACK
+    if not combined_text:
+        combined_text = DEFAULT_LICENSE_FALLBACK
+
+    return combined_text
 
 
 def extract_pyproject_metadata(
@@ -3475,13 +5328,14 @@ def extract_pyproject_metadata(
 ) -> PyprojectMetadata | None:
     """Extract metadata from pyproject.toml file.
 
-    Extracts name, version, description, and license from the [project] section.
-    Uses load_toml() utility which supports Python 3.10 and 3.11+.
+    Extracts name, version, description, license, and authors from the
+    [project] section. Uses load_toml() utility which supports Python 3.10
+    and 3.11+.
 
     Args:
         pyproject_path: Path to pyproject.toml file
-        required: If True, raise RuntimeError when tomli is missing on Python 3.10.
-                  If False, return None when unavailable.
+        required: If True, raise RuntimeError when tomli is missing on
+                  Python 3.10. If False, return None when unavailable.
 
     Returns:
         PyprojectMetadata with extracted fields (empty strings if not found),
@@ -3508,71 +5362,110 @@ def extract_pyproject_metadata(
     version = project.get("version", "")
     description = project.get("description", "")
 
-    # Handle license (can be string or dict with "file" key)
-    license_text = ""
+    # Handle license (can be string or dict with file/text/expression keys)
     license_val = project.get("license")
-    if isinstance(license_val, str):
-        license_text = license_val
-    elif isinstance(license_val, dict) and "file" in license_val:
-        file_val = license_val.get("file")  # pyright: ignore[reportUnknownVariableType,reportUnknownMemberType]
-        if isinstance(file_val, str):
-            filename = file_val
-        else:
-            filename = str(file_val) if file_val is not None else "LICENSE"  # pyright: ignore[reportUnknownArgumentType]
-        license_text = f"See {filename} if distributed alongside this script"
+    license_text = _extract_license_from_project(license_val, pyproject_path.parent)
+
+    # Extract license-files field (list of glob patterns)
+    license_files_val = project.get("license-files")
+    license_files = _extract_license_files_from_project(license_files_val)
+
+    # Extract authors
+    authors_text = _extract_authors_from_project(project)
 
     return PyprojectMetadata(
         name=name if isinstance(name, str) else "",
         version=version if isinstance(version, str) else "",
         description=description if isinstance(description, str) else "",
         license_text=license_text,
+        license_files=license_files,
+        authors=authors_text,
     )
 
 
-def _should_use_pyproject(
-    build_cfg: BuildConfig,
+def _is_configless_build(root_cfg: RootConfig | None) -> bool:
+    """Check if this is a configless build (no config file).
+
+    Configless builds are detected by checking if root_cfg is minimal:
+    has no include/exclude/out/package/order fields (set via CLI).
+
+    Args:
+        root_cfg: Root config (may be None)
+
+    Returns:
+        True if this is a configless build, False otherwise
+    """
+    if root_cfg is None:
+        return True
+    # Check if root_cfg is minimal (empty or only has minimal fields)
+    # This indicates a configless build created in cli.py
+    root_keys = set(root_cfg.keys())
+    # Configless builds have no include/exclude/out fields (set via CLI)
+    has_build_fields = any(
+        key in root_keys for key in ("include", "exclude", "out", "package", "order")
+    )
+    return not has_build_fields
+
+
+def _should_use_pyproject_metadata(
+    build_cfg: RootConfig,
     root_cfg: RootConfig | None,
-    num_builds: int,
 ) -> bool:
-    """Determine if pyproject.toml should be used for this build.
+    """Determine if pyproject.toml metadata should be extracted for this build.
+
+    Pyproject.toml metadata is used by default (DEFAULT_USE_PYPROJECT_METADATA) unless
+    explicitly disabled. Explicit enablement (use_pyproject_metadata=True or
+    pyproject_path set) always takes precedence and enables it even if it would
+    otherwise be disabled.
+
+    Note: Package name is always extracted from pyproject.toml (if available) for
+    resolution purposes, regardless of this setting. This setting only controls
+    extraction of other metadata (display_name, description, authors, license, version).
 
     Args:
         build_cfg: Build config
         root_cfg: Root config (may be None)
-        num_builds: Number of builds in root config
 
     Returns:
         True if pyproject.toml should be used, False otherwise
     """
-    build_use_pyproject = build_cfg.get("use_pyproject")
-    root_use_pyproject = (root_cfg or {}).get("use_pyproject")
+    root_use_pyproject_metadata = (root_cfg or {}).get("use_pyproject_metadata")
+    root_pyproject_path = (root_cfg or {}).get("pyproject_path")
+    build_use_pyproject_metadata = build_cfg.get("use_pyproject_metadata")
     build_pyproject_path = build_cfg.get("pyproject_path")
 
-    # Determine if this build has opted in
-    build_opted_in = False
-    if isinstance(build_use_pyproject, bool):
-        build_opted_in = build_use_pyproject
-    elif build_pyproject_path:
-        # Specifying a path is an implicit opt-in
-        build_opted_in = True
+    # Check if this is a configless build
+    is_configless = _is_configless_build(root_cfg)
 
-    if num_builds > 1:
-        # Multi-build: build must explicitly opt-in
-        return build_opted_in
+    # Build-level explicit disablement always takes precedence
+    if build_use_pyproject_metadata is False:
+        return False
 
-    # Single build: use root/default settings unless build explicitly opts out
-    if isinstance(build_use_pyproject, bool):
-        return build_use_pyproject
-    if build_pyproject_path:
+    # Root-level explicit disablement takes precedence unless build overrides
+    # (build-level pyproject_path is considered an override)
+    if root_use_pyproject_metadata is False and build_pyproject_path is None:
+        return False
+
+    # For configless builds, use DEFAULT_USE_PYPROJECT_METADATA (unless disabled above)
+    if is_configless:
+        return DEFAULT_USE_PYPROJECT_METADATA
+
+    # For non-configless builds, also use DEFAULT_USE_PYPROJECT_METADATA unless
+    # explicitly disabled (but allow explicit enablement to override)
+    if (
+        root_use_pyproject_metadata is True
+        or root_pyproject_path is not None
+        or build_use_pyproject_metadata is True
+        or build_pyproject_path is not None
+    ):
         return True
-    # Use root setting or default
-    if isinstance(root_use_pyproject, bool):
-        return root_use_pyproject
-    return DEFAULT_USE_PYPROJECT
+
+    # Default to DEFAULT_USE_PYPROJECT_METADATA for non-configless builds too
+    return DEFAULT_USE_PYPROJECT_METADATA
 
 
 def _resolve_pyproject_path(
-    build_cfg: BuildConfig,
+    build_cfg: RootConfig,
     root_cfg: RootConfig | None,
     config_dir: Path,
 ) -> Path:
@@ -3599,108 +5492,402 @@ def _resolve_pyproject_path(
     return config_dir / "pyproject.toml"
 
 
-def _is_explicitly_requested(
-    build_cfg: BuildConfig,
-    root_cfg: RootConfig | None,
-) -> bool:
-    """Check if pyproject.toml was explicitly requested (not just default).
+def validate_and_normalize_module_actions(  # noqa: C901, PLR0912, PLR0915
+    module_actions: ModuleActions,
+    config_dir: Path | None = None,
+) -> list[ModuleActionFull]:
+    """Validate and normalize module_actions to list format.
+
+    Applies all default values and validates all fields. Returns fully resolved
+    actions with all fields present (defaults applied).
 
     Args:
-        build_cfg: Build config
-        root_cfg: Root config (may be None)
+        module_actions: Either dict format (simple) or list format (full)
+        config_dir: Optional config directory for resolving relative source_path
+            paths. If None, paths are resolved relative to current working directory.
 
     Returns:
-        True if explicitly requested, False if just default behavior
-    """
-    build_use_pyproject = build_cfg.get("use_pyproject")
-    root_use_pyproject = (root_cfg or {}).get("use_pyproject")
-    build_pyproject_path = build_cfg.get("pyproject_path")
-    root_pyproject_path = (root_cfg or {}).get("pyproject_path")
-
-    return (
-        isinstance(build_use_pyproject, bool)
-        or build_pyproject_path is not None
-        or isinstance(root_use_pyproject, bool)
-        or root_pyproject_path is not None
-    )
-
-
-def _extract_pyproject_metadata_safe(
-    pyproject_path: Path,
-    *,
-    explicitly_requested: bool,
-) -> PyprojectMetadata:
-    """Extract metadata from pyproject.toml with error handling.
-
-    Args:
-        pyproject_path: Path to pyproject.toml
-        explicitly_requested: Whether pyproject was explicitly requested
-
-    Returns:
-        PyprojectMetadata object (may be empty if unavailable)
+        Normalized list of ModuleActionFull with all fields present
 
     Raises:
-        RuntimeError: If explicitly requested and TOML parsing unavailable
+        ValueError: If validation fails
+        TypeError: If types are invalid
     """
-    logger = get_app_logger()
+    valid_action_types = literal_to_set(ModuleActionType)
+    valid_action_modes = literal_to_set(ModuleActionMode)
+    valid_action_scopes = literal_to_set(ModuleActionScope)
+    valid_action_affects = literal_to_set(ModuleActionAffects)
+    valid_action_cleanups = literal_to_set(ModuleActionCleanup)
 
-    try:
-        metadata = extract_pyproject_metadata(
-            pyproject_path, required=explicitly_requested
-        )
-    except RuntimeError as e:
-        # If explicitly requested and TOML parsing unavailable, re-raise
-        if explicitly_requested:
-            xmsg = (
-                "pyproject.toml support was explicitly requested but "
-                f"TOML parsing is unavailable. {e!s}"
-            )
-            raise RuntimeError(xmsg) from e
-        # If not explicitly requested, this shouldn't happen (should return None)
-        raise
+    if isinstance(module_actions, dict):
+        # Simple format: dict[str, str | None]
+        # Convert to list format with defaults applied
+        # {"old": "new"} -> move action
+        # {"old": None} -> delete action
+        result: list[ModuleActionFull] = []
+        for key, value in sorted(module_actions.items()):
+            if not isinstance(key, str):  # pyright: ignore[reportUnnecessaryIsInstance]
+                msg = (
+                    f"module_actions dict keys must be strings, "
+                    f"got {type(key).__name__}"
+                )
+                raise TypeError(msg)
+            if value is not None and not isinstance(value, str):  # pyright: ignore[reportUnnecessaryIsInstance]
+                msg = (
+                    f"module_actions dict values must be strings or None, "
+                    f"got {type(value).__name__}"
+                )
+                raise ValueError(msg)
 
-    if metadata is None:
-        # TOML parsing unavailable but not explicitly requested - warn and skip
-        logger.warning(
-            "pyproject.toml found but TOML parsing unavailable "
-            "(Python 3.10 requires 'tomli'). "
-            "Skipping metadata extraction. Install 'tomli' to enable, "
-            "or explicitly set 'use_pyproject: false' to disable this warning."
-        )
-        # Create empty metadata object
-        metadata = PyprojectMetadata()
+            # Validate source is non-empty
+            if not key:
+                msg = "module_actions dict keys (source) must be non-empty strings"
+                raise ValueError(msg)
 
-    return metadata
+            # Build normalized action with defaults
+            # Dict format: {"old": "new"} -> move, {"old": None} -> delete
+            if value is not None:
+                # Move action: {"old": "new"}
+                normalized: ModuleActionFull = {
+                    "source": key,
+                    "dest": value,
+                    "action": "move",
+                    "mode": "preserve",
+                    "scope": "shim",  # Explicitly set for dict format (per Q4)
+                    "affects": "shims",
+                    "cleanup": "auto",
+                }
+            else:
+                # Delete action: {"old": None}
+                normalized = {
+                    "source": key,
+                    "action": "delete",
+                    "mode": "preserve",
+                    "scope": "shim",  # Explicitly set for dict format (per Q4)
+                    "affects": "shims",
+                    "cleanup": "auto",
+                }
+            result.append(normalized)
+        return result
+
+    if isinstance(module_actions, list):  # pyright: ignore[reportUnnecessaryIsInstance]
+        # Full format: list[ModuleActionFull]
+        # Validate each item, then apply defaults
+        result_list: list[ModuleActionFull] = []
+        for idx, action in enumerate(module_actions):
+            if not isinstance(action, dict):  # pyright: ignore[reportUnnecessaryIsInstance]
+                msg = (
+                    f"module_actions list items must be dicts, "
+                    f"got {type(action).__name__} at index {idx}"
+                )
+                raise TypeError(msg)
+
+            # Validate required 'source' key
+            if "source" not in action:
+                msg = f"module_actions[{idx}] missing required 'source' key"
+                raise ValueError(msg)
+            source_val = action["source"]
+            if not isinstance(source_val, str):  # pyright: ignore[reportUnnecessaryIsInstance]
+                msg = (
+                    f"module_actions[{idx}]['source'] must be a string, "
+                    f"got {type(source_val).__name__}"
+                )
+                raise TypeError(msg)
+            # Validate source is non-empty
+            if not source_val:
+                msg = f"module_actions[{idx}]['source'] must be a non-empty string"
+                raise ValueError(msg)
+
+            # Validate and normalize action type
+            action_val = action.get("action", "move")
+            # Normalize "none" to "delete" (alias)
+            if action_val == "none":
+                action_val = "delete"
+            if action_val not in valid_action_types:
+                valid_str = ", ".join(repr(v) for v in sorted(valid_action_types))
+                msg = (
+                    f"module_actions[{idx}]['action'] invalid: {action_val!r}. "
+                    f"Must be one of: {valid_str}"
+                )
+                raise ValueError(msg)
+
+            # Validate mode if present
+            if "mode" in action:
+                mode_val = action["mode"]
+                if mode_val not in valid_action_modes:
+                    valid_str = ", ".join(repr(v) for v in sorted(valid_action_modes))
+                    msg = (
+                        f"module_actions[{idx}]['mode'] invalid: {mode_val!r}. "
+                        f"Must be one of: {valid_str}"
+                    )
+                    raise ValueError(msg)
+
+            # Validate scope if present
+            if "scope" in action:
+                scope_val = action["scope"]
+                if scope_val not in valid_action_scopes:
+                    valid_str = ", ".join(repr(v) for v in sorted(valid_action_scopes))
+                    msg = (
+                        f"module_actions[{idx}]['scope'] invalid: {scope_val!r}. "
+                        f"Must be one of: {valid_str}"
+                    )
+                    raise ValueError(msg)
+
+            # Validate affects if present
+            if "affects" in action:
+                affects_val = action["affects"]
+                if affects_val not in valid_action_affects:
+                    valid_str = ", ".join(repr(v) for v in sorted(valid_action_affects))
+                    msg = (
+                        f"module_actions[{idx}]['affects'] invalid: {affects_val!r}. "
+                        f"Must be one of: {valid_str}"
+                    )
+                    raise ValueError(msg)
+
+            # Validate cleanup if present
+            if "cleanup" in action:
+                cleanup_val = action["cleanup"]
+                if cleanup_val not in valid_action_cleanups:
+                    valid_str = ", ".join(
+                        repr(v) for v in sorted(valid_action_cleanups)
+                    )
+                    msg = (
+                        f"module_actions[{idx}]['cleanup'] invalid: {cleanup_val!r}. "
+                        f"Must be one of: {valid_str}"
+                    )
+                    raise ValueError(msg)
+
+            # Validate source_path if present
+            source_path_resolved_str: str | None = None
+            if "source_path" in action:
+                source_path_val = action["source_path"]
+                if not isinstance(source_path_val, str):  # pyright: ignore[reportUnnecessaryIsInstance]
+                    msg = (
+                        f"module_actions[{idx}]['source_path'] must be a string, "
+                        f"got {type(source_path_val).__name__}"
+                    )
+                    raise TypeError(msg)
+                if not source_path_val:
+                    msg = (
+                        f"module_actions[{idx}]['source_path'] must be a "
+                        f"non-empty string if present"
+                    )
+                    raise ValueError(msg)
+
+                # Resolve to absolute path (relative to config_dir if provided)
+                if config_dir is not None:
+                    if Path(source_path_val).is_absolute():
+                        source_path_resolved = Path(source_path_val).resolve()
+                    else:
+                        source_path_resolved = (config_dir / source_path_val).resolve()
+                else:
+                    source_path_resolved = Path(source_path_val).resolve()
+
+                # Get affects value to determine if we need to validate file existence
+                affects_val = action.get("affects", "shims")
+                # Always validate module name matching (even for shims-only actions)
+                # but only validate file existence if affects includes "stitching"
+                if "stitching" in affects_val or affects_val == "both":
+                    # Validate file exists (if affects includes "stitching")
+                    if not source_path_resolved.exists():
+                        msg = (
+                            f"module_actions[{idx}]['source_path'] file "
+                            f"does not exist: {source_path_resolved}"
+                        )
+                        raise ValueError(msg)
+
+                    # Validate is Python file
+                    if source_path_resolved.suffix != ".py":
+                        msg = (
+                            f"module_actions[{idx}]['source_path'] must be a "
+                            f"Python file (.py extension), got: {source_path_resolved}"
+                        )
+                        raise ValueError(msg)
+
+                # Extract module name from file and verify it matches source
+                # Use file's parent directory as package root for validation
+                # (since source_path files may not be in normal include set)
+                # This validation happens for all affects values to ensure
+                # source matches
+                if (
+                    source_path_resolved.exists()
+                    and source_path_resolved.suffix == ".py"
+                ):
+                    package_root_for_validation = source_path_resolved.parent
+                    try:
+                        extract_module_name_from_source_path(
+                            source_path_resolved,
+                            package_root_for_validation,
+                            source_val,
+                        )
+                    except ValueError as e:
+                        msg = (
+                            f"module_actions[{idx}]['source_path'] "
+                            f"validation failed: {e!s}"
+                        )
+                        raise ValueError(msg) from e
+
+                # Store resolved absolute path for later use
+                source_path_resolved_str = str(source_path_resolved)
+
+            # Validate dest based on action type (per Q5)
+            dest_val = action.get("dest")
+            if action_val in ("move", "copy", "rename"):
+                # dest is required for move/copy/rename
+                if dest_val is None:
+                    msg = (
+                        f"module_actions[{idx}]: 'dest' is required for "
+                        f"'{action_val}' action"
+                    )
+                    raise ValueError(msg)
+                if not isinstance(dest_val, str):  # pyright: ignore[reportUnnecessaryIsInstance]
+                    msg = (
+                        f"module_actions[{idx}]['dest'] must be a string, "
+                        f"got {type(dest_val).__name__}"
+                    )
+                    raise TypeError(msg)
+                # For rename, validate that dest doesn't contain dots
+                if action_val == "rename" and "." in dest_val:
+                    msg = (
+                        f"module_actions[{idx}]['dest'] for 'rename' action "
+                        f"must not contain dots. Got dest='{dest_val}'. "
+                        f"Use 'move' action to move modules down the tree"
+                    )
+                    raise ValueError(msg)
+            elif action_val == "delete":
+                # dest must NOT be present for delete
+                if dest_val is not None:
+                    msg = (
+                        f"module_actions[{idx}]: 'dest' must not be present "
+                        f"for 'delete' action"
+                    )
+                    raise ValueError(msg)
+
+            # Build normalized action with all defaults applied (per Q1/Q2)
+            normalized_action: ModuleActionFull = {
+                "source": source_val,
+                "action": action_val,  # Already normalized ("none" -> "delete")
+                "mode": action.get("mode", "preserve"),
+                # Default for user actions (per Q3)
+                "scope": action.get("scope", "shim"),
+                "affects": action.get("affects", "shims"),
+                "cleanup": action.get("cleanup", "auto"),
+            }
+            # Add dest only if present (required for move/copy, not for delete)
+            if dest_val is not None:
+                normalized_action["dest"] = dest_val
+            # Add source_path only if present (store resolved absolute path)
+            if "source_path" in action:
+                if source_path_resolved_str is not None:
+                    normalized_action["source_path"] = source_path_resolved_str
+                else:
+                    # This shouldn't happen, but handle it just in case
+                    source_path_val = action["source_path"]
+                    if config_dir is not None:
+                        if Path(source_path_val).is_absolute():
+                            source_path_resolved = Path(source_path_val).resolve()
+                        else:
+                            source_path_resolved = (
+                                config_dir / source_path_val
+                            ).resolve()
+                    else:
+                        source_path_resolved = Path(source_path_val).resolve()
+                    normalized_action["source_path"] = str(source_path_resolved)
+
+            result_list.append(normalized_action)
+
+        return result_list
+
+    msg = f"module_actions must be dict or list, got {type(module_actions).__name__}"
+    raise ValueError(msg)
 
 
 def _apply_metadata_fields(
     resolved_cfg: dict[str, Any],
     metadata: PyprojectMetadata,
     pyproject_path: Path,
+    *,
+    explicitly_requested: bool,
 ) -> None:
     """Apply extracted metadata fields to resolved config.
+
+    Pyproject.toml metadata is always a fallback - it only fills missing fields.
+    User-set values (empty strings or non-empty strings) always take precedence
+    and are never overwritten.
+
+    Note: Empty strings ("") in config are preserved as they represent an
+    intentional choice. None or missing fields can be filled by pyproject.
+
+    Note: Package name is NOT set here - it's handled in _apply_pyproject_metadata()
+    and is always extracted if available, regardless of use_pyproject_metadata.
+
+    Note: description, authors, and license are only applied when
+    explicitly_requested is True (use_pyproject_metadata=True or pyproject_path set).
 
     Args:
         resolved_cfg: Mutable resolved config dict (modified in place)
         metadata: Extracted metadata
         pyproject_path: Path to pyproject.toml (for logging)
+        explicitly_requested: True if pyproject metadata should be used
+            (use_pyproject_metadata=True, pyproject_path set, or default for
+            configless builds). Controls whether description, authors, and
+            license are applied.
     """
     logger = get_app_logger()
 
-    # Fill in missing fields (only if not already set in config)
-    if metadata.version and not resolved_cfg.get("version"):
-        # Note: version is not a build config field, but we'll store it
-        # for use in build.py later
-        resolved_cfg["_pyproject_version"] = metadata.version
+    # Apply fields from pyproject.toml
+    # Version is resolved immediately (user -> pyproject) rather than storing
+    # _pyproject_version separately
+    if (
+        explicitly_requested
+        and metadata.version
+        and ("version" not in resolved_cfg or not resolved_cfg.get("version"))
+    ):
+        resolved_cfg["version"] = metadata.version
 
-    if metadata.name and not resolved_cfg.get("display_name"):
-        resolved_cfg["display_name"] = metadata.name
+    # For description, authors, license:
+    # - Only applied when explicitly_requested is True (use_pyproject_metadata=True
+    #   or pyproject_path set)
+    # - None or missing = not set, can be filled by pyproject (fallback)
+    # - "" = explicitly set to empty, should NOT be overwritten
+    # - non-empty string = explicitly set by user, should NEVER be overwritten
+    # Note: display_name is NOT set here - it uses package as fallback
+    # (handled after package resolution, since package may come from pyproject)
 
-    if metadata.description and not resolved_cfg.get("description"):
-        resolved_cfg["description"] = metadata.description
+    if explicitly_requested:
+        if metadata.description:
+            current = resolved_cfg.get("description")
+            if current is None:
+                resolved_cfg["description"] = metadata.description
 
-    if metadata.license_text and not resolved_cfg.get("license_header"):
-        resolved_cfg["license_header"] = metadata.license_text
+        if metadata.authors:
+            current = resolved_cfg.get("authors")
+            if current is None:
+                resolved_cfg["authors"] = metadata.authors
+
+        # Apply license from pyproject (only if not already set in config)
+        # Note: This only runs when explicitly_requested=True
+        # (use_pyproject_metadata=True or pyproject_path set),
+        # same as description and authors fields.
+        # Process license_text first, then license_files
+        if metadata.license_text or metadata.license_files:
+            current_license = resolved_cfg.get("license")
+            if current_license is None:
+                # Combine pyproject license_text (already resolved) with license_files
+                text_parts: list[str] = []
+                if metadata.license_text:
+                    text_parts.append(metadata.license_text)
+                if metadata.license_files:
+                    resolved_files_text = _resolve_license_files_patterns(
+                        metadata.license_files, pyproject_path.parent
+                    )
+                    if resolved_files_text:
+                        text_parts.append(resolved_files_text)
+                # Combine and use fallback if empty
+                pyproject_license_text = (
+                    "\n\n".join(text_parts) if text_parts else DEFAULT_LICENSE_FALLBACK
+                )
+                resolved_cfg["license"] = pyproject_license_text
 
     if metadata.has_any():
         logger.trace(f"[resolve_build_config] Extracted metadata from {pyproject_path}")
@@ -3709,33 +5896,66 @@ def _apply_metadata_fields(
 def _apply_pyproject_metadata(
     resolved_cfg: dict[str, Any],
     *,
-    build_cfg: BuildConfig,
+    build_cfg: RootConfig,
     root_cfg: RootConfig | None,
     config_dir: Path,
-    num_builds: int,
 ) -> None:
     """Extract and apply pyproject.toml metadata to resolved config.
 
-    Handles all the logic for determining when to use pyproject.toml,
-    path resolution, and filling in missing fields.
+    Extracts all metadata from pyproject.toml once, then:
+    - Always uses package name for resolution (if not already set)
+    - Uses other metadata (display_name, description, authors, license, version)
+      only if use_pyproject_metadata is enabled
 
     Args:
         resolved_cfg: Mutable resolved config dict (modified in place)
         build_cfg: Original build config
         root_cfg: Root config (may be None)
         config_dir: Config directory for path resolution
-        num_builds: Number of builds in the root config
     """
-    if not _should_use_pyproject(build_cfg, root_cfg, num_builds):
+    logger = get_app_logger()
+
+    # Try to find pyproject.toml
+    pyproject_path = _resolve_pyproject_path(build_cfg, root_cfg, config_dir)
+    if not pyproject_path or not pyproject_path.exists():
         return
 
-    pyproject_path = _resolve_pyproject_path(build_cfg, root_cfg, config_dir)
-    explicitly_requested = _is_explicitly_requested(build_cfg, root_cfg)
+    # Extract all metadata once (if available)
+    # Use required=False since we handle errors gracefully below
+    try:
+        metadata = extract_pyproject_metadata(pyproject_path, required=False)
+        if metadata is None:
+            return
+    except (RuntimeError, ValueError, FileNotFoundError) as e:
+        # If extraction fails, silently continue (package will be resolved via
+        # other means)
+        logger.trace(
+            "[_apply_pyproject_metadata] Failed to extract metadata from %s: %s",
+            pyproject_path,
+            e,
+        )
+        return
 
-    metadata = _extract_pyproject_metadata_safe(
-        pyproject_path, explicitly_requested=explicitly_requested
+    # Always extract package name for resolution purposes (if not already set)
+    if metadata.name and not resolved_cfg.get("package"):
+        resolved_cfg["package"] = metadata.name
+        logger.info(
+            "Package name '%s' extracted from pyproject.toml for resolution",
+            metadata.name,
+        )
+
+    # Apply other metadata only if use_pyproject_metadata is enabled
+    # (This includes configless builds which use pyproject by default)
+    should_use = _should_use_pyproject_metadata(build_cfg, root_cfg)
+    if not should_use:
+        return
+
+    _apply_metadata_fields(
+        resolved_cfg,
+        metadata,
+        pyproject_path,
+        explicitly_requested=should_use,
     )
-    _apply_metadata_fields(resolved_cfg, metadata, pyproject_path)
 
 
 def _load_gitignore_patterns(path: Path) -> list[str]:
@@ -3860,8 +6080,8 @@ def _merge_post_processing(  # noqa: C901, PLR0912, PLR0915
     return merged
 
 
-def resolve_post_processing(  # noqa: PLR0912, C901
-    build_cfg: BuildConfig,
+def resolve_post_processing(  # noqa: PLR0912
+    build_cfg: RootConfig,
     root_cfg: RootConfig | None,
 ) -> PostProcessingConfigResolved:
     """Resolve post-processing configuration with cascade and validation.
@@ -3906,9 +6126,7 @@ def resolve_post_processing(  # noqa: PLR0912, C901
         tool_dict = cast("dict[str, Any]", tool_config)
 
         # Args is required - if not present, this is an error
-        if "args" not in tool_dict:
-            xmsg = f"Tool config for {tool_label} is missing required 'args' field"
-            raise ValueError(xmsg)
+        validate_required_keys(tool_dict, {"args"}, f"tool_config for {tool_label}")
 
         resolved: ToolConfigResolved = {
             "command": tool_dict.get("command", tool_label),
@@ -4091,6 +6309,377 @@ def _normalize_path_with_root(
 # --------------------------------------------------------------------------- #
 
 
+def _get_first_level_modules_from_base(
+    base_str: str,
+    config_dir: Path,
+) -> list[str]:
+    """Get first-level module/package names from a single module_base directory.
+
+    Scans only the immediate children of the module_base directory (not
+    recursive). Returns a sorted list of package/module names.
+
+    Package detection logic:
+    - Directories with __init__.py are definitely packages (standard Python)
+    - Directories in module_bases are also considered packages (namespace
+      packages, mimics modern Python behavior)
+    - .py files at first level are modules
+
+    Args:
+        base_str: Module base directory path (relative or absolute)
+        config_dir: Config directory for resolving relative paths
+
+    Returns:
+        Sorted list of first-level module/package names found in the base
+    """
+    logger = get_app_logger()
+    modules: list[str] = []
+
+    # Resolve base path relative to config_dir
+    base_path = (config_dir / base_str).resolve()
+
+    if not base_path.exists() or not base_path.is_dir():
+        logger.trace(
+            "[get_first_level_modules] Skipping non-existent base: %s", base_path
+        )
+        return modules
+
+    # Get immediate children (first level only, not recursive)
+    try:
+        for item in sorted(base_path.iterdir()):
+            if item.is_dir():
+                # Check if directory has __init__.py (definitive package marker)
+                has_init = (item / "__init__.py").exists()
+                if has_init:
+                    # Standard Python package (has __init__.py)
+                    modules.append(item.name)
+                    logger.trace(
+                        "[get_first_level_modules] Found package (with __init__.py): "
+                        "%s in %s",
+                        item.name,
+                        base_path,
+                    )
+                else:
+                    # Directory in module_bases is considered a package
+                    # (namespace package, mimics modern Python)
+                    modules.append(item.name)
+                    logger.trace(
+                        "[get_first_level_modules] Found package (namespace): %s in %s",
+                        item.name,
+                        base_path,
+                    )
+            elif item.is_file() and item.suffix == ".py":
+                # Python file at first level is a module
+                module_name = item.stem
+                if module_name not in modules:
+                    modules.append(module_name)
+                    logger.trace(
+                        "[get_first_level_modules] Found module file: %s in %s",
+                        module_name,
+                        base_path,
+                    )
+    except PermissionError:
+        logger.trace("[get_first_level_modules] Permission denied for: %s", base_path)
+
+    return sorted(modules)
+
+
+def _get_first_level_modules_from_bases(
+    module_bases: list[str],
+    config_dir: Path,
+) -> list[str]:
+    """Get first-level module/package names from module_bases directories.
+
+    Scans only the immediate children of each module_base directory (not
+    recursive). Returns a list preserving the order of module_bases, with
+    modules from each base sorted but not deduplicated across bases.
+
+    Args:
+        module_bases: List of module base directory paths (relative or absolute)
+        config_dir: Config directory for resolving relative paths
+
+    Returns:
+        List of first-level module/package names found in module_bases,
+        preserving module_bases order
+    """
+    modules: list[str] = []
+
+    for base_str in module_bases:
+        base_modules = _get_first_level_modules_from_base(base_str, config_dir)
+        modules.extend(base_modules)
+
+    return modules
+
+
+def _has_main_function(module_path: Path) -> bool:
+    """Check if a module path contains a main function.
+
+    Looks for:
+    - `def main(` in any Python file
+    - `if __name__ == "__main__":` in any Python file
+
+    Args:
+        module_path: Path to module (directory or file)
+
+    Returns:
+        True if main function or __main__ block found
+    """
+    import ast  # noqa: PLC0415
+
+    if module_path.is_file() and module_path.suffix == ".py":
+        files_to_check = [module_path]
+    elif module_path.is_dir():
+        # Check all Python files in directory (non-recursive)
+        files_to_check = list(module_path.glob("*.py"))
+    else:
+        return False
+
+    for file_path in files_to_check:
+        try:
+            content = file_path.read_text(encoding="utf-8")
+            tree = ast.parse(content, filename=str(file_path))
+            for node in ast.walk(tree):
+                # Check for def main(
+                if isinstance(node, ast.FunctionDef) and node.name == "main":
+                    return True
+                # Check for if __name__ == '__main__' block
+                if isinstance(node, ast.If):
+                    test = node.test
+                    if (
+                        isinstance(test, ast.Compare)
+                        and isinstance(test.left, ast.Name)
+                        and test.left.id == "__name__"
+                        and len(test.ops) == 1
+                        and isinstance(test.ops[0], ast.Eq)
+                        and len(test.comparators) == 1
+                        and isinstance(test.comparators[0], ast.Constant)
+                        and test.comparators[0].value == "__main__"
+                    ):
+                        return True
+        except (SyntaxError, UnicodeDecodeError, OSError):  # noqa: PERF203
+            # Skip files that can't be parsed
+            continue
+
+    return False
+
+
+def _infer_packages_from_includes(  # noqa: C901, PLR0912, PLR0915
+    includes: list[IncludeResolved],
+    module_bases: list[str],
+    config_dir: Path,
+) -> list[str]:
+    """Infer package names from include paths using multiple strategies.
+
+    Uses strategies in priority order:
+    1. Filter by module_bases (if configured)
+    2. Check __init__.py (definitive package markers)
+    3. Check __main__.py (executable package markers)
+    4. Extract from common prefix
+    5. Validate against module_bases (ensure exists)
+    6. Use most common first-level directory (when multiple candidates)
+
+    Args:
+        includes: List of resolved include patterns
+        module_bases: List of module base directory paths
+        config_dir: Config directory for resolving relative paths
+
+    Returns:
+        List of inferred package names (may be empty or contain multiple candidates)
+    """
+    if not includes:
+        return []
+
+    logger = get_app_logger()
+    candidates: set[str] = set()
+    path_strings: list[str] = []
+
+    # Extract path strings from includes
+    for inc in includes:
+        path_val = inc.get("path")
+        if isinstance(path_val, (Path, str)):  # pyright: ignore[reportUnnecessaryIsInstance]
+            path_str = str(path_val)
+            # Remove trailing slashes and normalize
+            path_str = path_str.rstrip("/")
+            if path_str:
+                path_strings.append(path_str)
+
+    if not path_strings:
+        return []
+
+    # Strategy 1: Filter by module_bases (if configured)
+    filtered_paths: list[str] = []
+    if module_bases:
+        for path_str in path_strings:
+            # Check if path is within any module_base
+            for base_str in module_bases:
+                base_path = (config_dir / base_str).resolve()
+                # Try to resolve path relative to config_dir
+                try:
+                    path_obj = (config_dir / path_str).resolve()
+                    # Check if path is within base_path
+                    try:
+                        path_obj.relative_to(base_path)
+                        filtered_paths.append(path_str)
+                        break
+                    except ValueError:
+                        # Not within this base, try next
+                        continue
+                except (OSError, ValueError):
+                    # Path resolution failed, skip
+                    continue
+    else:
+        # No module_bases, use all paths
+        filtered_paths = path_strings
+
+    if not filtered_paths:
+        return []
+
+    # Strategy 2 & 3: Check for __init__.py and __main__.py
+    for path_str in filtered_paths:
+        path_obj = (config_dir / path_str).resolve()
+        if not path_obj.exists():
+            continue
+
+        # Check if it's a file or directory
+        if path_obj.is_file():
+            # Check if parent has __init__.py or __main__.py
+            parent = path_obj.parent
+            if (parent / "__init__.py").exists() or (parent / "__main__.py").exists():
+                candidates.add(parent.name)
+            # Also check if file itself is __init__.py or __main__.py
+            if path_obj.name in {"__init__.py", "__main__.py"}:
+                candidates.add(parent.name)
+        elif path_obj.is_dir():
+            # Check if directory has __init__.py or __main__.py
+            if (path_obj / "__init__.py").exists() or (
+                path_obj / "__main__.py"
+            ).exists():
+                candidates.add(path_obj.name)
+
+    # Strategy 4: Extract from common prefix
+    if not candidates:
+        # Find common prefix of all paths
+        common_prefix = _find_common_path_prefix(filtered_paths, config_dir)
+        if common_prefix:
+            # Get first directory after common prefix for each path
+            common_path = (config_dir / common_prefix).resolve()
+            for path_str in filtered_paths:
+                try:
+                    path_obj = (config_dir / path_str).resolve()
+                    try:
+                        rel_path = path_obj.relative_to(common_path)
+                        # Get first component
+                        parts = list(rel_path.parts)
+                        if parts:
+                            first_part = parts[0]
+                            if first_part and first_part != ".":
+                                candidates.add(first_part)
+                    except ValueError:
+                        # Not relative to common prefix, skip
+                        continue
+                except (OSError, ValueError):
+                    continue
+
+    # Strategy 5: Validate against module_bases (ensure exists)
+    if module_bases and candidates:
+        valid_modules = _get_first_level_modules_from_bases(module_bases, config_dir)
+        candidates = {c for c in candidates if c in valid_modules}
+
+    # Strategy 6: If multiple candidates, use most common first-level directory
+    if len(candidates) > 1:
+        # Count occurrences in original paths
+        first_level_counts: dict[str, int] = {}
+        for path_str in filtered_paths:
+            try:
+                path_obj = (config_dir / path_str).resolve()
+                # Try to find first-level directory relative to module_bases
+                for base_str in module_bases:
+                    base_path = (config_dir / base_str).resolve()
+                    try:
+                        rel_path = path_obj.relative_to(base_path)
+                        parts = list(rel_path.parts)
+                        if parts:
+                            first_part = parts[0]
+                            if first_part in candidates:
+                                first_level_counts[first_part] = (
+                                    first_level_counts.get(first_part, 0) + 1
+                                )
+                        break
+                    except ValueError:
+                        continue
+            except (OSError, ValueError):
+                continue
+
+        # Return most common, or all if tied
+        if first_level_counts:
+            max_count = max(first_level_counts.values())
+            most_common = [
+                pkg for pkg, count in first_level_counts.items() if count == max_count
+            ]
+            if len(most_common) == 1:
+                logger.trace(
+                    "[_infer_packages_from_includes] Using most common package: %s",
+                    most_common[0],
+                )
+                return most_common
+
+    result = sorted(candidates)
+    if result:
+        logger.trace("[_infer_packages_from_includes] Inferred packages: %s", result)
+    return result
+
+
+def _find_common_path_prefix(paths: list[str], config_dir: Path) -> str | None:
+    """Find the longest common path prefix of a list of paths.
+
+    Args:
+        paths: List of path strings (relative to config_dir)
+        config_dir: Config directory for resolving paths
+
+    Returns:
+        Common prefix path string (relative to config_dir), or None if no common prefix
+    """
+    if not paths:
+        return None
+
+    # Resolve all paths and find common prefix
+    resolved_paths: list[Path] = []
+    for path_str in paths:
+        try:
+            resolved = (config_dir / path_str).resolve()
+            if resolved.exists():
+                resolved_paths.append(resolved)
+        except (OSError, ValueError):  # noqa: PERF203
+            continue
+
+    if not resolved_paths:
+        return None
+
+    # Find common prefix by comparing path parts
+    common_parts: list[str] = []
+    first_path = resolved_paths[0]
+    max_parts = len(first_path.parts)
+
+    for i in range(max_parts):
+        part = first_path.parts[i]
+        # Check if all paths have this part at this position
+        if all(i < len(p.parts) and p.parts[i] == part for p in resolved_paths[1:]):
+            common_parts.append(part)
+        else:
+            break
+
+    if not common_parts:
+        return None
+
+    # Reconstruct path and make relative to config_dir
+    common_path = Path(*common_parts)
+    try:
+        rel_path = common_path.relative_to(config_dir.resolve())
+        return str(rel_path)
+    except ValueError:
+        # Not relative to config_dir, return as-is
+        return str(common_path)
+
+
 def _resolve_includes(  # noqa: PLR0912
     resolved_cfg: dict[str, Any],
     *,
@@ -4209,14 +6798,23 @@ def _resolve_excludes(
     # Determine whether to respect .gitignore
     if getattr(args, "respect_gitignore", None) is not None:
         respect_gitignore = args.respect_gitignore
-    elif "respect_gitignore" in resolved_cfg:
-        respect_gitignore = resolved_cfg["respect_gitignore"]
     else:
-        # fallback — true by default, overridden by root config if needed
-        respect_gitignore = (root_cfg or {}).get(
-            "respect_gitignore",
-            DEFAULT_RESPECT_GITIGNORE,
-        )
+        # Check ENV (SERGER_RESPECT_GITIGNORE or RESPECT_GITIGNORE)
+        env_respect = os.getenv(
+            f"{PROGRAM_ENV}_{DEFAULT_ENV_RESPECT_GITIGNORE}"
+        ) or os.getenv(DEFAULT_ENV_RESPECT_GITIGNORE)
+        if env_respect is not None:
+            # Parse boolean from string (accept "true", "1", "yes", etc.)
+            env_respect_lower = env_respect.lower()
+            respect_gitignore = env_respect_lower in ("true", "1", "yes", "on")
+        elif "respect_gitignore" in resolved_cfg:
+            respect_gitignore = resolved_cfg["respect_gitignore"]
+        else:
+            # fallback — true by default, overridden by root config if needed
+            respect_gitignore = (root_cfg or {}).get(
+                "respect_gitignore",
+                DEFAULT_RESPECT_GITIGNORE,
+            )
 
     if respect_gitignore:
         gitignore_path = config_dir / ".gitignore"
@@ -4266,23 +6864,35 @@ def _resolve_output(
     return out_wrapped
 
 
-def resolve_build_config(
-    build_cfg: BuildConfig,
+def resolve_build_config(  # noqa: C901, PLR0912, PLR0915
+    build_cfg: RootConfig,
     args: argparse.Namespace,
     config_dir: Path,
     cwd: Path,
-    root_cfg: RootConfig | None = None,
-) -> BuildConfigResolved:
-    """Resolve a single BuildConfig into a BuildConfigResolved.
+) -> RootConfigResolved:
+    """Resolve a flat RootConfig into a RootConfigResolved.
 
     Applies CLI overrides, normalizes paths, merges gitignore behavior,
     and attaches provenance metadata.
     """
     logger = get_app_logger()
-    logger.trace("[resolve_build_config] Starting resolution for build config")
+    logger.trace("[resolve_build_config] Starting resolution for config")
 
     # Make a mutable copy
     resolved_cfg: dict[str, Any] = dict(build_cfg)
+
+    # Log package source if provided in config
+    if "package" in build_cfg and build_cfg.get("package"):
+        logger.info(
+            "Package name '%s' provided in config",
+            build_cfg.get("package"),
+        )
+
+    # Set log_level if not present (for tests that call resolve_build_config directly)
+    if "log_level" not in resolved_cfg:
+        root_log = None
+        log_level = logger.determine_log_level(args=args, root_log_level=root_log)
+        resolved_cfg["log_level"] = log_level
 
     # root provenance for all resolutions
     meta: MetaBuildConfigResolved = {
@@ -4307,7 +6917,7 @@ def resolve_build_config(
         args=args,
         config_dir=config_dir,
         cwd=cwd,
-        root_cfg=root_cfg,
+        root_cfg=None,
     )
     logger.trace(
         f"[resolve_build_config] Resolved {len(resolved_cfg['exclude'])} exclude(s)"
@@ -4324,48 +6934,406 @@ def resolve_build_config(
     # ------------------------------
     # Log level
     # ------------------------------
-    build_log = resolved_cfg.get("log_level")
-    root_log = (root_cfg or {}).get("log_level")
-    resolved_cfg["log_level"] = logger.determine_log_level(
-        args=args, root_log_level=root_log, build_log_level=build_log
-    )
+    # Log level is resolved in resolve_config() before calling this function
+    # This is a no-op placeholder - the value should already be set
+    # (resolve_config sets it and then calls this function)
 
     # ------------------------------
     # Strict config
     # ------------------------------
-    # Cascade: build-level → root-level → default
-    build_strict = resolved_cfg.get("strict_config")
-    root_strict = (root_cfg or {}).get("strict_config")
-    if isinstance(build_strict, bool):
-        resolved_cfg["strict_config"] = build_strict
-    elif isinstance(root_strict, bool):
-        resolved_cfg["strict_config"] = root_strict
-    else:
+    if "strict_config" not in resolved_cfg:
         resolved_cfg["strict_config"] = DEFAULT_STRICT_CONFIG
+
+    # ------------------------------
+    # Stitch mode (resolved first, used for import defaults)
+    # ------------------------------
+    if "stitch_mode" not in resolved_cfg:
+        resolved_cfg["stitch_mode"] = DEFAULT_STITCH_MODE
+
+    # Get the resolved stitch_mode for use in import defaults
+    stitch_mode = resolved_cfg["stitch_mode"]
+    if not isinstance(stitch_mode, str):
+        msg = "stitch_mode must be a string"
+        raise TypeError(msg)
+
+    # ------------------------------
+    # Module mode
+    # ------------------------------
+    if "module_mode" not in resolved_cfg:
+        resolved_cfg["module_mode"] = DEFAULT_MODULE_MODE
+
+    # ------------------------------
+    # Shim setting
+    # ------------------------------
+    valid_shim_values = literal_to_set(ShimSetting)
+    if "shim" in resolved_cfg:
+        shim_val = resolved_cfg["shim"]
+        # Validate value
+        if shim_val not in valid_shim_values:
+            valid_str = ", ".join(repr(v) for v in sorted(valid_shim_values))
+            msg = f"Invalid shim value: {shim_val!r}. Must be one of: {valid_str}"
+            raise ValueError(msg)
+    else:
+        resolved_cfg["shim"] = DEFAULT_SHIM
+
+    # ------------------------------
+    # Module actions
+    # ------------------------------
+    if "module_actions" in resolved_cfg:
+        # Validate and normalize to list format
+        resolved_cfg["module_actions"] = validate_and_normalize_module_actions(
+            resolved_cfg["module_actions"], config_dir=config_dir
+        )
+    else:
+        # Always set to empty list in resolved config (fully resolved)
+        resolved_cfg["module_actions"] = []
+
+    # ------------------------------
+    # Import handling
+    # ------------------------------
+    if "internal_imports" not in resolved_cfg:
+        resolved_cfg["internal_imports"] = DEFAULT_INTERNAL_IMPORTS[stitch_mode]
+
+    if "external_imports" not in resolved_cfg:
+        resolved_cfg["external_imports"] = DEFAULT_EXTERNAL_IMPORTS[stitch_mode]
+
+    # ------------------------------
+    # Comments mode
+    # ------------------------------
+    if "comments_mode" not in resolved_cfg:
+        resolved_cfg["comments_mode"] = DEFAULT_COMMENTS_MODE
+
+    # ------------------------------
+    # Docstring mode
+    # ------------------------------
+    if "docstring_mode" not in resolved_cfg:
+        resolved_cfg["docstring_mode"] = DEFAULT_DOCSTRING_MODE
+
+    # ------------------------------
+    # Module bases
+    # ------------------------------
+    # Convert str to list[str] if needed
+    if "module_bases" in resolved_cfg:
+        module_bases = resolved_cfg["module_bases"]
+        resolved_cfg["module_bases"] = (
+            [module_bases] if isinstance(module_bases, str) else module_bases
+        )
+    else:
+        resolved_cfg["module_bases"] = DEFAULT_MODULE_BASES
+
+    # ------------------------------
+    # Main mode
+    # ------------------------------
+    valid_main_mode_values = literal_to_set(MainMode)
+    if "main_mode" in resolved_cfg:
+        main_mode_val = resolved_cfg["main_mode"]
+        # Validate value
+        if main_mode_val not in valid_main_mode_values:
+            valid_str = ", ".join(repr(v) for v in sorted(valid_main_mode_values))
+            msg = (
+                f"Invalid main_mode value: {main_mode_val!r}. "
+                f"Must be one of: {valid_str}"
+            )
+            raise ValueError(msg)
+    else:
+        resolved_cfg["main_mode"] = DEFAULT_MAIN_MODE
+
+    # ------------------------------
+    # Main name
+    # ------------------------------
+    if "main_name" not in resolved_cfg:
+        resolved_cfg["main_name"] = DEFAULT_MAIN_NAME
+    # Note: main_name can be None or a string, no validation needed here
+    # (validation happens during parsing in later phases)
+
+    # ------------------------------
+    # Disable build timestamp
+    # ------------------------------
+    if getattr(args, "disable_build_timestamp", None):
+        # CLI argument takes precedence
+        resolved_cfg["disable_build_timestamp"] = True
+    else:
+        # Check ENV (SERGER_DISABLE_BUILD_TIMESTAMP or DISABLE_BUILD_TIMESTAMP)
+        env_disable = os.getenv(
+            f"{PROGRAM_ENV}_{DEFAULT_ENV_DISABLE_BUILD_TIMESTAMP}"
+        ) or os.getenv(DEFAULT_ENV_DISABLE_BUILD_TIMESTAMP)
+        if env_disable is not None:
+            # Parse boolean from string (accept "true", "1", "yes", etc.)
+            env_disable_lower = env_disable.lower()
+            resolved_cfg["disable_build_timestamp"] = env_disable_lower in (
+                "true",
+                "1",
+                "yes",
+                "on",
+            )
+        elif "disable_build_timestamp" not in resolved_cfg:
+            resolved_cfg["disable_build_timestamp"] = DEFAULT_DISABLE_BUILD_TIMESTAMP
 
     # ------------------------------
     # Post-processing
     # ------------------------------
-    # Cascade: build-level → root-level → default
-    resolved_cfg["post_processing"] = resolve_post_processing(build_cfg, root_cfg)
+    resolved_cfg["post_processing"] = resolve_post_processing(build_cfg, None)
 
     # ------------------------------
-    # Pyproject.toml metadata
+    # Pyproject.toml metadata extraction
     # ------------------------------
-    num_builds = len((root_cfg or {}).get("builds", []))
+    # Extracts all metadata once, then:
+    # - Always uses package name for resolution (if not already set)
+    # - Uses other metadata only if use_pyproject_metadata is enabled
+    # - Version is resolved here: user version -> pyproject version
     _apply_pyproject_metadata(
         resolved_cfg,
         build_cfg=build_cfg,
-        root_cfg=root_cfg,
+        root_cfg=None,
         config_dir=config_dir,
-        num_builds=num_builds,
     )
+
+    # ------------------------------
+    # Version resolution
+    # ------------------------------
+    # Version is optional - resolved during pyproject metadata extraction above.
+    # If not set, will fall back to timestamp in _extract_build_metadata()
+    # No action needed here - value is already resolved if available
+
+    # ------------------------------
+    # License resolution
+    # ------------------------------
+    # License is mandatory in resolved config (always present with fallback).
+    # Processing order: license field first, then license_files.
+    # Resolution order: config license -> pyproject license (if enabled) -> fallback
+    # Note: pyproject license is already applied in _apply_pyproject_metadata()
+    # above (only when use_pyproject_metadata=True or pyproject_path set),
+    # so we only need to handle config-provided license here.
+    license_val = build_cfg.get("license")
+    license_files_val = build_cfg.get("license_files")
+    if license_val is not None or license_files_val is not None:
+        # Resolve config-provided license (overrides pyproject if set)
+        resolved_license = _resolve_license_field(
+            license_val, license_files_val, config_dir
+        )
+        resolved_cfg["license"] = resolved_license
+    elif "license" not in resolved_cfg:
+        # No license in config or pyproject - use fallback
+        resolved_cfg["license"] = DEFAULT_LICENSE_FALLBACK
+
+    # ------------------------------
+    # Stitching metadata fields (ensure all are present)
+    # ------------------------------
+    # Metadata fields are optional in resolved config.
+    # Resolution order for most fields: user value -> pyproject value -> None (default)
+    # Note: display_name has different priority (handled after package resolution)
+    # Note: license is handled above (always present with fallback)
+    # Fields are only set if they have a value; otherwise they remain None/absent
+    for field in ("description", "authors", "repo"):
+        if field not in resolved_cfg or resolved_cfg.get(field) is None:
+            # Don't set to empty string - leave as None/absent
+            pass
+
+    # ------------------------------
+    # Custom header and file docstring (pass through if present)
+    # ------------------------------
+    # These fields are truly optional and pass through as-is if provided
+    if "custom_header" in build_cfg:
+        resolved_cfg["custom_header"] = build_cfg["custom_header"]
+    if "file_docstring" in build_cfg:
+        resolved_cfg["file_docstring"] = build_cfg["file_docstring"]
+
+    # ------------------------------
+    # Package resolution (steps 3-7)
+    # ------------------------------
+    # Order of operations:
+    # 1. ✅ User-provided in config (already set, logged above)
+    # 2. ✅ pyproject.toml (just completed above)
+    # 3. ✅ Infer from include paths
+    # 4. ✅ Main function detection
+    # 5. ✅ Most common package in includes (handled in step 3)
+    # 6. ✅ Single module auto-detection
+    # 7. ✅ First package in module_bases order
+    package = resolved_cfg.get("package")
+    module_bases_list = resolved_cfg.get("module_bases", [])
+    config_includes = resolved_cfg.get("include", [])
+
+    # Step 3: Infer from include paths (if package not set and includes exist)
+    if not package and config_includes:
+        inferred_packages = _infer_packages_from_includes(
+            config_includes, module_bases_list, config_dir
+        )
+        if inferred_packages:
+            # Use first package if single, or most common if multiple (already handled)
+            resolved_cfg["package"] = inferred_packages[0]
+            logger.info(
+                "Package name '%s' inferred from include paths. "
+                "Set 'package' in config to override.",
+                inferred_packages[0],
+            )
+
+    # Step 4: Main function detection (if package not set and multiple modules exist)
+    package = resolved_cfg.get("package")
+    if not package and module_bases_list:
+        # Check if multiple modules exist
+        all_modules = _get_first_level_modules_from_bases(module_bases_list, config_dir)
+        if len(all_modules) > 1:
+            # Try to find main function in modules
+            for module_name in all_modules:
+                # Find module path
+                module_path: Path | None = None
+                for base_str in module_bases_list:
+                    base_path = (config_dir / base_str).resolve()
+                    module_dir = base_path / module_name
+                    module_file = base_path / f"{module_name}.py"
+                    if module_dir.exists() and module_dir.is_dir():
+                        module_path = module_dir
+                        break
+                    if module_file.exists() and module_file.is_file():
+                        module_path = module_file.parent
+                        break
+                if module_path and _has_main_function(module_path):
+                    # Simple check for main function (def main( or if __name__ == "__main__")  # noqa: E501
+                    resolved_cfg["package"] = module_name
+                    logger.info(
+                        "Package name '%s' detected via main() function. "
+                        "Set 'package' in config to override.",
+                        module_name,
+                    )
+                    break
+
+    # Step 6: Single module auto-detection (if package not set)
+    package = resolved_cfg.get("package")
+    if not package and module_bases_list:
+        # Find the first module_base with exactly 1 module
+        detected_module: str | None = None
+        detected_base: str | None = None
+        for base_str in module_bases_list:
+            base_modules = _get_first_level_modules_from_base(base_str, config_dir)
+            if len(base_modules) == 1:
+                # Found a base with exactly 1 module
+                detected_module = base_modules[0]
+                detected_base = base_str
+                break
+
+        if detected_module and detected_base:
+            # Set package to the detected module
+            resolved_cfg["package"] = detected_module
+            logger.info(
+                "Package name '%s' auto-detected from single module in "
+                "module_base '%s'. Set 'package' in config to override.",
+                detected_module,
+                detected_base,
+            )
+
+    # Step 7: First package in module_bases order (if package not set)
+    package = resolved_cfg.get("package")
+    if not package and module_bases_list:
+        all_modules = _get_first_level_modules_from_bases(module_bases_list, config_dir)
+        if len(all_modules) > 0:
+            # Use first module found (preserves module_bases order)
+            resolved_cfg["package"] = all_modules[0]
+            logger.info(
+                "Package name '%s' selected from module_bases (first found). "
+                "Set 'package' in config to override.",
+                all_modules[0],
+            )
+
+    # ------------------------------
+    # Auto-set includes from package and module_bases
+    # ------------------------------
+    # If no includes were provided (configless or config has no includes),
+    # automatically set includes based on package and module_bases.
+    # This must run AFTER pyproject metadata extraction so package from
+    # pyproject.toml is available.
+    has_cli_includes = bool(
+        getattr(args, "include", None) or getattr(args, "add_include", None)
+    )
+    # Check if config has includes (empty list means no includes)
+    config_includes = resolved_cfg.get("include", [])
+    has_config_includes = len(config_includes) > 0
+    # Check if includes were explicitly set in original config
+    # (even if empty, explicit setting means don't auto-set)
+    has_explicit_config_includes = "include" in build_cfg
+    package = resolved_cfg.get("package")
+    module_bases_list = resolved_cfg.get("module_bases", [])
+
+    # Auto-set includes based on package (if package exists and no includes provided)
+    if (
+        package
+        and not has_cli_includes
+        and not has_config_includes
+        and not has_explicit_config_includes
+        and module_bases_list
+    ):
+        # Package exists and is found in module_bases
+        # Get first-level modules from module_bases for this check
+        first_level_modules = _get_first_level_modules_from_bases(
+            module_bases_list, config_dir
+        )
+        if package in first_level_modules:
+            logger.debug(
+                "Auto-setting includes to package '%s' found in module_bases: %s",
+                package,
+                module_bases_list,
+            )
+
+            # Find which module_base contains the package
+            # Can be either a directory (package) or a .py file (module)
+            package_path: str | None = None
+            for base_str in module_bases_list:
+                base_path = (config_dir / base_str).resolve()
+                package_dir = base_path / package
+                package_file = base_path / f"{package}.py"
+
+                if package_dir.exists() and package_dir.is_dir():
+                    # Found the package directory
+                    # Create include path relative to config_dir
+                    rel_path = package_dir.relative_to(config_dir)
+                    package_path = str(rel_path)
+                    break
+                if package_file.exists() and package_file.is_file():
+                    # Found the package as a single-file module
+                    # Create include path relative to config_dir
+                    rel_path = package_file.relative_to(config_dir)
+                    package_path = str(rel_path)
+                    break
+
+            if package_path:
+                # Set includes to the package found in module_bases
+                # For directories, add trailing slash to ensure recursive matching
+                # (build.py handles directories with trailing slash as recursive)
+                package_path_str = str(package_path)
+                # Check if it's a directory (not a .py file) and add trailing slash
+                if (
+                    (config_dir / package_path_str).exists()
+                    and (config_dir / package_path_str).is_dir()
+                    and not package_path_str.endswith(".py")
+                    and not package_path_str.endswith("/")
+                ):
+                    # Add trailing slash for recursive directory matching
+                    package_path_str = f"{package_path_str}/"
+
+                root, rel = _normalize_path_with_root(package_path_str, config_dir)
+                auto_include = make_includeresolved(rel, root, "config")
+                resolved_cfg["include"] = [auto_include]
+                logger.trace(
+                    "[resolve_build_config] Auto-set include: %s (root: %s)",
+                    rel,
+                    root,
+                )
+
+    # ------------------------------
+    # Display name resolution (after package is fully resolved)
+    # ------------------------------
+    # display_name priority: user -> package -> None (default)
+    # Package is now fully resolved, so we can use it as fallback
+    if "display_name" not in resolved_cfg or resolved_cfg.get("display_name") is None:
+        package = resolved_cfg.get("package")
+        if package:
+            resolved_cfg["display_name"] = package
+        # If no package, leave display_name as None/absent
 
     # ------------------------------
     # Attach provenance
     # ------------------------------
     resolved_cfg["__meta__"] = meta
-    return cast_hint(BuildConfigResolved, resolved_cfg)
+    return cast_hint(RootConfigResolved, resolved_cfg)
 
 
 # --------------------------------------------------------------------------- #
@@ -4386,10 +7354,7 @@ def resolve_config(
     logger = get_app_logger()
     root_cfg = cast_hint(RootConfig, dict(root_input))
 
-    builds_input = root_cfg.get("builds", [])
-    logger.trace(
-        f"[resolve_config] Resolving root config with {len(builds_input)} build(s)"
-    )
+    logger.trace("[resolve_config] Resolving flat config")
 
     # ------------------------------
     # Watch interval
@@ -4413,36 +7378,783 @@ def resolve_config(
     # ------------------------------
     # Log level
     # ------------------------------
-    #  log_level: arg -> env -> build -> root -> default
     root_log = root_cfg.get("log_level")
     log_level = logger.determine_log_level(args=args, root_log_level=root_log)
 
     # --- sync runtime ---
     logger.setLevel(log_level)
 
-    # ------------------------------
-    # Resolve builds
-    # ------------------------------
-    resolved_builds = [
-        resolve_build_config(b, args, config_dir, cwd, root_cfg) for b in builds_input
-    ]
+    # Set log_level in config before resolving (resolve_build_config expects it)
+    root_cfg["log_level"] = log_level
 
     # ------------------------------
-    # Post-processing
+    # Resolve single flat config
     # ------------------------------
-    # For root-level, create a dummy build config to use the same resolution function
-    dummy_build: BuildConfig = {}
-    post_processing = resolve_post_processing(dummy_build, root_cfg)
+    resolved = resolve_build_config(root_cfg, args, config_dir, cwd)
 
-    resolved_root: RootConfigResolved = {
-        "builds": resolved_builds,
-        "strict_config": root_cfg.get("strict_config", False),
-        "watch_interval": watch_interval,
-        "log_level": log_level,
-        "post_processing": post_processing,
-    }
+    # Add watch_interval to resolved config
+    resolved["watch_interval"] = watch_interval
 
-    return resolved_root
+    return resolved
+
+
+# === serger.main_config ===
+# src/serger/main_config.py
+"""Main function configuration and detection logic.
+
+This module handles parsing of main_name configuration, finding main functions,
+and managing __main__ block generation.
+"""
+
+
+@dataclass
+class MainBlock:
+    """Represents a detected __main__ block.
+
+    Attributes:
+        content: The full content of the __main__ block (including the if statement)
+        file_path: Path to the file containing the block
+        module_name: Module name derived from the file path
+    """
+
+    content: str
+    file_path: Path
+    module_name: str
+
+
+def parse_main_name(main_name: str | None) -> tuple[str | None, str]:
+    """Parse main_name syntax to extract module path and function name.
+
+    Syntax rules:
+    - With dots (module/package path): `::` is optional
+      - `mypkg.subpkg` → module `mypkg.subpkg`, function `main` (default)
+      - `mypkg.subpkg::` → module `mypkg.subpkg`, function `main` (explicit)
+      - `mypkg.subpkg::entry` → module `mypkg.subpkg`, function `entry`
+    - Without dots (single name): `::` is required to indicate package
+      - `mypkg::` → package `mypkg`, function `main` (default)
+      - `mypkg::entry` → package `mypkg`, function `entry`
+      - `mypkg` → function name `mypkg` (search across all packages)
+      - `main` → function name `main` (search across all packages)
+
+    Args:
+        main_name: The main_name configuration value (can be None)
+
+    Returns:
+        Tuple of (module_path, function_name):
+        - module_path: Module/package path (None if function name only)
+        - function_name: Function name to search for (defaults to "main")
+    """
+    # If None, return (None, "main") for auto-detection
+    if main_name is None:
+        return (None, "main")
+
+    # If contains `::`, split on it
+    if "::" in main_name:
+        parts = main_name.split("::", 1)
+        module_path = parts[0] if parts[0] else None
+        function_name = parts[1] if parts[1] else "main"
+        return (module_path, function_name)
+
+    # If no `::`, check for dots
+    if "." in main_name:
+        # Contains dots: treat as module path, function defaults to "main"
+        return (main_name, "main")
+
+    # No dots and no `::`: treat as function name, module path is None
+    return (None, main_name)
+
+
+def _extract_top_level_function_names(source: str) -> set[str]:
+    """Extract all top-level function names from source code.
+
+    This is a "dumb extraction" function that only extracts function names.
+    It does not filter by name - that's handled by the usage function.
+
+    Args:
+        source: Python source code to analyze
+
+    Returns:
+        Set of top-level function names (both sync and async)
+    """
+    try:
+        tree = ast.parse(source)
+        function_names: set[str] = set()
+        # Only search top-level functions (direct children of module)
+        for node in tree.body:
+            if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                function_names.add(node.name)
+        return function_names  # noqa: TRY300
+    except (SyntaxError, ValueError):
+        return set()
+
+
+def _find_function_in_source(
+    source: str, function_name: str
+) -> ast.FunctionDef | ast.AsyncFunctionDef | None:
+    """Find a top-level function definition in source code.
+
+    Args:
+        source: Python source code
+        function_name: Name of function to find
+
+    Returns:
+        Function node if found, None otherwise
+    """
+    try:
+        tree = ast.parse(source)
+        # Only search top-level functions (direct children of module)
+        for node in tree.body:
+            if (
+                isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
+                and node.name == function_name
+            ):
+                return node
+    except (SyntaxError, ValueError):
+        pass
+    return None
+
+
+def _get_file_priority(file_path: Path) -> int:
+    """Get priority for file search order.
+
+    Lower numbers = higher priority.
+    Priority: __main__.py (0) < __init__.py (1) < other files (2)
+
+    Args:
+        file_path: File path to check
+
+    Returns:
+        Priority value (lower = higher priority)
+    """
+    if file_path.name == "__main__.py":
+        return 0
+    if file_path.name == "__init__.py":
+        return 1
+    return 2
+
+
+def detect_function_parameters(
+    function_node: ast.FunctionDef | ast.AsyncFunctionDef,
+) -> bool:
+    """Detect if a function has any parameters.
+
+    Checks for positional parameters, *args, **kwargs, and default values.
+
+    Args:
+        function_node: AST node for the function definition
+
+    Returns:
+        True if function has any parameters, False otherwise
+    """
+    args = function_node.args
+
+    # Check for any type of parameter
+    return bool(
+        args.args  # Positional parameters
+        or args.vararg is not None  # *args
+        or args.kwarg is not None  # **kwargs
+        or args.kwonlyargs  # Keyword-only arguments
+        or (
+            args.kw_defaults and any(d is not None for d in args.kw_defaults)
+        )  # Keyword-only args with defaults
+    )
+
+
+def find_main_function(  # noqa: PLR0912, C901, PLR0915
+    *,
+    config: RootConfigResolved,
+    file_paths: list[Path],
+    module_sources: dict[str, str],
+    module_names: list[str],  # noqa: ARG001  # Unused: we derive from module_to_file instead
+    package_root: Path,
+    file_to_include: dict[Path, IncludeResolved],
+    detected_packages: set[str],
+) -> tuple[str, Path, str] | None:
+    """Find the main function based on configuration.
+
+    Search order:
+    1. If `main_name` is set, use it (with fallback logic)
+    2. If `package` is set, search in that package
+    3. Search in first package from include order
+
+    Args:
+        config: Resolved configuration with main_mode and main_name
+        file_paths: List of file paths being stitched (in order)
+        module_sources: Mapping of module name to source code
+        module_names: List of module names in order (unused, kept for API)
+        package_root: Common root of all included files
+        file_to_include: Mapping of file path to its include
+        detected_packages: Pre-detected package names
+
+    Returns:
+        Tuple of (function_name, source_file, module_path) if found, None otherwise
+    """
+    main_mode = config.get("main_mode", "auto")
+    main_name = config.get("main_name")
+    package = config.get("package")
+
+    # If main_mode is "none", don't search
+    if main_mode == "none":
+        return None
+
+    # Build mapping from module names to file paths
+    # Also handle package_root being a package directory itself
+    is_package_dir = (package_root / "__init__.py").exists()
+    package_name_from_root: str | None = None
+    if is_package_dir:
+        package_name_from_root = package_root.name
+    # Also treat as package directory if package_root.name matches package
+    # (even without __init__.py, files in package_root are submodules of package)
+    elif package is not None and package_root.name == package:
+        package_name_from_root = package_root.name
+        is_package_dir = True  # Treat as package directory for module naming
+
+    # Check if any files have imports that reference the package name
+    # (indicates files are part of that package structure)
+    has_package_imports = False
+    if (
+        package is not None
+        and package_root.name != package
+        and package_root.name in ("src", "lib", "app", "package", "packages")
+    ):
+        # Quick check: see if any file imports from the package
+        for file_path in file_paths:
+            if not file_path.exists():
+                continue
+            try:
+                content = file_path.read_text(encoding="utf-8")
+                # Check for imports that reference the package name
+                if f"from {package}" in content or f"import {package}" in content:
+                    has_package_imports = True
+                    break
+            except Exception:  # noqa: BLE001, S110
+                # If we can't read the file, skip the check
+                pass
+
+    module_to_file: dict[str, Path] = {}
+    for file_path in file_paths:
+        include = file_to_include.get(file_path)
+        module_name = derive_module_name(file_path, package_root, include)
+
+        # If package_root is a package directory, preserve package structure
+        if is_package_dir and package_name_from_root:
+            # Handle __init__.py special case: represents the package itself
+            if file_path.name == "__init__.py" and file_path.parent == package_root:
+                module_name = package_name_from_root
+            else:
+                # Prepend package name to preserve structure
+                module_name = f"{package_name_from_root}.{module_name}"
+        # If package name is provided but package_root.name doesn't match,
+        # still prepend package name to ensure correct module structure
+        # (e.g., files in src/ but package is testpkg -> testpkg.utils)
+        # Only do this if package_root is a common project subdirectory
+        # (like src, lib, app) AND files have imports that reference the package
+        elif (
+            package is not None
+            and package_root.name != package
+            and not module_name.startswith(f"{package}.")
+            and has_package_imports
+            and module_name != package
+        ):
+            # Prepend package name to module name
+            module_name = f"{package}.{module_name}"
+
+        module_to_file[module_name] = file_path
+
+    # Parse main_name to get module path and function name
+    module_path_spec, function_name = parse_main_name(main_name)
+
+    # Use module_to_file.keys() instead of module_names to ensure we use
+    # the correct module names (with package prefix if applicable)
+    available_module_names = sorted(module_to_file.keys())
+
+    # Search strategy based on what's specified
+    search_candidates: list[tuple[str, Path]] = []
+
+    if main_name is not None:
+        # main_name is set: use it
+        if module_path_spec is not None:
+            # Module path specified: search in that module/package
+            # Match modules that start with the specified path
+            search_candidates.extend(
+                (mod_name, module_to_file[mod_name])
+                for mod_name in available_module_names
+                if (
+                    mod_name == module_path_spec
+                    or mod_name.startswith(f"{module_path_spec}.")
+                )
+            )
+        else:
+            # Function name only: search across all packages
+            search_candidates.extend(
+                (mod_name, module_to_file[mod_name])
+                for mod_name in available_module_names
+            )
+    elif package is not None:
+        # main_name is None, but package is set: search in that package
+        search_candidates.extend(
+            (mod_name, module_to_file[mod_name])
+            for mod_name in available_module_names
+            if mod_name == package or mod_name.startswith(f"{package}.")
+        )
+    # No main_name and no package: search in first package from include order
+    elif detected_packages:
+        first_package = sorted(detected_packages)[0]
+        search_candidates.extend(
+            (mod_name, module_to_file[mod_name])
+            for mod_name in available_module_names
+            if mod_name == first_package or mod_name.startswith(f"{first_package}.")
+        )
+    else:
+        # No packages detected: search all modules
+        search_candidates.extend(
+            (mod_name, module_to_file[mod_name]) for mod_name in available_module_names
+        )
+
+    # Sort candidates by file priority
+    # (__main__.py first, then __init__.py, then others)
+    # Then by module name for determinism
+    search_candidates.sort(key=lambda x: (_get_file_priority(x[1]), x[0]))
+
+    # Extract function names from all candidates (one parse per candidate)
+    # Then filter to only candidates that have the function name
+    for mod_name, file_path in search_candidates:
+        # Get module source (key includes .py suffix)
+        module_key = f"{mod_name}.py"
+        if module_key not in module_sources:
+            continue
+
+        source = module_sources[module_key]
+        # Extract function names (parses AST once)
+        function_names = _extract_top_level_function_names(source)
+        # Filter: only keep candidates that have the function name
+        if function_name in function_names:
+            # Return first matching candidate (already sorted by priority)
+            return (function_name, file_path, mod_name)
+
+    # Not found
+    return None
+
+
+def _is_main_guard(node: ast.If) -> bool:  # noqa: PLR0911
+    """Check if an if statement is a __main__ guard.
+
+    Args:
+        node: AST If node to check
+
+    Returns:
+        True if this is a __main__ guard, False otherwise
+    """
+    # Check if condition is: __name__ == '__main__'
+    if not isinstance(node.test, ast.Compare):
+        return False
+
+    compare = node.test
+    if len(compare.ops) != 1:
+        return False
+
+    if not isinstance(compare.ops[0], ast.Eq):
+        return False
+
+    # Check left side is __name__
+    if not isinstance(compare.left, ast.Name):
+        return False
+    if compare.left.id != "__name__":
+        return False
+
+    # Check right side is '__main__' or "__main__"
+    if len(compare.comparators) != 1:
+        return False
+
+    comparator = compare.comparators[0]
+    if isinstance(comparator, ast.Constant):
+        return comparator.value == "__main__"
+
+    return False
+
+
+def _extract_main_guards(source: str) -> list[tuple[int, int | None]]:
+    """Extract line ranges for __main__ guard blocks.
+
+    This is a "dumb extraction" function that only extracts line ranges.
+    It does not extract block content - that's handled by the usage function.
+
+    Args:
+        source: Python source code to analyze
+
+    Returns:
+        List of (start_line, end_line) tuples where:
+        - start_line: 1-indexed line number where the guard starts
+        - end_line: 1-indexed line number (exclusive) where the guard ends,
+          or None if end_lineno is not available (Python < 3.8)
+    """
+    try:
+        tree = ast.parse(source)
+    except (SyntaxError, ValueError):
+        return []
+
+    guards: list[tuple[int, int | None]] = []
+
+    # Find all top-level if statements that are __main__ guards
+    for node in tree.body:
+        if isinstance(node, ast.If) and _is_main_guard(node):
+            if hasattr(node, "lineno") and hasattr(node, "end_lineno"):
+                # Python 3.8+ has end_lineno
+                start_line = node.lineno  # 1-indexed
+                end_line = node.end_lineno  # 1-indexed (exclusive)
+                guards.append((start_line, end_line))
+            elif hasattr(node, "lineno"):
+                # Python < 3.8 or no end_lineno
+                start_line = node.lineno  # 1-indexed
+                guards.append((start_line, None))
+            # If no lineno, skip (shouldn't happen in valid AST)
+
+    return guards
+
+
+def detect_main_blocks(  # noqa: PLR0912
+    *,
+    file_paths: list[Path],
+    package_root: Path,
+    file_to_include: dict[Path, IncludeResolved],
+    detected_packages: set[str],  # noqa: ARG001
+) -> list[MainBlock]:
+    """Detect all __main__ blocks in the provided file paths.
+
+    Args:
+        file_paths: List of file paths to check (in order)
+        package_root: Common root of all included files
+        file_to_include: Mapping of file path to its include
+        detected_packages: Pre-detected package names
+            (unused, kept for API consistency)
+
+    Returns:
+        List of MainBlock objects, one for each detected __main__ block
+    """
+    main_blocks: list[MainBlock] = []
+
+    # Build mapping from module names to file paths
+    # Also handle package_root being a package directory itself
+    is_package_dir = (package_root / "__init__.py").exists()
+    package_name_from_root: str | None = None
+    if is_package_dir:
+        package_name_from_root = package_root.name
+
+    for file_path in file_paths:
+        if not file_path.exists():
+            continue
+
+        # Read file content
+        try:
+            source = file_path.read_text(encoding="utf-8")
+        except (OSError, UnicodeDecodeError):
+            continue
+
+        # Extract main guard line ranges (parses AST once)
+        guard_ranges = _extract_main_guards(source)
+
+        # Extract block content from line ranges (usage logic)
+        for start_line, end_line in guard_ranges:
+            # Convert 1-indexed line numbers to 0-indexed for slicing
+            start_idx = start_line - 1  # 0-indexed
+            block_content: str | None = None
+
+            if end_line is not None:
+                # Python 3.8+ has end_lineno
+                lines = source.splitlines(keepends=True)
+                if start_idx < len(lines) and end_line <= len(lines):
+                    block_lines = lines[start_idx:end_line]
+                    block_content = "".join(block_lines).rstrip()
+                else:
+                    # Fallback: use regex to find block
+                    block_content = _extract_main_block_regex(source)
+            else:
+                # Python < 3.8 or no end_lineno: use regex fallback
+                block_content = _extract_main_block_regex(source)
+
+            if block_content:
+                # Derive module name
+                include = file_to_include.get(file_path)
+                module_name = derive_module_name(file_path, package_root, include)
+
+                # If package_root is a package directory, preserve package structure
+                if is_package_dir and package_name_from_root:
+                    # Handle __init__.py special case: represents the package itself
+                    if (
+                        file_path.name == "__init__.py"
+                        and file_path.parent == package_root
+                    ):
+                        module_name = package_name_from_root
+                    else:
+                        # Prepend package name to preserve structure
+                        module_name = f"{package_name_from_root}.{module_name}"
+
+                main_blocks.append(
+                    MainBlock(
+                        content=block_content,
+                        file_path=file_path,
+                        module_name=module_name,
+                    )
+                )
+                # Only take the first __main__ block per file
+                break
+
+    return main_blocks
+
+
+def _extract_main_block_regex(source: str) -> str:
+    """Extract __main__ block using regex (fallback method).
+
+    Args:
+        source: Source code to search
+
+    Returns:
+        Extracted block content, or empty string if not found
+    """
+    # Pattern matches: if __name__ == '__main__': ... (to end of file)
+    # Using (?s) for dotall mode (match newlines)
+    pattern = (
+        r"(?s)(if\s+__name__\s*==\s*[\"']__main__[\"']\s*:\s*\n.*?)"
+        r"(?=\n\n|\n[A-Za-z_#@]|\Z)"
+    )
+    match = re.search(pattern, source)
+    if match:
+        return match.group(1).rstrip()
+    return ""
+
+
+def select_main_block(
+    *,
+    main_blocks: list[MainBlock],
+    main_function_result: tuple[str, Path, str] | None,
+    file_paths: list[Path],
+    module_names: list[str],  # noqa: ARG001
+) -> MainBlock | None:
+    """Select which __main__ block to keep based on priority.
+
+    Priority order:
+    1. Block in same module/file as main function
+    2. Block in same package as main function
+    3. Block in earliest include (by include order)
+
+    Args:
+        main_blocks: List of all detected __main__ blocks
+        main_function_result: Result from find_main_function()
+            (function_name, file_path, module_path) or None
+        file_paths: List of file paths in include order
+        module_names: List of module names in include order
+            (unused, kept for API consistency)
+
+    Returns:
+        Selected MainBlock to keep, or None if no block should be kept
+    """
+    if not main_blocks:
+        return None
+
+    # If we have a main function, use it to determine priority
+    if main_function_result is not None:
+        _function_name, main_file_path, main_module_path = main_function_result
+
+        # Priority 1: Block in same module/file as main function
+        for block in main_blocks:
+            if block.file_path == main_file_path:
+                return block
+
+        # Priority 2: Block in same package as main function
+        # Extract package from main_module_path (everything before last dot)
+        if "." in main_module_path:
+            main_package = main_module_path.rsplit(".", 1)[0]
+            for block in main_blocks:
+                if block.module_name == main_package or block.module_name.startswith(
+                    f"{main_package}."
+                ):
+                    return block
+
+    # Priority 3: Block in earliest include (by include order)
+    # Build mapping from file paths to their index in include order
+    file_to_index = {file_path: i for i, file_path in enumerate(file_paths)}
+
+    # Find block with earliest file index
+    earliest_block: MainBlock | None = None
+    earliest_index = len(file_paths)  # Start with max index
+
+    for block in main_blocks:
+        block_index = file_to_index.get(block.file_path, len(file_paths))
+        if block_index < earliest_index:
+            earliest_index = block_index
+            earliest_block = block
+
+    return earliest_block
+
+
+@dataclass
+class FunctionCollision:
+    """Represents a function name collision.
+
+    Attributes:
+        module_name: Module name where the collision occurs
+        function_name: Name of the colliding function
+        is_main: Whether this is the main function (should not be renamed)
+    """
+
+    module_name: str
+    function_name: str
+    is_main: bool
+
+
+def detect_collisions(
+    *,
+    main_function_result: tuple[str, Path, str] | None,
+    module_sources: dict[str, str],
+    module_names: list[str],
+) -> list[FunctionCollision]:
+    """Detect function name collisions with the main function.
+
+    After module actions are applied, check if multiple functions exist
+    with the same name as the main function.
+
+    Args:
+        main_function_result: Result from find_main_function()
+            (function_name, file_path, module_path) or None
+        module_sources: Mapping of module name to source code
+        module_names: List of module names in order
+
+    Returns:
+        List of FunctionCollision objects for all functions with the same name
+        as the main function. The main function itself is marked with is_main=True.
+    """
+    if main_function_result is None:
+        return []
+
+    main_function_name, _main_file_path, main_module_path = main_function_result
+
+    collisions: list[FunctionCollision] = []
+
+    # Search all modules for functions with the same name
+    for module_name in sorted(module_names):
+        module_key = f"{module_name}.py"
+        if module_key not in module_sources:
+            continue
+
+        source = module_sources[module_key]
+        func_node = _find_function_in_source(source, main_function_name)
+        if func_node is not None:
+            is_main = module_name == main_module_path
+            collisions.append(
+                FunctionCollision(
+                    module_name=module_name,
+                    function_name=main_function_name,
+                    is_main=is_main,
+                )
+            )
+
+    return collisions
+
+
+def rename_function_in_source(source: str, old_name: str, new_name: str) -> str:
+    """Rename a function definition in source code.
+
+    Only renames the function definition, not calls to the function.
+    Uses AST to find and rename the function definition.
+
+    Args:
+        source: Python source code
+        old_name: Current function name
+        new_name: New function name
+
+    Returns:
+        Modified source code with function renamed
+    """
+    try:
+        tree = ast.parse(source)
+        # Find the function definition and rename it
+        for node in tree.body:
+            if (
+                isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
+                and node.name == old_name
+            ):
+                node.name = new_name
+                break
+
+        # Convert back to source code
+        # Use ast.unparse if available (Python 3.9+), otherwise use regex fallback
+        try:
+            unparsed = ast.unparse(tree)
+            # ast.unparse removes leading whitespace, so if the original had
+            # indentation, we need to preserve it. For module-level functions,
+            # this shouldn't be an issue, but we check anyway.
+            # If the original source had the function at column 0, unparsed should too
+            stripped_source = source.strip()
+            if stripped_source.startswith(("def ", "async def ")):
+                # Module-level function - unparsed should be correct
+                return unparsed
+            # Otherwise, try to preserve indentation from original
+            # Find the indentation of the function in the original source
+            lines = source.splitlines()
+            for line in lines:
+                stripped = line.lstrip()
+                if stripped.startswith(("def ", "async def ")) and old_name in stripped:
+                    indent = line[: len(line) - len(stripped)]
+                    # Apply same indentation to unparsed result
+                    unparsed_lines = unparsed.splitlines()
+                    if unparsed_lines:
+                        # Find the function definition line in unparsed
+                        for i, unparsed_line in enumerate(unparsed_lines):
+                            if new_name in unparsed_line and unparsed_line.startswith(
+                                ("def ", "async def ")
+                            ):
+                                unparsed_lines[i] = indent + unparsed_line.lstrip()
+                                return "\n".join(unparsed_lines)
+                    break
+            # If loop completes (with or without break), return unparsed
+            return unparsed  # noqa: TRY300
+        except AttributeError:
+            # Python < 3.9: use regex fallback
+            # Match function definition with any indentation
+            pattern = rf"^(\s*)(async\s+)?def\s+{re.escape(old_name)}\s*\("
+            replacement = rf"\1\2def {new_name}("
+            return re.sub(pattern, replacement, source, flags=re.MULTILINE)
+    except (SyntaxError, ValueError):
+        # If parsing fails, return original source
+        return source
+
+
+def generate_auto_renames(
+    *,
+    collisions: list[FunctionCollision],
+    main_function_result: tuple[str, Path, str],
+) -> dict[str, str]:
+    """Generate auto-rename mappings for colliding functions.
+
+    Creates rename mappings for all colliding functions except the main one.
+    Renames to main_1, main_2, etc.
+
+    Args:
+        collisions: List of all function collisions
+        main_function_result: Result from find_main_function()
+            (function_name, file_path, module_path)
+
+    Returns:
+        Dictionary mapping module_name -> new_function_name for functions
+        that should be renamed. Only includes non-main functions.
+    """
+    main_function_name, _main_file_path, _main_module_path = main_function_result
+
+    # Filter out the main function itself
+    non_main_collisions = [c for c in collisions if not c.is_main]
+
+    if not non_main_collisions:
+        return {}
+
+    # Generate rename mappings: main_1, main_2, etc.
+    renames: dict[str, str] = {}
+    counter = 1
+    for collision in sorted(non_main_collisions, key=lambda c: c.module_name):
+        new_name = f"{main_function_name}_{counter}"
+        renames[collision.module_name] = new_name
+        counter += 1
+
+    return renames
 
 
 # === serger.verify_script ===
@@ -4452,6 +8164,19 @@ def resolve_config(
 This module provides functions for verifying stitched Python scripts,
 including compilation checks, ruff formatting, and execution validation.
 """
+
+
+def verify_compiles_string(source: str, filename: str = "<string>") -> None:
+    """Verify that Python source code compiles without syntax errors.
+
+    Args:
+        source: Python source code as string
+        filename: Filename to use in error messages (for debugging)
+
+    Raises:
+        SyntaxError: If compilation fails with syntax error details
+    """
+    compile(source, filename, "exec")
 
 
 def verify_compiles(file_path: Path) -> bool:
@@ -4502,19 +8227,19 @@ def find_tool_executable(
 
 def build_tool_command(
     tool_label: str,
-    _category: str,
+    category: str,  # noqa: ARG001
     file_path: Path,
-    _tool_override: ToolConfigResolved | None = None,
+    tool_override: ToolConfigResolved | None = None,  # noqa: ARG001
     tools_dict: dict[str, ToolConfigResolved] | None = None,
 ) -> list[str] | None:
     """Build the full command to execute a tool.
 
     Args:
         tool_label: Tool name or custom label (simple tool name or custom instance)
-        _category: Category name (static_checker, formatter, import_sorter) -
+        category: Category name (static_checker, formatter, import_sorter) -
             unused, kept for API compatibility
         file_path: Path to the file to process
-        _tool_override: Optional tool override config (deprecated, unused)
+        tool_override: Optional tool override config (deprecated, unused)
         tools_dict: Dict of resolved tool configs keyed by label
             (includes defaults from resolved config)
 
@@ -4524,6 +8249,9 @@ def build_tool_command(
     # Look up tool in tools_dict (includes defaults from resolved config)
     if tools_dict and tool_label in tools_dict:
         tool_config = tools_dict[tool_label]
+        validate_required_keys(
+            tool_config, {"command", "args", "path", "options"}, "tool_config"
+        )
         actual_tool_name = tool_config["command"]
         base_args = tool_config["args"]
         extra = tool_config["options"]
@@ -4551,6 +8279,9 @@ def execute_post_processing(
         file_path: Path to the file to process
         config: Resolved post-processing configuration
     """
+    validate_required_keys(
+        config, {"enabled", "category_order", "categories"}, "config"
+    )
     logger = get_app_logger()
 
     if not config["enabled"]:
@@ -4566,6 +8297,7 @@ def execute_post_processing(
             continue
 
         category = config["categories"][category_name]
+        validate_required_keys(category, {"enabled", "priority", "tools"}, "category")
         if not category["enabled"]:
             logger.debug("Category %s is disabled, skipping", category_name)
             continue
@@ -4705,6 +8437,128 @@ def verify_executes(file_path: Path) -> bool:
     return False
 
 
+def _get_error_file_pattern(out_path: Path) -> str:
+    """Get the glob pattern for error files matching the output path.
+
+    Args:
+        out_path: Path to the output file (e.g., dist/package.py)
+
+    Returns:
+        Glob pattern string (e.g., "package_ERROR_*.py")
+    """
+    stem = out_path.stem
+    return f"{stem}_ERROR_*.py"
+
+
+def _cleanup_error_files(out_path: Path) -> None:  # pyright: ignore[reportUnusedFunction]
+    """Delete all error files matching the output path pattern.
+
+    Args:
+        out_path: Path to the output file (e.g., dist/package.py)
+    """
+    logger = get_app_logger()
+    pattern = _get_error_file_pattern(out_path)
+    error_files = list(out_path.parent.glob(pattern))
+    if error_files:
+        logger.debug(
+            "Cleaning up %d error file(s) matching pattern: %s",
+            len(error_files),
+            pattern,
+        )
+        for error_file in error_files:
+            try:
+                error_file.unlink()
+                logger.trace("Deleted error file: %s", error_file)
+            except OSError as e:  # noqa: PERF203
+                logger.debug("Failed to delete error file %s: %s", error_file, e)
+
+
+def _write_error_file(  # pyright: ignore[reportUnusedFunction]
+    out_path: Path,
+    source: str,
+    error: SyntaxError,
+) -> Path:
+    """Write source code to an error file with date suffix.
+
+    Args:
+        out_path: Path to the output file (e.g., dist/package.py)
+        source: Source code that failed to compile
+        error: SyntaxError from compilation failure
+
+    Returns:
+        Path to the written error file
+    """
+    logger = get_app_logger()
+    now = datetime.now(timezone.utc)
+    date_suffix = now.strftime("%Y_%m_%d")
+    stem = out_path.stem
+    error_filename = f"{stem}_ERROR_{date_suffix}.py"
+    error_path = out_path.parent / error_filename
+
+    # Get existing error files before writing (exclude the one we're about to write)
+    pattern = _get_error_file_pattern(out_path)
+    all_error_files = list(out_path.parent.glob(pattern))
+    # Filter out the file we're about to write (in case it already exists)
+    existing_error_files = [
+        f for f in all_error_files if f.resolve() != error_path.resolve()
+    ]
+
+    # Build error header with troubleshooting information
+    lineno = error.lineno or "unknown"
+    error_msg = error.msg or "unknown error"
+    separator = "# " + "=" * 70
+    error_header = f"""{separator}
+# COMPILATION ERROR - TROUBLESHOOTING FILE
+# ============================================================================
+# This file was generated because the stitched code failed to compile.
+#
+# Error Details:
+#   - Type: SyntaxError
+#   - Line: {lineno}
+#   - Message: {error_msg}
+#   - Generated: {now.isoformat()}
+#
+# Original Output Path: {out_path}
+#
+# Troubleshooting:
+#   1. Review the error message above to identify the syntax issue
+#   2. Check the source code around line {lineno} in this file
+#   3. Fix the syntax error in your source files
+#   4. Rebuild with: python -m serger
+#   5. This error file can be safely deleted after fixing the issue
+#
+# If you need to report this error, please include:
+#   - This error file (or the error details above)
+#   - Your serger configuration
+#   - The source files that were being stitched
+# ============================================================================
+
+"""
+
+    # Write error file
+    error_content = error_header + source
+    error_path.write_text(error_content, encoding="utf-8")
+    logger.warning("Compilation failed. Error file written to: %s", error_path)
+
+    # Clean up pre-existing error files (excluding the one we just wrote)
+    if existing_error_files:
+        logger.debug(
+            "Deleting %d pre-existing error file(s)", len(existing_error_files)
+        )
+        for old_error_file in existing_error_files:
+            try:
+                old_error_file.unlink()
+                logger.trace("Deleted pre-existing error file: %s", old_error_file)
+            except OSError as e:  # noqa: PERF203
+                logger.debug(
+                    "Failed to delete pre-existing error file %s: %s",
+                    old_error_file,
+                    e,
+                )
+
+    return error_path
+
+
 def post_stitch_processing(
     out_path: Path,
     *,
@@ -4719,12 +8573,18 @@ def post_stitch_processing(
     4. Reverts changes if compilation fails after processing but succeeded before
     5. Runs a basic execution sanity check
 
+    If post-processing breaks compilation, this function logs a warning, reverts
+    the file, and continues (does not raise). The build is considered successful
+    as long as the original stitched file compiles.
+
     Args:
         out_path: Path to the stitched Python file
         post_processing: Post-processing configuration (if None, skips post-processing)
 
-    Raises:
-        RuntimeError: If compilation fails and cannot be reverted
+    Note:
+        This function does not raise on post-processing failures. It only raises
+        if the file doesn't compile before post-processing (which should never happen
+        if in-memory compilation check was performed first).
     """
     logger = get_app_logger()
     logger.debug("Starting post-stitch processing for %s", out_path)
@@ -4732,6 +8592,8 @@ def post_stitch_processing(
     # Compile before post-processing
     compiled_before = verify_compiles(out_path)
     if not compiled_before:
+        # This should never happen if in-memory compilation check was performed
+        # But handle it gracefully just in case
         logger.warning(
             "Stitched file does not compile before post-processing. "
             "Skipping post-processing and continuing."
@@ -4746,9 +8608,16 @@ def post_stitch_processing(
     # Run post-processing if configured
     processing_ran = False
     if post_processing:
-        execute_post_processing(out_path, post_processing)
-        processing_ran = True
-        logger.debug("Post-processing completed")
+        try:
+            execute_post_processing(out_path, post_processing)
+            processing_ran = True
+            logger.debug("Post-processing completed")
+        except Exception as e:  # noqa: BLE001
+            # Post-processing tools can fail - log and continue
+            logger.warning("Post-processing failed: %s. Reverting changes.", e)
+            out_path.write_text(original_content, encoding="utf-8")
+            out_path.chmod(0o755)
+            return
     else:
         logger.debug("Post-processing skipped (no configuration)")
 
@@ -4761,18 +8630,22 @@ def post_stitch_processing(
         )
         out_path.write_text(original_content, encoding="utf-8")
         out_path.chmod(0o755)
-        # Verify it compiles after revert
+        # Verify it compiles after revert (should always succeed)
         if not verify_compiles(out_path):
-            xmsg = (
+            # This should never happen, but log it if it does
+            logger.error(
                 "File does not compile after reverting post-processing changes. "
                 "This indicates a problem with the original stitched file."
             )
-            raise RuntimeError(xmsg)
-    elif not compiled_after:
+        return
+    if not compiled_after:
         # It didn't compile after, but either it didn't compile before
-        # or processing didn't run, so we can't revert
-        xmsg = "Stitched file does not compile after post-processing"
-        raise RuntimeError(xmsg)
+        # or processing didn't run - this shouldn't happen if we checked before
+        logger.warning(
+            "File does not compile after post-processing. "
+            "This should not happen if in-memory compilation check passed."
+        )
+        return
 
     # Run execution sanity check
     verify_executes(out_path)
@@ -4839,25 +8712,111 @@ def extract_commit(root_path: Path) -> str:
     return "unknown"
 
 
-def split_imports(  # noqa: C901, PLR0915
+# Maximum number of lines to read when checking if a file is a serger build
+_MAX_LINES_TO_CHECK_FOR_SERGER_BUILD = 100
+
+
+def is_serger_build(file_path: Path) -> bool:
+    """Check if a file is a serger-generated build.
+
+    Reads the first ~100 lines of the file and checks for the
+    __STITCH_SOURCE__ variable that serger embeds in all generated files.
+
+    Args:
+        file_path: Path to the file to check
+
+    Returns:
+        True if the file appears to be a serger build, False otherwise
+    """
+    if not file_path.exists():
+        return False
+
+    try:
+        # Read first N lines to catch the constants section
+        # where __STITCH_SOURCE__ is defined
+        with file_path.open(encoding="utf-8") as f:
+            lines: list[str] = []
+            for i, line in enumerate(f):
+                if i >= _MAX_LINES_TO_CHECK_FOR_SERGER_BUILD:
+                    break
+                lines.append(line)
+
+        content = "".join(lines)
+
+        # Check for __STITCH_SOURCE__ variable assignment with value "serger"
+        # Pattern matches: __STITCH_SOURCE__ = "serger" or __STITCH_SOURCE__ = 'serger'
+        # Uses capturing group to ensure opening and closing quotes match
+        # Case-insensitive for both variable name and "serger" value
+        pattern = r'__STITCH_SOURCE__\s*=\s*(["\'])serger\1'
+        return bool(re.search(pattern, content, re.IGNORECASE))
+
+    except (OSError, UnicodeDecodeError):
+        # If we can't read the file, assume it's not a serger build
+        # (safer to err on the side of caution)
+        return False
+
+
+def split_imports(  # noqa: C901, PLR0912, PLR0915
     text: str,
     package_names: list[str],
+    external_imports: ExternalImportMode = "top",
+    internal_imports: InternalImportMode = "force_strip",
 ) -> tuple[list[str], str]:
     """Extract external imports and body text using AST.
 
-    Separates internal package imports from external imports, removing all
-    imports from the function body (they'll be collected and deduplicated).
-    Recursively finds imports at all levels, including inside functions.
+    Separates internal package imports from external imports, handling them
+    according to the external_imports and internal_imports modes. Recursively
+    finds imports at all levels, including inside functions.
 
     Args:
         text: Python source code
         package_names: List of package names to treat as internal
             (e.g., ["serger", "other"])
+        external_imports: How to handle external imports. Supported modes:
+            - "top": Hoist module-level external imports to top, but only if
+              not inside conditional structures (try/if blocks) (default).
+              `if TYPE_CHECKING:` blocks are excluded from this check.
+            - "force_top": Hoist module-level external imports to top of file.
+              Always moves imports, even inside conditional structures (if, try,
+              etc.). Module-level imports are collected and deduplicated at the
+              top. Empty structures (if, try, etc.) get a `pass` statement.
+              Empty `if TYPE_CHECKING:` blocks (including those with only pass
+              statements) are removed entirely.
+            - "keep": Leave external imports in their original locations
+            - "force_strip": Remove all external imports regardless of location
+              (module-level, function-local, in conditionals, etc.). Empty
+              structures (if, try, etc.) get a `pass` statement. Empty
+              `if TYPE_CHECKING:` blocks (including those with only pass
+              statements) are removed entirely.
+            - "strip": Remove external imports, but skip imports inside
+              conditional structures (if, try, etc.). `if TYPE_CHECKING:` blocks
+              are always processed (imports removed). Empty `if TYPE_CHECKING:`
+              blocks (including those with only pass statements) are removed
+              entirely.
+        internal_imports: How to handle internal imports. Supported modes:
+            - "force_strip": Remove all internal imports regardless of location
+              (default). Internal imports break in stitched mode, so they are
+              removed by default.
+            - "keep": Keep internal imports in their original locations within
+              each module section.
+            - "strip": Remove internal imports, but skip imports inside
+              conditional structures (if, try, etc.). `if TYPE_CHECKING:` blocks
+              are always processed (imports removed). Empty `if TYPE_CHECKING:`
+              blocks (including those with only pass statements) are removed
+              entirely.
+            - "assign": **[EXPERIMENTAL/WIP]** Transform imports into assignments.
+              Converts imports like `from module import name` to `name = name`
+              (direct reference). In stitched mode, all modules share the same
+              global namespace and execute in topological order, so symbols can be
+              referenced directly. Preserves original indentation and location of
+              imports. Assignments are included in collision detection. Note: `import
+              module` statements for internal packages may not work correctly as
+              there are no module objects in stitched mode.
 
     Returns:
         Tuple of (external_imports, body_text) where external_imports is a
-        list of import statement strings, and body_text is the source with
-        all imports removed
+        list of import statement strings (empty for "keep" mode), and body_text
+        is the source with imports removed according to the mode
     """
     logger = get_app_logger()
     try:
@@ -4867,8 +8826,13 @@ def split_imports(  # noqa: C901, PLR0915
         return [], text
 
     lines = text.splitlines(keepends=True)
-    external_imports: list[str] = []
+    external_imports_list: list[str] = []
+    # Separate list for TYPE_CHECKING imports
+    type_checking_imports_list: list[str] = []
     all_import_ranges: list[tuple[int, int]] = []
+    # For assign mode: track imports to replace with assignments
+    # Maps (start, end) range to assignment code
+    import_replacements: dict[tuple[int, int], str] = {}
 
     def find_parent(
         node: ast.AST,
@@ -4903,7 +8867,134 @@ def split_imports(  # noqa: C901, PLR0915
         pattern = r"#\s*serger\s*:\s*no-move"
         return bool(re.search(pattern, snippet, re.IGNORECASE))
 
-    def collect_imports(node: ast.AST) -> None:  # noqa: PLR0912
+    def is_in_conditional(node: ast.AST, tree: ast.AST) -> bool:
+        """Check if node is inside a conditional structure (try/if).
+
+        Returns True if node is inside a try block or if block (excluding
+        `if TYPE_CHECKING:` blocks). Returns False otherwise.
+
+        Args:
+            node: AST node to check
+            tree: Root AST tree (for building parent map)
+
+        Returns:
+            True if node is in a conditional structure, False otherwise
+        """
+        # Build parent map once
+        parent_map: dict[ast.AST, ast.AST] = {}
+
+        def build_parent_map(parent: ast.AST) -> None:
+            """Recursively build parent mapping."""
+            for child in ast.iter_child_nodes(parent):
+                parent_map[child] = parent
+                build_parent_map(child)
+
+        build_parent_map(tree)
+
+        # Walk up the parent chain
+        current: ast.AST | None = node
+        while current is not None:
+            # Check for try blocks
+            if isinstance(current, ast.Try):
+                return True
+
+            # Check for if blocks (but exclude `if TYPE_CHECKING:`)
+            if isinstance(current, ast.If):
+                # Check if this is `if TYPE_CHECKING:`
+                # It must be: test is a Name with id == "TYPE_CHECKING"
+                if (
+                    isinstance(current.test, ast.Name)
+                    and current.test.id == "TYPE_CHECKING"
+                ):
+                    # This is `if TYPE_CHECKING:` - don't count as conditional
+                    # Continue checking parent chain
+                    pass
+                else:
+                    # This is a regular if block - count as conditional
+                    return True
+
+            current = parent_map.get(current)
+
+        return False
+
+    def generate_assignments_from_import(
+        node: ast.Import | ast.ImportFrom,
+        _package_names: list[str],
+    ) -> str:
+        """Generate assignment statements from an import node.
+
+        In the stitched output, all modules share the same global namespace and
+        are executed in topological order. So we can reference symbols directly
+        instead of using sys.modules (which isn't set up until after all module
+        code runs).
+
+        Converts imports like:
+        - `from module import name` → (skipped, no-op: `name = name`)
+        - `from module import name as alias` → `alias = name` (direct reference)
+        - `import module` → (skipped, no-op: `module = module`)
+        - `import module as alias` → `alias = module` (direct reference)
+
+        Note: No-op assignments (where local_name == imported_name) are skipped
+        since they're redundant.
+
+        Note: For `import a.b.c`, Python creates variable 'a' in the namespace,
+        but in stitched mode, we can't easily reference 'a.b.c' directly.
+        This case may need special handling or may not be fully supported.
+
+        Args:
+            node: AST Import or ImportFrom node
+            package_names: List of package names (unused, kept for API consistency)
+
+        Returns:
+            String containing assignment statements, one per line
+        """
+        assignments: list[str] = []
+
+        if isinstance(node, ast.ImportFrom):
+            # Handle: from module import name1, name2, ...
+            # In stitched mode, all symbols are in the same global namespace,
+            # so we can reference them directly
+            for alias in node.names:
+                imported_name = alias.name
+                local_name = alias.asname if alias.asname else imported_name
+                # Skip no-op assignments (name = name)
+                if local_name != imported_name:
+                    # Direct reference: symbol is already in global namespace
+                    assignment = f"{local_name} = {imported_name}"
+                    assignments.append(assignment)
+
+        else:
+            # Handle: import module [as alias]
+            for alias in node.names:
+                module_name = alias.name
+                if alias.asname:
+                    # import module as alias
+                    local_name = alias.asname
+                    # For simple imports like "import json", we can reference
+                    # directly. But this assumes the module was already imported
+                    # as an external import (hoisted to top).
+                    # For internal imports, this won't work - we'd need the
+                    # module object, which doesn't exist in stitched mode.
+                    # This is a limitation of assign mode for "import module".
+                    # Skip no-op (alias == module_name)
+                    if local_name != module_name:
+                        assignment = f"{local_name} = {module_name}"
+                        assignments.append(assignment)
+                else:
+                    # import module or import a.b.c
+                    # For dotted imports like "import a.b.c", Python creates
+                    # variable 'a' pointing to the 'a' module.
+                    # In stitched mode, we can't reference 'a.b.c' directly,
+                    # so we just reference the first component.
+                    # This may not work correctly for all cases.
+                    # Skip no-op assignments (module = module would be redundant)
+                    # Note: For non-aliased imports, we skip since it would be
+                    # a no-op (first_component = first_component)
+                    pass
+
+        return "\n".join(assignments)
+
+    def collect_imports(node: ast.AST) -> None:  # noqa: C901, PLR0912, PLR0915
         """Recursively collect all import nodes from the AST."""
         if isinstance(node, (ast.Import, ast.ImportFrom)):
             start = node.lineno - 1
@@ -4938,39 +9029,137 @@ def split_imports(  # noqa: C901, PLR0915
                         break
 
             # Check if import is inside if TYPE_CHECKING block
+            # Must be exactly 'if TYPE_CHECKING:' (not 'if TYPE_CHECKING and
+            # something:')
             type_checking_block = find_parent(node, tree, ast.If)
-            if (
+            is_type_checking = (
                 type_checking_block
                 and isinstance(type_checking_block, ast.If)
                 and isinstance(type_checking_block.test, ast.Name)
                 and type_checking_block.test.id == "TYPE_CHECKING"
-                and len(type_checking_block.body) == 1
-            ):
-                # If this is the only statement in the if block, remove entire block
-                type_start = type_checking_block.lineno - 1
-                type_end = getattr(
-                    type_checking_block, "end_lineno", type_checking_block.lineno
-                )
-                all_import_ranges.append((type_start, type_end))
-                return  # Skip this import, entire block will be removed
+            )
 
-            # Always remove internal imports (they break in stitched mode)
+            # Handle internal imports according to mode
             if is_internal:
-                all_import_ranges.append((start, end))
-            else:
-                # External: hoist module-level to top, keep function-local in place
+                if internal_imports == "keep":
+                    # Keep internal imports in place - don't add to ranges
+                    pass
+                elif internal_imports == "force_strip":
+                    # Remove all internal imports regardless of location
+                    all_import_ranges.append((start, end))
+                elif internal_imports == "strip":
+                    # Strip internal imports, but skip imports inside conditional
+                    # structures (if, try, etc.). TYPE_CHECKING blocks are always
+                    # processed (imports removed).
+                    if is_type_checking:
+                        # Always process TYPE_CHECKING blocks - remove imports
+                        all_import_ranges.append((start, end))
+                    elif is_in_conditional(node, tree):
+                        # In conditional (but not TYPE_CHECKING) - keep import
+                        # Don't add to ranges
+                        pass
+                    else:
+                        # Not in conditional - remove import
+                        all_import_ranges.append((start, end))
+                elif internal_imports == "assign":
+                    # Transform imports into assignments
+                    # Get indentation from the original import line
+                    import_line = lines[start] if start < len(lines) else ""
+                    indent_match = re.match(r"^(\s*)", import_line)
+                    indent = indent_match.group(1) if indent_match else ""
+                    # Generate assignment code
+                    assignment_code = generate_assignments_from_import(
+                        node, package_names
+                    )
+                    # Indent each assignment line to match original import
+                    indented_assignments = "\n".join(
+                        f"{indent}{line}" for line in assignment_code.split("\n")
+                    )
+                    # Add newline at end if original had one
+                    if end < len(lines) and lines[end - 1].endswith("\n"):
+                        indented_assignments += "\n"
+                    # Store replacement
+                    import_replacements[(start, end)] = indented_assignments
+                    # Mark import for removal
+                    all_import_ranges.append((start, end))
+                else:
+                    # Unknown mode
+                    msg = (
+                        f"internal_imports mode '{internal_imports}' is not "
+                        "supported. Only 'force_strip', 'keep', 'strip', and "
+                        "'assign' modes are currently supported."
+                    )
+                    raise ValueError(msg)
+            # External: handle according to mode
+            elif external_imports == "keep":
+                # Keep external imports in place - don't add to ranges or list
+                pass
+            elif external_imports == "force_top":
+                # Hoist module-level to top, keep function-local in place
                 is_module_level = not find_parent(
                     node, tree, (ast.FunctionDef, ast.AsyncFunctionDef)
                 )
                 if is_module_level:
                     # Module-level external import - hoist to top section
+                    all_import_ranges.append((start, end))
                     import_text = snippet.strip()
                     if import_text:
                         if not import_text.endswith("\n"):
                             import_text += "\n"
-                        external_imports.append(import_text)
-                        all_import_ranges.append((start, end))
+                        # Track TYPE_CHECKING imports separately
+                        if is_type_checking:
+                            type_checking_imports_list.append(import_text)
+                        else:
+                            external_imports_list.append(import_text)
                 # Function-local external imports stay in place (not added to ranges)
+            elif external_imports == "top":
+                # Hoist module-level to top, but only if not in conditional
+                # Keep function-local and conditional imports in place
+                is_module_level = not find_parent(
+                    node, tree, (ast.FunctionDef, ast.AsyncFunctionDef)
+                )
+                if is_module_level and not is_in_conditional(node, tree):
+                    # Module-level external import not in conditional - hoist to top
+                    all_import_ranges.append((start, end))
+                    import_text = snippet.strip()
+                    if import_text:
+                        if not import_text.endswith("\n"):
+                            import_text += "\n"
+                        # Track TYPE_CHECKING imports separately
+                        if is_type_checking:
+                            type_checking_imports_list.append(import_text)
+                        else:
+                            external_imports_list.append(import_text)
+                # Function-local and conditional external imports stay in place
+            elif external_imports == "force_strip":
+                # Strip all external imports regardless of location
+                # (module-level, function-local, in conditionals, etc.)
+                all_import_ranges.append((start, end))
+                # Don't add to external_imports_list (we're stripping, not hoisting)
+            elif external_imports == "strip":
+                # Strip external imports, but skip imports inside conditional
+                # structures (if, try, etc.). TYPE_CHECKING blocks are always
+                # processed (imports removed).
+                if is_type_checking:
+                    # Always process TYPE_CHECKING blocks - remove imports
+                    all_import_ranges.append((start, end))
+                elif is_in_conditional(node, tree):
+                    # In conditional (but not TYPE_CHECKING) - keep import
+                    # Don't add to ranges
+                    pass
+                else:
+                    # Not in conditional - remove import
+                    all_import_ranges.append((start, end))
+                # Don't add to external_imports_list (we're stripping, not hoisting)
+            else:
+                # Other modes (assign)
+                # not yet implemented
+                msg = (
+                    f"external_imports mode '{external_imports}' is not yet "
+                    "implemented. Only 'force_top', 'top', 'keep', "
+                    "'force_strip', and 'strip' modes are currently supported."
+                )
+                raise ValueError(msg)
 
         # Recursively visit child nodes
         for child in ast.iter_child_nodes(node):
@@ -4980,11 +9169,131 @@ def split_imports(  # noqa: C901, PLR0915
     for node in tree.body:
         collect_imports(node)
 
-    # --- Remove *all* import lines from the body ---
-    skip = {i for s, e in all_import_ranges for i in range(s, e)}
-    body = "".join(line for i, line in enumerate(lines) if i not in skip)
+    # --- Remove *all* import lines from the body and insert assignments ---
+    # Build new body with imports replaced by assignments
+    new_lines: list[str] = []
+    i = 0
+    while i < len(lines):
+        # Check if this line is part of an import to remove
+        in_import_range = False
+        replacement_range: tuple[int, int] | None = None
+        for start, end in all_import_ranges:
+            if start <= i < end:
+                in_import_range = True
+                replacement_range = (start, end)
+                break
 
-    return external_imports, body
+        if in_import_range and replacement_range:
+            # This is an import to replace
+            if replacement_range in import_replacements:
+                # Insert assignment code
+                assignment_code = import_replacements[replacement_range]
+                new_lines.append(assignment_code)
+            # Skip all lines in this import range
+            i = replacement_range[1]
+        else:
+            # Keep this line
+            new_lines.append(lines[i])
+            i += 1
+
+    body = "".join(new_lines)
+
+    # Check if TYPE_CHECKING blocks and other conditional blocks are empty
+    # TYPE_CHECKING blocks: remove if empty
+    # Other conditionals: add 'pass' if empty (they might have side effects)
+    body_lines = body.splitlines(keepends=True)
+    lines_to_remove: set[int] = set()
+    lines_to_insert: list[tuple[int, str]] = []  # (index, line_to_insert)
+
+    # Find empty conditional blocks
+    i = 0
+    while i < len(body_lines):
+        line = body_lines[i].rstrip()
+        # Check if this is a conditional block start (if/try)
+        # Match "if condition:" or "try:" (try can have no condition)
+        if re.match(r"^\s*(if\s+.*|try)\s*:\s*$", line):
+            block_start = i
+            is_type_checking = bool(re.match(r"^\s*if\s+TYPE_CHECKING\s*:\s*$", line))
+            # Get indentation level
+            indent_match = re.match(r"^(\s*)", body_lines[i])
+            indent = indent_match.group(1) if indent_match else ""
+            i += 1
+            # Check if block is empty (only whitespace, pass, or nothing)
+            # For TYPE_CHECKING blocks, treat blocks with only pass statements as empty
+            has_content = False
+            block_end = i
+            is_try = line.strip().startswith("try:")
+            only_pass_statements = True  # Track if block only has pass statements
+            while i < len(body_lines):
+                next_line = body_lines[i]
+                stripped = next_line.strip()
+                # Empty line - continue checking
+                if not stripped:
+                    i += 1
+                    continue
+                # For try blocks, check for except/finally/else clauses
+                # These are at the same indentation as try:, so they end the try body
+                if is_try and stripped.startswith(("except", "finally", "else:")):
+                    # We've reached the end of the try body
+                    # Check if the try body (before this clause) was empty
+                    block_end = i
+                    break
+                # Check if line is indented (part of the block)
+                if re.match(r"^\s+", next_line):
+                    # Indented content found
+                    if stripped == "pass":
+                        # For TYPE_CHECKING blocks, pass statements don't count
+                        # as content. For other blocks, pass is content.
+                        if not is_type_checking:
+                            has_content = True
+                        # else: keep only_pass_statements = True
+                    else:
+                        # Non-pass content found - block has real content
+                        has_content = True
+                        only_pass_statements = False
+                    i += 1
+                    continue
+                # Non-indented line - end of block
+                block_end = i
+                break
+            # For TYPE_CHECKING blocks, if only pass statements, treat as empty
+            if is_type_checking and only_pass_statements and not has_content:
+                # TYPE_CHECKING block with only pass statements: remove
+                for j in range(block_start, block_end):
+                    lines_to_remove.add(j)
+            elif not has_content:
+                if is_type_checking:
+                    # TYPE_CHECKING block: remove if empty
+                    for j in range(block_start, block_end):
+                        lines_to_remove.add(j)
+                else:
+                    # Other conditional: add 'pass' to make it valid
+                    # Insert pass after the block start line
+                    pass_line = f"{indent}    pass\n"
+                    lines_to_insert.append((block_start + 1, pass_line))
+        i += 1
+
+    # Apply insertions (in reverse order to maintain indices)
+    for idx, line in sorted(lines_to_insert, reverse=True):
+        body_lines.insert(idx, line)
+
+    # Remove empty TYPE_CHECKING blocks
+    if lines_to_remove:
+        body = "".join(
+            line for i, line in enumerate(body_lines) if i not in lines_to_remove
+        )
+    else:
+        body = "".join(body_lines)
+
+    # Group TYPE_CHECKING imports together in a single block
+    if type_checking_imports_list:
+        type_checking_block_text = "if TYPE_CHECKING:\n"
+        for imp in type_checking_imports_list:
+            # Indent the import
+            type_checking_block_text += f"    {imp}"
+        external_imports_list.append(type_checking_block_text)
+
+    return external_imports_list, body
 
 
 def strip_redundant_blocks(text: str) -> str:
@@ -5004,6 +9313,314 @@ def strip_redundant_blocks(text: str) -> str:
     )
 
     return text.strip()
+
+
+def process_comments(text: str, mode: CommentsMode) -> str:  # noqa: C901, PLR0912, PLR0915
+    """Process comments in source code according to the specified mode.
+
+    Args:
+        text: Python source code
+        mode: Comments processing mode:
+            - "keep": Keep all comments
+            - "ignores": Only keep comments that specify ignore rules
+            - "inline": Only keep inline comments (on same line as code)
+            - "strip": Remove all comments
+
+    Returns:
+        Source code with comments processed according to mode
+    """
+    if mode == "keep":
+        return text
+
+    if mode == "strip":
+        # Remove all comments, but preserve docstrings
+        # Use a simple approach: split by # and check if we're in a string
+        lines = text.splitlines(keepends=True)
+        result: list[str] = []
+
+        for line in lines:
+            # Simple check: if line has #, check if it's in a string
+            if "#" not in line:
+                result.append(line)
+                continue
+
+            # Check if # is inside a string literal
+            in_string = False
+            string_char = None
+            escape_next = False
+            comment_pos = -1
+
+            for i, char in enumerate(line):
+                if escape_next:
+                    escape_next = False
+                    continue
+
+                if char == "\\":
+                    escape_next = True
+                    continue
+
+                if not in_string:
+                    if char in ('"', "'"):
+                        in_string = True
+                        string_char = char
+                    elif char == "#":
+                        comment_pos = i
+                        break
+                elif char == string_char:
+                    in_string = False
+                    string_char = None
+
+            if comment_pos >= 0 and not in_string:
+                # Found comment outside string - remove it
+                code_part = line[:comment_pos].rstrip()
+                if code_part:
+                    # Has code before comment - keep code part
+                    result.append(code_part + ("\n" if line.endswith("\n") else ""))
+                # If no code part, this is a standalone comment - remove entirely
+            else:
+                # No comment found or comment is in string - keep line
+                result.append(line)
+
+        return "".join(result)
+
+    # Pattern for ignore comments (case-insensitive)
+    # Matches: noqa, type: ignore, pyright: ignore, mypy: ignore,
+    # ruff noqa, serger: no-move, etc.
+    # Note: This pattern matches the comment part AFTER the #
+    ignore_pattern = re.compile(
+        r"^\s*(noqa|type:\s*ignore|pyright:\s*ignore|mypy:\s*ignore|ruff:\s*noqa|serger:\s*no-move)",
+        re.IGNORECASE,
+    )
+
+    lines = text.splitlines(keepends=True)
+    output_lines: list[str] = []
+
+    for line in lines:
+        # Check if line has code before comment
+        if "#" in line:
+            # Split at first # to get code and comment parts
+            parts = line.split("#", 1)
+            code_part = parts[0].rstrip()
+            comment_part = parts[1] if len(parts) > 1 else ""
+            has_code = bool(code_part)
+        else:
+            # No comment - keep the line as-is
+            output_lines.append(line)
+            continue
+
+        if mode == "inline":
+            # Keep only inline comments (comments on same line as code)
+            if has_code:
+                # Has code, so any comment is inline - keep the whole line
+                output_lines.append(line)
+            # If no code, this is a standalone comment - remove entirely
+        elif mode == "ignores":
+            # Keep only ignore comments
+            if ignore_pattern.match(comment_part):
+                # This is an ignore comment - keep it
+                output_lines.append(line)
+            elif has_code:
+                # Has code but comment is not an ignore - keep code, remove comment
+                output_lines.append(code_part + ("\n" if line.endswith("\n") else ""))
+            # If no code and not an ignore comment, remove entirely
+        else:
+            # Unknown mode - keep as-is
+            output_lines.append(line)
+
+    return "".join(output_lines)
+
+
+def process_docstrings(text: str, mode: DocstringMode) -> str:  # noqa: C901, PLR0915
+    """Process docstrings in source code according to the specified mode.
+
+    Args:
+        text: Python source code
+        mode: Docstring processing mode:
+            - "keep": Keep all docstrings (default)
+            - "strip": Remove all docstrings
+            - "public": Keep only public docstrings (not prefixed with underscore)
+            - dict: Per-location control, e.g., {"module": "keep", "class": "strip"}
+              Valid locations: "module", "class", "function", "method"
+              Each location value can be "keep", "strip", or "public"
+              Omitted locations default to "keep"
+
+    Returns:
+        Source code with docstrings processed according to mode
+    """
+    logger = get_app_logger()
+
+    # Handle simple string modes
+    if isinstance(mode, str):
+        if mode == "keep":
+            return text
+
+        # Normalize to dict format for processing
+        mode_dict: dict[DocstringModeLocation, DocstringModeSimple] = {
+            "module": mode,
+            "class": mode,
+            "function": mode,
+            "method": mode,
+        }
+    else:
+        # Dict mode - fill in defaults for omitted locations
+        mode_dict = {
+            "module": mode.get("module", "keep"),
+            "class": mode.get("class", "keep"),
+            "function": mode.get("function", "keep"),
+            "method": mode.get("method", "keep"),
+        }
+
+    # Parse AST to find docstrings
+    try:
+        tree = ast.parse(text)
+    except SyntaxError:
+        logger.exception("Failed to parse file for docstring processing")
+        return text
+
+    # Build parent map to distinguish methods from functions
+    parent_map: dict[ast.AST, ast.AST] = {}
+
+    def build_parent_map(parent: ast.AST) -> None:
+        """Recursively build parent mapping."""
+        for child in ast.iter_child_nodes(parent):
+            parent_map[child] = parent
+            build_parent_map(child)
+
+    build_parent_map(tree)
+
+    lines = text.splitlines(keepends=True)
+    # Track line ranges to remove (start, end) inclusive
+    ranges_to_remove: list[tuple[int, int]] = []
+
+    def get_docstring_node(node: ast.AST) -> ast.Expr | None:
+        """Get the docstring node if it exists as the first statement."""
+        # Type guard: only nodes with body attribute can have docstrings
+        if not isinstance(
+            node, (ast.Module, ast.ClassDef, ast.FunctionDef, ast.AsyncFunctionDef)
+        ):
+            return None
+        if not node.body:
+            return None
+        first_stmt = node.body[0]
+        if (
+            isinstance(first_stmt, ast.Expr)
+            and isinstance(first_stmt.value, ast.Constant)
+            and isinstance(first_stmt.value.value, str)
+        ):
+            return first_stmt
+        return None
+
+    def is_public(name: str) -> bool:
+        """Check if a name is public (doesn't start with underscore)."""
+        return not name.startswith("_")
+
+    def get_location_type(node: ast.AST) -> DocstringModeLocation | None:
+        """Determine the location type of a docstring node.
+
+        Note: "method" covers all functions inside classes, including:
+        - Regular methods
+        - Properties (@property)
+        - Static methods (@staticmethod)
+        - Class methods (@classmethod)
+        - Async methods (async def)
+        """
+        if isinstance(node, ast.Module):
+            return "module"
+        if isinstance(node, ast.ClassDef):
+            return "class"
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            # Check if function is inside a class (method) or top-level (function)
+            # This covers all method types: regular, @property, @staticmethod, etc.
+            parent = parent_map.get(node)
+            if isinstance(parent, ast.ClassDef):
+                return "method"
+            return "function"
+        return None
+
+    def should_remove_docstring(
+        location: DocstringModeLocation,
+        name: str,
+    ) -> bool:
+        """Determine if a docstring should be removed based on mode."""
+        location_mode = mode_dict[location]
+
+        if location_mode == "keep":
+            return False
+        if location_mode == "strip":
+            return True
+        if location_mode == "public":
+            # Module docstrings are always considered public
+            if location == "module":
+                return False
+            # Remove if not public
+            return not is_public(name)
+        # Unknown mode - keep it
+        return False
+
+    # Process module-level docstring
+    module_docstring = get_docstring_node(tree)
+    if module_docstring:
+        location: DocstringModeLocation = "module"
+        if should_remove_docstring(location, "__module__"):
+            # Get line range for docstring
+            start_line = module_docstring.lineno - 1  # 0-indexed
+            end_line = (
+                module_docstring.end_lineno - 1
+                if module_docstring.end_lineno
+                else start_line
+            )
+            ranges_to_remove.append((start_line, end_line))
+
+    # Process class and function/method docstrings
+    def process_node(node: ast.AST) -> None:
+        """Recursively process nodes to find docstrings."""
+        # Skip module docstring - it's already processed above
+        if isinstance(node, ast.Module):
+            # Just recurse into children, don't process module docstring again
+            for child in node.body:
+                process_node(child)
+            return
+
+        docstring = get_docstring_node(node)
+        if docstring:
+            location = get_location_type(node)
+            if location:
+                name = ""
+                if isinstance(
+                    node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)
+                ):
+                    name = node.name
+
+                if should_remove_docstring(location, name):
+                    # Get line range for docstring
+                    start_line = docstring.lineno - 1  # 0-indexed
+                    end_line = (
+                        docstring.end_lineno - 1 if docstring.end_lineno else start_line
+                    )
+                    ranges_to_remove.append((start_line, end_line))
+
+        # Recurse into child nodes
+        if isinstance(node, (ast.ClassDef, ast.FunctionDef, ast.AsyncFunctionDef)):
+            for child in node.body:
+                process_node(child)
+
+    process_node(tree)
+
+    # If no ranges to remove, return original text
+    if not ranges_to_remove:
+        return text
+
+    # Sort ranges by start line (descending) so we can remove from end to start
+    # This preserves line numbers while removing
+    ranges_to_remove.sort(reverse=True)
+
+    # Remove docstrings from text
+    result_lines = lines[:]
+    for start_line, end_line in ranges_to_remove:
+        # Remove the range (inclusive)
+        del result_lines[start_line : end_line + 1]
+
+    return "".join(result_lines)
 
 
 @dataclass
@@ -5055,6 +9672,8 @@ def _extract_top_level_symbols(code: str) -> ModuleSymbols:
 
 def detect_name_collisions(
     module_symbols: dict[str, ModuleSymbols],
+    *,
+    ignore_functions: set[str] | None = None,
 ) -> None:
     """Detect top-level name collisions across modules.
 
@@ -5063,6 +9682,8 @@ def detect_name_collisions(
 
     Args:
         module_symbols: Dict mapping module names to their extracted symbols
+        ignore_functions: Optional set of function names to ignore when checking
+            collisions (e.g., when auto-rename will handle them)
 
     Raises:
         RuntimeError: If collisions are detected
@@ -5072,6 +9693,7 @@ def detect_name_collisions(
         "__all__",
         "__version__",
         "__author__",
+        "__authors__",
         "__path__",
         "__package__",
         "__commit__",
@@ -5079,16 +9701,24 @@ def detect_name_collisions(
 
     symbols: dict[str, str] = {}  # name -> module
     collisions: list[tuple[str, str, str]] = []
+    ignore_funcs = ignore_functions or set()
 
-    for mod, symbols_data in module_symbols.items():
+    # Sort module names for deterministic iteration order
+    for mod, symbols_data in sorted(module_symbols.items()):
         # Check all symbol types (functions, classes, assignments)
         all_names = (
             symbols_data.functions | symbols_data.classes | symbols_data.assignments
         )
 
-        for name in all_names:
+        # Sort for deterministic iteration order
+        for name in sorted(all_names):
             # skip known harmless globals
             if name in ignore:
+                continue
+
+            # Skip function names that will be auto-renamed
+            # (only skip if it's a function collision, not class/assignment)
+            if name in ignore_funcs and name in symbols_data.functions:
                 continue
 
             prev = symbols.get(name)
@@ -5098,7 +9728,9 @@ def detect_name_collisions(
                 symbols[name] = mod
 
     if collisions:
-        collision_list = ", ".join(f"{name!r}" for name, _, _ in collisions)
+        # Sort collisions by name for deterministic error messages
+        sorted_collisions = sorted(collisions, key=lambda x: x[0])
+        collision_list = ", ".join(f"{name!r}" for name, _, _ in sorted_collisions)
         msg = f"Top-level name collisions detected: {collision_list}"
         raise RuntimeError(msg)
 
@@ -5128,11 +9760,203 @@ def verify_all_modules_listed(
         raise RuntimeError(msg)
 
 
-def compute_module_order(  # noqa: C901, PLR0912, PLR0915
+def _resolve_relative_import(node: ast.ImportFrom, current_module: str) -> str | None:
+    """Resolve relative import to absolute module name.
+
+    Args:
+        node: The ImportFrom AST node
+        current_module: The current module name (e.g., "serger.actions")
+
+    Returns:
+        Resolved absolute module name, or None if relative import goes
+        beyond package root
+    """
+    if node.level == 0:
+        # Not a relative import
+        return node.module or ""
+
+    # Resolve relative import to absolute module name
+    # e.g., from .constants in serger.actions -> serger.constants
+    current_parts = current_module.split(".")
+    # Go up 'level' levels from current module
+    if node.level > len(current_parts):
+        # Relative import goes beyond package root, skip
+        return None
+    base_parts = current_parts[: -node.level]
+    if node.module:
+        # Append the module name
+        mod_parts = node.module.split(".")
+        resolved_mod = ".".join(base_parts + mod_parts)
+    else:
+        # from . import something - use base only
+        resolved_mod = ".".join(base_parts)
+    return resolved_mod
+
+
+def _is_internal_import(module_name: str, detected_packages: set[str]) -> bool:
+    """Check if an import is internal (starts with detected package).
+
+    Args:
+        module_name: The module name to check
+        detected_packages: Set of detected package names
+
+    Returns:
+        True if module_name equals or starts with any detected package
+    """
+    # Sort packages for deterministic iteration order
+    for pkg in sorted(detected_packages):
+        # Match only if mod equals pkg or starts with pkg + "."
+        # This prevents false matches where a module name happens to
+        # start with a package name (e.g., "foo_bar" matching "foo")
+        if module_name == pkg or module_name.startswith(pkg + "."):
+            return True
+    return False
+
+
+def _extract_import_module_info(  # pyright: ignore[reportUnusedFunction]
+    node: ast.Import | ast.ImportFrom,
+    current_module: str,
+    detected_packages: set[str],
+) -> tuple[str, bool] | None:
+    """Extract module name and whether it's internal from import node.
+
+    Args:
+        node: The Import or ImportFrom AST node
+        current_module: The current module name
+        detected_packages: Set of detected package names
+
+    Returns:
+        Tuple of (module_name, is_internal), or None if not relevant
+    """
+    if isinstance(node, ast.ImportFrom):
+        # Handle relative imports (node.level > 0)
+        if node.level > 0:
+            resolved_mod = _resolve_relative_import(node, current_module)
+            if resolved_mod is None:
+                # Relative import goes beyond package root
+                return None
+            mod = resolved_mod
+        else:
+            # Absolute import
+            mod = node.module or ""
+
+        # Check if import is internal
+        is_internal = _is_internal_import(mod, detected_packages)
+        return (mod, is_internal)
+
+    if isinstance(node, ast.Import):  # pyright: ignore[reportUnnecessaryIsInstance]
+        # For Import nodes, we need to check each alias
+        # But this function returns a single result, so we'll handle
+        # the first alias (caller can iterate if needed)
+        if not node.names:
+            return None
+        mod = node.names[0].name
+        # Check if import starts with any detected package
+        # Note: Import nodes use startswith(pkg) not startswith(pkg + ".")
+        # This is different from ImportFrom matching logic
+        is_internal = False
+        # Sort packages for deterministic iteration order
+        for pkg in sorted(detected_packages):
+            if mod.startswith(pkg):
+                is_internal = True
+                break
+        return (mod, is_internal)
+
+    return None
+
+
+def _extract_internal_imports_for_deps(  # noqa: PLR0912
+    source: str,
+    module_name: str,
+    detected_packages: set[str],
+) -> set[str]:
+    """Extract internal import module names for dependency graph building.
+
+    This is a "dumb" extraction function that extracts only raw data - the
+    set of internal module names that this module imports. The matching logic
+    (checking against existing modules) is handled by the caller.
+
+    Args:
+        source: Source code of the module
+        module_name: The current module name (e.g., "serger.actions")
+        detected_packages: Set of detected package names
+
+    Returns:
+        Set of internal module names that this module imports (resolved from
+        relative imports if needed). Includes relative imports that resolve to
+        simple names (no dots) even if not package-prefixed, as they may match
+        existing modules.
+    """
+    try:
+        tree = ast.parse(source)
+    except SyntaxError:
+        return set()
+
+    internal_imports: set[str] = set()
+
+    # Use ast.walk() to find ALL imports, including those inside
+    # if/else blocks, functions, etc. This is necessary because
+    # imports inside conditionals (like "if not __STANDALONE__: from .x import y")
+    # still represent dependencies that affect module ordering.
+    for node in ast.walk(tree):
+        if isinstance(node, ast.ImportFrom):
+            # Handle relative imports (node.level > 0)
+            if node.level > 0:
+                resolved_mod = _resolve_relative_import(node, module_name)
+                if resolved_mod is None:
+                    # Relative import goes beyond package root, skip
+                    continue
+                mod = resolved_mod
+                # Check if relative import resolved to a simple name (no dots)
+                # These may match existing modules even if not package-prefixed
+                is_relative_resolved = mod and "." not in mod
+            else:
+                # Absolute import
+                mod = node.module or ""
+                is_relative_resolved = False
+
+            # Check if import is internal (matches a detected package)
+            matched_package = None
+            # Sort packages for deterministic iteration order
+            for pkg in sorted(detected_packages):
+                # Match only if mod equals pkg or starts with pkg + "."
+                # This prevents false matches where a module name happens to
+                # start with a package name (e.g., "foo_bar" matching "foo")
+                if mod == pkg or mod.startswith(pkg + "."):
+                    matched_package = pkg
+                    break
+
+            # If relative import resolved to a simple name (no dots), include it
+            # even if not package-prefixed, as it may match existing modules
+            if is_relative_resolved and not matched_package:
+                internal_imports.add(mod)
+            elif matched_package:
+                # Include the resolved module name for package-based matching
+                internal_imports.add(mod)
+
+        elif isinstance(node, ast.Import):
+            # For Import nodes, check each alias
+            for alias in node.names:
+                mod = alias.name
+                # Check if import starts with any detected package
+                # Note: Import nodes use startswith(pkg) not startswith(pkg + ".")
+                # This is different from ImportFrom matching logic
+                # Sort packages for deterministic iteration order
+                for pkg in sorted(detected_packages):
+                    if mod.startswith(pkg):
+                        internal_imports.add(mod)
+                        break
+
+    return internal_imports
+
+
+def compute_module_order(  # noqa: C901, PLR0912
     file_paths: list[Path],
     package_root: Path,
-    package_name: str,
+    _package_name: str,
     file_to_include: dict[Path, IncludeResolved],
+    *,
+    detected_packages: set[str],
 ) -> list[Path]:
     """Compute correct module order based on import dependencies.
 
@@ -5142,8 +9966,9 @@ def compute_module_order(  # noqa: C901, PLR0912, PLR0915
     Args:
         file_paths: List of file paths in initial order
         package_root: Common root of all included files
-        package_name: Root package name
+        _package_name: Root package name (unused, kept for API consistency)
         file_to_include: Mapping of file path to its include (for dest access)
+        detected_packages: Pre-detected package names
 
     Returns:
         Topologically sorted list of file paths
@@ -5161,14 +9986,9 @@ def compute_module_order(  # noqa: C901, PLR0912, PLR0915
         file_to_module[file_path] = module_name
         module_to_file[module_name] = file_path
 
-    # Detect all packages from module names (for multi-package support)
-    detected_packages: set[str] = {package_name}  # Always include configured package
-    for module_name in file_to_module.values():
-        if "." in module_name:
-            pkg = module_name.split(".", 1)[0]
-            detected_packages.add(pkg)
-
     # Build dependency graph using derived module names
+    # file_paths is already sorted from collect_included_files, so dict insertion
+    # order is deterministic
     deps: dict[str, set[str]] = {file_to_module[fp]: set() for fp in file_paths}
 
     for file_path in file_paths:
@@ -5177,139 +9997,91 @@ def compute_module_order(  # noqa: C901, PLR0912, PLR0915
             continue
 
         try:
-            tree = ast.parse(file_path.read_text(encoding="utf-8"))
-        except SyntaxError:
+            source = file_path.read_text(encoding="utf-8")
+        except (OSError, UnicodeDecodeError):
             continue
 
-        # Use ast.walk() to find ALL imports, including those inside
-        # if/else blocks, functions, etc. This is necessary because
-        # imports inside conditionals (like "if not __STANDALONE__: from .x import y")
-        # still represent dependencies that affect module ordering.
-        for node in ast.walk(tree):
-            if isinstance(node, ast.ImportFrom):
-                # Handle relative imports (node.level > 0)
-                if node.level > 0:
-                    # Resolve relative import to absolute module name
-                    # e.g., from .constants in serger.actions -> serger.constants
-                    current_parts = module_name.split(".")
-                    # Go up 'level' levels from current module
-                    if node.level > len(current_parts):
-                        # Relative import goes beyond package root, skip
-                        continue
-                    base_parts = current_parts[: -node.level]
-                    if node.module:
-                        # Append the module name
-                        mod_parts = node.module.split(".")
-                        resolved_mod = ".".join(base_parts + mod_parts)
-                    else:
-                        # from . import something - use base only
-                        resolved_mod = ".".join(base_parts)
-                    mod = resolved_mod
-                else:
-                    # Absolute import
-                    mod = node.module or ""
+        # Extract internal imports using the extraction function
+        # This parses the AST once and extracts all internal module names
+        internal_imports = _extract_internal_imports_for_deps(
+            source, module_name, detected_packages
+        )
 
-                # Check if import starts with any detected package, or if it's a
-                # relative import that resolved to a module name without package prefix
-                matched_package = None
-                is_relative_resolved = node.level > 0 and mod and "." not in mod
+        # Build dependency graph from extracted imports
+        # The matching logic (checking against existing modules) stays here
+        for mod in sorted(internal_imports):
+            # Check if this is a relative import that resolved to a simple name
+            # (no dots) - these may match existing modules directly
+            is_relative_resolved = "." not in mod
 
-                for pkg in detected_packages:
-                    # Match only if mod equals pkg or starts with pkg + "."
-                    # This prevents false matches where a module name happens to
-                    # start with a package name (e.g., "foo_bar" matching "foo")
-                    if mod == pkg or mod.startswith(pkg + "."):
-                        matched_package = pkg
-                        break
+            # Check if import matches a detected package
+            matched_package = None
+            # Sort packages for deterministic iteration order
+            for pkg in sorted(detected_packages):
+                # Match only if mod equals pkg or starts with pkg + "."
+                # This prevents false matches where a module name happens to
+                # start with a package name (e.g., "foo_bar" matching "foo")
+                if mod == pkg or mod.startswith(pkg + "."):
+                    matched_package = pkg
+                    break
 
+            logger.trace(
+                "[DEPS] %s imports %s: matched_package=%s, is_relative_resolved=%s",
+                module_name,
+                mod,
+                matched_package,
+                is_relative_resolved,
+            )
+
+            # If relative import resolved to a simple name (no dots), check if it
+            # matches any module name directly (for same-package imports)
+            if not matched_package and is_relative_resolved:
+                # Check if the resolved module name matches any module directly
                 logger.trace(
-                    "[DEPS] %s imports %s: mod=%s, matched_package=%s, "
-                    "is_relative_resolved=%s",
+                    "[DEPS] Relative import in %s: resolved_mod=%s, checking deps",
                     module_name,
-                    node.module or "",
                     mod,
-                    matched_package,
-                    is_relative_resolved,
                 )
-
-                # If relative import resolved to a simple name (no dots), check if it
-                # matches any module name directly (for same-package imports)
-                if not matched_package and is_relative_resolved:
-                    # Check if the resolved module name matches any module directly
-                    logger.trace(
-                        "[DEPS] Relative import in %s: resolved_mod=%s, checking deps",
-                        module_name,
-                        mod,
-                    )
-                    for dep_module in deps:
-                        # Match if dep_module equals mod or starts with mod.
-                        if (
-                            dep_module == mod or dep_module.startswith(mod + ".")
-                        ) and dep_module != module_name:
-                            logger.trace(
-                                "[DEPS] Found dependency: %s -> %s (from %s)",
-                                module_name,
-                                dep_module,
-                                mod,
-                            )
-                            deps[module_name].add(dep_module)
-                    continue  # Skip the package-based matching below
-
-                if matched_package:
-                    # Handle nested imports: package.core.base -> core.base
-                    # Remove package prefix and check if it matches any module
-                    mod_suffix = (
-                        mod[len(matched_package) + 1 :]
-                        if mod.startswith(matched_package + ".")
-                        else mod[len(matched_package) :]
-                        if mod == matched_package
-                        else ""
-                    )
-                    if mod_suffix:
-                        # Check if this matches any derived module name
-                        # Match both the suffix (for same-package imports)
-                        # and full module name (for cross-package imports)
-                        for dep_module in deps:
-                            # Match if: dep_module equals mod_suffix or mod
-                            # or dep_module starts with mod_suffix or mod
-                            prefix_tuple = (mod_suffix + ".", mod + ".")
-                            matches = dep_module in (
-                                mod_suffix,
-                                mod,
-                            ) or dep_module.startswith(prefix_tuple)
-                            if matches and dep_module != module_name:
-                                deps[module_name].add(dep_module)
-            elif isinstance(node, ast.Import):
-                for alias in node.names:
-                    mod = alias.name
-                    # Check if import starts with any detected package
-                    matched_package = None
-                    for pkg in detected_packages:
-                        if mod.startswith(pkg):
-                            matched_package = pkg
-                            break
-
-                    if matched_package:
-                        # Handle nested imports
-                        mod_suffix = (
-                            mod[len(matched_package) + 1 :]
-                            if mod.startswith(matched_package + ".")
-                            else mod[len(matched_package) :]
-                            if mod == matched_package
-                            else ""
+                # Sort for deterministic iteration order
+                for dep_module in sorted(deps.keys()):
+                    # Match if dep_module equals mod or starts with mod.
+                    if (
+                        dep_module == mod or dep_module.startswith(mod + ".")
+                    ) and dep_module != module_name:
+                        logger.trace(
+                            "[DEPS] Found dependency: %s -> %s (from %s)",
+                            module_name,
+                            dep_module,
+                            mod,
                         )
-                        if mod_suffix:
-                            # Check if this matches any derived module name
-                            # Match both the suffix (for same-package imports)
-                            # and full module name (for cross-package imports)
-                            for dep_module in deps:
-                                prefix_tuple = (mod_suffix + ".", mod + ".")
-                                matches = dep_module in (
-                                    mod_suffix,
-                                    mod,
-                                ) or dep_module.startswith(prefix_tuple)
-                                if matches and dep_module != module_name:
-                                    deps[module_name].add(dep_module)
+                        deps[module_name].add(dep_module)
+                continue  # Skip the package-based matching below
+
+            if matched_package:
+                # Handle nested imports: package.core.base -> core.base
+                # Remove package prefix and check if it matches any module
+                mod_suffix = (
+                    mod[len(matched_package) + 1 :]
+                    if mod.startswith(matched_package + ".")
+                    else mod[len(matched_package) :]
+                    if mod == matched_package
+                    else ""
+                )
+                if mod_suffix:
+                    # Check if this matches any derived module name
+                    # Match both the suffix (for same-package imports)
+                    # and full module name (for cross-package imports)
+                    # Sort for deterministic iteration order
+                    for dep_module in sorted(deps.keys()):
+                        # Match if: dep_module equals mod_suffix or mod
+                        # or dep_module starts with mod_suffix or mod
+                        prefix_tuple = (mod_suffix + ".", mod + ".")
+                        matches = dep_module in (
+                            mod_suffix,
+                            mod,
+                        ) or dep_module.startswith(prefix_tuple)
+                        if matches and dep_module != module_name:
+                            deps[module_name].add(dep_module)
 
     # detect circular imports first
     try:
@@ -5327,8 +10099,10 @@ def compute_module_order(  # noqa: C901, PLR0912, PLR0915
 def suggest_order_mismatch(
     order_paths: list[Path],
     package_root: Path,
-    package_name: str,
+    _package_name: str,
     file_to_include: dict[Path, IncludeResolved],
+    *,
+    detected_packages: set[str],
     topo_paths: list[Path] | None = None,
 ) -> None:
     """Warn if module order violates dependencies.
@@ -5336,8 +10110,9 @@ def suggest_order_mismatch(
     Args:
         order_paths: List of file paths in intended order
         package_root: Common root of all included files
-        package_name: Root package name
+        _package_name: Root package name (unused, kept for API consistency)
         file_to_include: Mapping of file path to its include (for dest access)
+        detected_packages: Pre-detected package names
         topo_paths: Optional pre-computed topological order. If provided,
                     skips recomputing the order. If None, computes it via
                     compute_module_order.
@@ -5345,7 +10120,11 @@ def suggest_order_mismatch(
     logger = get_app_logger()
     if topo_paths is None:
         topo_paths = compute_module_order(
-            order_paths, package_root, package_name, file_to_include
+            order_paths,
+            package_root,
+            _package_name,
+            file_to_include,
+            detected_packages=detected_packages,
         )
 
     # compare order_paths to topological sort
@@ -5368,7 +10147,75 @@ def suggest_order_mismatch(
         logger.warning("Suggested order: %s", ", ".join(topo_modules))
 
 
-def verify_no_broken_imports(final_text: str, package_names: list[str]) -> None:
+def _is_inside_string_literal(text: str, pos: int) -> bool:
+    """Check if a position in text is inside a string literal.
+
+    Args:
+        text: Source text to check
+        pos: Position to check
+
+    Returns:
+        True if position is inside a string literal, False otherwise
+    """
+    # Track string state by scanning from start
+    in_string = False
+    string_char = None
+    escape_next = False
+    triple_quote = False
+    i = 0
+
+    while i < pos:
+        char = text[i]
+
+        if escape_next:
+            escape_next = False
+            i += 1
+            continue
+
+        if char == "\\":
+            escape_next = True
+            i += 1
+            continue
+
+        if not in_string:
+            # Check for triple quotes first
+            if i < len(text) - 2:
+                triple_start = text[i : i + 3]
+                if triple_start in ('"""', "'''"):
+                    in_string = True
+                    string_char = triple_start[0]
+                    triple_quote = True
+                    # Skip next two chars
+                    i += 3
+                    continue
+            # Check for single quotes
+            if char in ('"', "'"):
+                in_string = True
+                string_char = char
+                triple_quote = False
+        # Inside string - check for end
+        elif triple_quote:
+            if i < len(text) - 2 and string_char is not None:
+                triple_end = text[i : i + 3]
+                if triple_end == string_char * 3:
+                    in_string = False
+                    string_char = None
+                    triple_quote = False
+                    # Skip next two chars
+                    i += 3
+                    continue
+        elif char == string_char:
+            in_string = False
+            string_char = None
+
+        i += 1
+
+    return in_string
+
+
+def verify_no_broken_imports(  # noqa: C901
+    final_text: str, package_names: list[str]
+) -> None:
     """Verify all internal imports have been resolved in stitched script.
 
     Args:
@@ -5393,39 +10240,67 @@ def verify_no_broken_imports(final_text: str, package_names: list[str]) -> None:
         # Pattern for top-level package imports: from package import ...
         top_level_pattern = re.compile(rf"\bfrom {re.escape(package_name)}\s+import")
 
-        # Check import statements
-        for m in import_pattern.finditer(final_text):
-            mod_suffix = m.group(1)
-            full_module_name = f"{package_name}.{mod_suffix}"
-            # Check if module is in the stitched output
-            # Header format: # === module_name === (may contain dots)
-            # Try both full module name and just the suffix (for backward compat)
+        # Helper to check if a module exists (header or shim)
+        def module_exists(full_module_name: str, mod_suffix: str | None = None) -> bool:
+            """Check if a module exists via header or shim."""
+            # Check for header
             header_pattern_full = re.compile(
                 rf"# === {re.escape(full_module_name)} ==="
             )
-            header_pattern_suffix = re.compile(rf"# === {re.escape(mod_suffix)} ===")
-            if not header_pattern_full.search(
-                final_text
-            ) and not header_pattern_suffix.search(final_text):
+            if header_pattern_full.search(final_text):
+                return True
+
+            # Check for suffix header (backward compat)
+            if mod_suffix:
+                header_pattern_suffix = re.compile(
+                    rf"# === {re.escape(mod_suffix)} ==="
+                )
+                if header_pattern_suffix.search(final_text):
+                    return True
+
+            # Check for shim
+            escaped_name = re.escape(full_module_name)
+            shim_pattern_old = re.compile(
+                rf"_pkg\s*=\s*(?:['\"]){escaped_name}(?:['\"]).*?"
+                rf"sys\.modules\[_pkg\]\s*=\s*_mod",
+                re.DOTALL,
+            )
+            shim_pattern_new = re.compile(
+                rf"_create_pkg_module\s*\(\s*(?:['\"]){escaped_name}(?:['\"])"
+            )
+            return (
+                shim_pattern_old.search(final_text) is not None
+                or shim_pattern_new.search(final_text) is not None
+            )
+
+        # Check import statements
+        for m in import_pattern.finditer(final_text):
+            # Skip if inside string literal (docstring/comment)
+            if _is_inside_string_literal(final_text, m.start()):
+                continue
+
+            mod_suffix = m.group(1)
+            full_module_name = f"{package_name}.{mod_suffix}"
+            if not module_exists(full_module_name, mod_suffix):
                 broken.add(full_module_name)
 
         # Check from ... import statements
         for m in from_pattern.finditer(final_text):
+            # Skip if inside string literal (docstring/comment)
+            if _is_inside_string_literal(final_text, m.start()):
+                continue
+
             mod_suffix = m.group(1)
             full_module_name = f"{package_name}.{mod_suffix}"
-            # Check if module is in the stitched output
-            # Try both full module name and just the suffix (for backward compat)
-            header_pattern_full = re.compile(
-                rf"# === {re.escape(full_module_name)} ==="
-            )
-            header_pattern_suffix = re.compile(rf"# === {re.escape(mod_suffix)} ===")
-            if not header_pattern_full.search(
-                final_text
-            ) and not header_pattern_suffix.search(final_text):
+            if not module_exists(full_module_name, mod_suffix):
                 broken.add(full_module_name)
 
         # Check top-level package imports: from package import ...
-        for _m in top_level_pattern.finditer(final_text):
+        for m in top_level_pattern.finditer(final_text):
+            # Skip if inside string literal (docstring/comment)
+            if _is_inside_string_literal(final_text, m.start()):
+                continue
+
             # For top-level imports, check if the package itself exists
             # This would be in a header like # === package === or
             # # === package.__init__ ===
@@ -5459,21 +10334,29 @@ def verify_no_broken_imports(final_text: str, package_names: list[str]) -> None:
         raise RuntimeError(msg)
 
 
-def _find_package_root_for_file(file_path: Path) -> Path | None:
-    """Find the package root for a file by walking up looking for __init__.py.
+def _find_package_root_for_file(
+    file_path: Path,
+    *,
+    module_bases: list[str] | None = None,
+    config_dir: Path | None = None,
+) -> Path | None:
+    """Find the package root for a file.
 
-    Starting from the file's directory, walks up the directory tree while
-    we find __init__.py files. The topmost directory with __init__.py is
-    the package root.
+    First checks for __init__.py files (definitive package marker).
+    If no __init__.py found and file is under a module_bases directory,
+    treats everything after the matching base prefix as a package structure.
 
     Args:
         file_path: Path to the Python file
+        module_bases: Optional list of module base directories
+        config_dir: Optional config directory for resolving relative module_bases
 
     Returns:
         Path to the package root directory, or None if not found
     """
     logger = get_app_logger()
-    current_dir = file_path.parent.resolve()
+    file_path_resolved = file_path.resolve()
+    current_dir = file_path_resolved.parent
     last_package_dir: Path | None = None
 
     logger.trace(
@@ -5482,7 +10365,8 @@ def _find_package_root_for_file(file_path: Path) -> Path | None:
         current_dir,
     )
 
-    # Walk up from the file's directory
+    # First, walk up looking for __init__.py (definitive package marker)
+    # __init__.py always takes precedence
     while True:
         # Check if current directory has __init__.py
         init_file = current_dir / "__init__.py"
@@ -5494,26 +10378,120 @@ def _find_package_root_for_file(file_path: Path) -> Path | None:
                 current_dir,
                 last_package_dir,
             )
-        else:
-            # This directory doesn't have __init__.py, so we've gone past the package
-            # Return the last directory that had __init__.py
+        # This directory doesn't have __init__.py
+        # If we found a package via __init__.py, return it
+        elif last_package_dir is not None:
             logger.trace(
                 "[PKG_ROOT] No __init__.py at %s, package root: %s",
                 current_dir,
                 last_package_dir,
             )
             return last_package_dir
+            # No __init__.py found yet, continue walking up
+            # (we'll check module_bases after this loop if needed)
 
         # Move up one level
         parent = current_dir.parent
         if parent == current_dir:
             # Reached filesystem root
-            logger.trace(
-                "[PKG_ROOT] Reached filesystem root, package root: %s",
-                last_package_dir,
-            )
-            return last_package_dir
+            if last_package_dir is not None:
+                logger.trace(
+                    "[PKG_ROOT] Reached filesystem root, package root: %s",
+                    last_package_dir,
+                )
+                return last_package_dir
+            # No __init__.py found, break to check module_bases
+            break
         current_dir = parent
+
+    # If no __init__.py found, check if file is under any module_bases directory
+    if module_bases and config_dir and last_package_dir is None:
+        config_dir_resolved = config_dir.resolve()
+        for base_str in module_bases:
+            base_path = (config_dir_resolved / base_str).resolve()
+            try:
+                # Check if file is under this base
+                rel_path = file_path_resolved.relative_to(base_path)
+                # If file is directly in base (e.g., src/mymodule.py), no package
+                if len(rel_path.parts) == 1:
+                    # Single file in base - not a package
+                    continue
+                # File is in a subdirectory of base (e.g., src/mypkg/submodule.py)
+                # The first part after base is the package
+                package_dir = base_path / rel_path.parts[0]
+                if package_dir.exists() and package_dir.is_dir():
+                    logger.trace(
+                        "[PKG_ROOT] Found package via module_bases: %s (base: %s)",
+                        package_dir,
+                        base_path,
+                    )
+                    return package_dir
+            except ValueError:
+                # File is not under this base, continue to next base
+                continue
+
+    # Return None if no package found
+    return last_package_dir
+
+
+def detect_packages_from_files(
+    file_paths: list[Path],
+    package_name: str,
+    *,
+    module_bases: list[str] | None = None,
+    config_dir: Path | None = None,
+) -> set[str]:
+    """Detect packages from file paths.
+
+    If files are under module_bases directories, treats everything after the
+    matching base prefix as a package structure (regardless of __init__.py).
+    Otherwise, follows Python's import rules: only detects regular packages
+    (with __init__.py files). Falls back to configured package_name if none detected.
+
+    Args:
+        file_paths: List of file paths to check
+        package_name: Configured package name (used as fallback)
+        module_bases: Optional list of module base directories
+        config_dir: Optional config directory for resolving relative module_bases
+
+    Returns:
+        Set of detected package names (always includes package_name)
+    """
+    logger = get_app_logger()
+    detected: set[str] = set()
+
+    # Detect packages from files
+    for file_path in file_paths:
+        pkg_root = _find_package_root_for_file(
+            file_path, module_bases=module_bases, config_dir=config_dir
+        )
+        if pkg_root:
+            # Extract package name from directory name
+            pkg_name = pkg_root.name
+            detected.add(pkg_name)
+            logger.trace(
+                "[PKG_DETECT] Detected package %s from %s (root: %s)",
+                pkg_name,
+                file_path,
+                pkg_root,
+            )
+
+    # Always include configured package (for fallback and multi-package scenarios)
+    detected.add(package_name)
+
+    if len(detected) == 1 and package_name in detected:
+        logger.debug(
+            "Package detection: No packages found, using configured package '%s'",
+            package_name,
+        )
+    else:
+        logger.debug(
+            "Package detection: Found %d package(s): %s",
+            len(detected),
+            sorted(detected),
+        )
+
+    return detected
 
 
 def force_mtime_advance(path: Path, seconds: float = 1.0, max_tries: int = 50) -> None:
@@ -5552,19 +10530,29 @@ def force_mtime_advance(path: Path, seconds: float = 1.0, max_tries: int = 50) -
     raise AssertionError(xmsg)
 
 
-def _collect_modules(
+def _collect_modules(  # noqa: PLR0912, PLR0915
     file_paths: list[Path],
     package_root: Path,
-    package_name: str,
+    _package_name: str,
     file_to_include: dict[Path, IncludeResolved],
+    detected_packages: set[str],
+    external_imports: ExternalImportMode = "top",
+    internal_imports: InternalImportMode = "force_strip",
+    comments_mode: CommentsMode = "keep",
+    docstring_mode: DocstringMode = "keep",
 ) -> tuple[dict[str, str], OrderedDict[str, None], list[str], list[str]]:
     """Collect and process module sources from file paths.
 
     Args:
         file_paths: List of file paths to stitch (in order)
         package_root: Common root of all included files
-        package_name: Root package name
+        _package_name: Root package name (unused, kept for API consistency)
         file_to_include: Mapping of file path to its include (for dest access)
+        detected_packages: Pre-detected package names
+        external_imports: How to handle external imports
+        internal_imports: How to handle internal imports
+        comments_mode: How to handle comments in stitched output
+        docstring_mode: How to handle docstrings in stitched output
 
     Returns:
         Tuple of (module_sources, all_imports, parts, derived_module_names)
@@ -5579,25 +10567,47 @@ def _collect_modules(
     all_imports.setdefault("import sys\n", None)  # For shim system and main()
     all_imports.setdefault("import types\n", None)  # For shim system (ModuleType)
 
-    # First pass: collect all module names to detect packages
-    all_module_names: list[str] = []
-    for file_path in file_paths:
-        if not file_path.exists():
-            logger.warning("Skipping missing file: %s", file_path)
-            continue
-        include = file_to_include.get(file_path)
-        module_name = derive_module_name(file_path, package_root, include)
-        all_module_names.append(module_name)
-
-    # Detect all packages from module names
-    detected_packages: set[str] = {package_name}  # Always include configured package
-    for module_name in all_module_names:
-        if "." in module_name:
-            pkg = module_name.split(".", 1)[0]
-            detected_packages.add(pkg)
-
     # Convert to sorted list for consistent behavior
     package_names_list = sorted(detected_packages)
+
+    # Check if package_root is a package directory itself
+    # (when all files are in a single package, package_root is that package)
+    is_package_dir = (package_root / "__init__.py").exists()
+    package_name_from_root: str | None = None
+    if is_package_dir:
+        package_name_from_root = package_root.name
+    # Also treat as package directory if package_root.name matches package
+    # (even without __init__.py, files in package_root are submodules of package)
+    elif package_root.name == _package_name:
+        package_name_from_root = package_root.name
+        is_package_dir = True  # Treat as package directory for module naming
+
+    # Check if any files have imports that reference the package name
+    # (indicates files are part of that package structure)
+    has_package_imports = False
+    if package_root.name != _package_name and package_root.name in (
+        "src",
+        "lib",
+        "app",
+        "package",
+        "packages",
+    ):
+        # Quick check: see if any file imports from the package
+        for file_path in file_paths:
+            if not file_path.exists():
+                continue
+            try:
+                content = file_path.read_text(encoding="utf-8")
+                # Check for imports that reference the package name
+                if (
+                    f"from {_package_name}" in content
+                    or f"import {_package_name}" in content
+                ):
+                    has_package_imports = True
+                    break
+            except Exception:  # noqa: BLE001, S110
+                # If we can't read the file, skip the check
+                pass
 
     for file_path in file_paths:
         if not file_path.exists():
@@ -5607,18 +10617,84 @@ def _collect_modules(
         # Derive module name from file path
         include = file_to_include.get(file_path)
         module_name = derive_module_name(file_path, package_root, include)
+
+        # If package_root is a package directory, preserve package structure
+        if is_package_dir and package_name_from_root:
+            # Handle __init__.py special case: represents the package itself
+            if file_path.name == "__init__.py" and file_path.parent == package_root:
+                # Use package name as the module name (represents the package)
+                module_name = package_name_from_root
+            else:
+                # Prepend package name to preserve structure
+                # e.g., "core" -> "oldpkg.core"
+                module_name = f"{package_name_from_root}.{module_name}"
+        # If package name is provided but package_root.name doesn't match,
+        # still prepend package name to ensure correct module structure
+        # (e.g., files in src/ but package is testpkg -> testpkg.utils)
+        # Only do this if package_root is a common project subdirectory
+        # (like src, lib, app) AND files have imports that reference the package
+        elif (
+            package_root.name != _package_name
+            and not module_name.startswith(f"{_package_name}.")
+            and has_package_imports
+            and module_name != _package_name
+        ):
+            # Prepend package name to module name
+            module_name = f"{_package_name}.{module_name}"
+
         derived_module_names.append(module_name)
 
         module_text = file_path.read_text(encoding="utf-8")
         module_text = strip_redundant_blocks(module_text)
-        module_sources[f"{module_name}.py"] = module_text
 
-        # Extract imports - pass all detected package names
-        external_imports, module_body = split_imports(module_text, package_names_list)
-        for imp in external_imports:
+        # Process comments according to mode
+        # IMPORTANT: This must happen BEFORE split_imports, as split_imports
+        # works with the text directly and will preserve any comments that
+        # are still in the text at that point
+        logger.trace(
+            "Processing comments: mode=%s, file=%s, text_length=%d",
+            comments_mode,
+            file_path,
+            len(module_text),
+        )
+        has_comment_before = "# This comment should be removed" in module_text
+        module_text = process_comments(module_text, comments_mode)
+        has_comment_after = "# This comment should be removed" in module_text
+        logger.trace(
+            "After process_comments: text_length=%d, had_comment_before=%s, "
+            "has_comment_after=%s",
+            len(module_text),
+            has_comment_before,
+            has_comment_after,
+        )
+
+        # Process docstrings according to mode
+        # IMPORTANT: This must happen BEFORE split_imports, similar to comments
+        logger.trace(
+            "Processing docstrings: mode=%s, file=%s, text_length=%d",
+            docstring_mode,
+            file_path,
+            len(module_text),
+        )
+        module_text = process_docstrings(module_text, docstring_mode)
+        logger.trace(
+            "After process_docstrings: text_length=%d",
+            len(module_text),
+        )
+
+        # Extract imports - pass all detected package names and modes
+        external_imports_list, module_body = split_imports(
+            module_text, package_names_list, external_imports, internal_imports
+        )
+        # Store transformed body for symbol extraction (collision detection)
+        # This ensures assign mode assignments are included in collision checks
+        module_sources[f"{module_name}.py"] = module_body
+        for imp in external_imports_list:
             all_imports.setdefault(imp, None)
 
         # Create module section - use derived module name in header
+        # Note: serger-generated comments (like headers) are added here and should
+        # remain even in strip mode, as they're part of serger's output, not user code
         header = f"# === {module_name} ==="
         parts.append(f"\n{header}\n{module_body.strip()}\n\n")
 
@@ -5661,23 +10737,69 @@ def _format_header_line(
     return f"{package_name}"
 
 
+def _format_license(license_text: str) -> str:
+    """Format license text for inclusion in generated script.
+
+    Rules:
+    - Single line (no linebreaks): Format as "License: <license text>"
+    - Multi-line (has linebreaks): Use block format with ====LICENSE==== header
+
+    Args:
+        license_text: License text to format
+
+    Returns:
+        Formatted license text with "# " prefix on each line, or empty string
+    """
+    if not license_text:
+        return ""
+
+    stripped = license_text.strip()
+    if not stripped:
+        return ""
+
+    # Check if license text has linebreaks
+    has_linebreaks = "\n" in stripped
+
+    if has_linebreaks:
+        # Multi-line format: Use block format
+        lines = stripped.split("\n")
+        prefixed_lines = [f"# {line}" for line in lines]
+        return (
+            "# ============LICENSE============\n"
+            + "\n".join(prefixed_lines)
+            + "\n# ================================\n"
+        )
+    # Single line format: "License: <license text>"
+    return f"# License: {stripped}\n"
+
+
 def _build_final_script(  # noqa: C901, PLR0912, PLR0913, PLR0915
     *,
     package_name: str,
     all_imports: OrderedDict[str, None],
     parts: list[str],
     order_names: list[str],
-    all_function_names: set[str],
-    order_paths: list[Path] | None = None,
-    package_root: Path | None = None,
-    file_to_include: dict[Path, IncludeResolved] | None = None,
-    license_header: str,
+    all_function_names: set[str],  # noqa: ARG001
+    detected_packages: set[str],
+    module_mode: str,
+    module_actions: list[ModuleActionFull],
+    shim: ShimSetting,
+    order_paths: list[Path] | None = None,  # noqa: ARG001
+    package_root: Path | None = None,  # noqa: ARG001
+    file_to_include: dict[Path, IncludeResolved] | None = None,  # noqa: ARG001
+    _original_order_names_for_shims: list[str] | None = None,
+    license_text: str,
     version: str,
     commit: str,
     build_date: str,
     display_name: str = "",
     description: str = "",
+    authors: str = "",
     repo: str = "",
+    config: RootConfigResolved | None = None,
+    selected_main_block: MainBlock | None = None,
+    main_function_result: tuple[str, Path, str] | None = None,
+    module_sources: dict[str, str] | None = None,
 ) -> tuple[str, list[str]]:
     """Build the final stitched script.
 
@@ -5687,16 +10809,25 @@ def _build_final_script(  # noqa: C901, PLR0912, PLR0913, PLR0915
         parts: Module code sections
         order_names: List of module names (for shim generation)
         all_function_names: Set of all function names from all modules
-            (used to detect if main() function exists)
-        order_paths: Optional list of file paths corresponding to order_names
-        package_root: Optional common root of all included files
-        file_to_include: Optional mapping of file path to its include
-        license_header: License header text
+            (unused, kept for API consistency)
+        config: Resolved configuration with main_mode and main_name
+        selected_main_block: Selected __main__ block to use (if any)
+        main_function_result: Result from find_main_function() if found
+        module_sources: Mapping of module name to source code
+        detected_packages: Pre-detected package names
+        module_mode: How to generate import shims ("none", "multi", "force")
+        module_actions: List of module actions (already normalized)
+        shim: Shim setting ("all", "public", "none")
+        order_paths: Optional list of file paths (unused, kept for API consistency)
+        package_root: Optional common root (unused, kept for API consistency)
+        file_to_include: Optional mapping (unused, kept for API consistency)
+        license_text: License text (will be formatted automatically)
         version: Version string
         commit: Commit hash
         build_date: Build timestamp
         display_name: Optional display name for header
         description: Optional description for header
+        authors: Optional authors for header
         repo: Optional repository URL for header
 
     Returns:
@@ -5715,322 +10846,1124 @@ def _build_final_script(  # noqa: C901, PLR0912, PLR0913, PLR0915
     future_block = "".join(future_imports.keys())
     import_block = "".join(all_imports.keys())
 
-    # Generate import shims
-    # Group modules by their immediate parent package
-    # For "serger.utils.utils_text", the parent package is "serger.utils"
-    # For "serger.cli", the parent package is "serger"
-    # Include all modules (matching installed package behavior)
-    #
-    # IMPORTANT: Module names in order_names are relative to package_root
-    # (e.g., "utils.utils_text"), but shims need full paths
-    # (e.g., "serger.utils.utils_text").
-    # Prepend package_name to all module names for shim generation.
-    # Note: If specific modules should be excluded, use the 'exclude' config option
-    shim_names_raw = list(order_names)
-
-    # Detect packages by looking at file system structure (__init__.py files)
-    # This is more reliable than guessing from module names
-    # Map module names to their actual package roots
-    module_to_package_root: dict[str, Path | None] = {}
-    detected_packages: set[str] = {package_name}  # Always include configured package
-
-    if order_paths and package_root and file_to_include:
-        logger.trace(
-            "[PKG_DETECT] Detecting packages from file system structure "
-            "(__init__.py files)"
-        )
-        # Create mapping from module names to file paths
-        name_to_path: dict[str, Path] = {}
-        for file_path in order_paths:
-            include = file_to_include.get(file_path)
-            module_name = derive_module_name(file_path, package_root, include)
-            name_to_path[module_name] = file_path
-
-        # For each module, find its package root by walking up looking for __init__.py
-        for module_name in shim_names_raw:
-            if module_name in name_to_path:
-                file_path = name_to_path[module_name]
-                file_pkg_root = _find_package_root_for_file(file_path)
-                module_to_package_root[module_name] = file_pkg_root
-
-                # Determine if this file is from a different package
-                # A file is from a different package if its package root is:
-                # 1. Not the same as package_root, AND
-                # 2. Not a subdirectory of package_root
-                #    (i.e., it's a sibling or unrelated)
-                if file_pkg_root and file_pkg_root != package_root:
-                    try:
-                        # Check if file_pkg_root is a subdirectory of package_root
-                        rel_path = file_pkg_root.relative_to(package_root)
-                        # If it's a direct child (one level deep), it might be
-                        # a sibling package like pkg1/ and pkg2/ under a common root
-                        if len(rel_path.parts) == 1:
-                            # It's a direct child - check if it's a different package
-                            # by comparing the package root name to package_name
-                            pkg_name_from_path = file_pkg_root.name
-                            if (
-                                pkg_name_from_path
-                                and pkg_name_from_path != package_name
-                            ):
-                                logger.trace(
-                                    "[PKG_DETECT] Detected separate package %s "
-                                    "(sibling of %s) from file %s",
-                                    pkg_name_from_path,
-                                    package_name,
-                                    file_path,
-                                )
-                                detected_packages.add(pkg_name_from_path)
-                            else:
-                                logger.trace(
-                                    "[PKG_DETECT] %s is subpackage of %s "
-                                    "(file_pkg_root=%s, package_root=%s)",
-                                    module_name,
-                                    package_name,
-                                    file_pkg_root,
-                                    package_root,
-                                )
-                        # If it's deeper (len > 1), it's a subpackage
-                        else:
-                            logger.trace(
-                                "[PKG_DETECT] %s is nested subpackage of %s (depth=%d)",
-                                module_name,
-                                package_name,
-                                len(rel_path.parts),
-                            )
-                    except ValueError:
-                        # file_pkg_root is not under package_root,
-                        # so it's a different package
-                        # Extract package name from the file's package root
-                        pkg_name_from_path = file_pkg_root.name
-                        if pkg_name_from_path and pkg_name_from_path != package_name:
-                            logger.trace(
-                                "[PKG_DETECT] Detected separate package %s "
-                                "(unrelated to %s) from file %s",
-                                pkg_name_from_path,
-                                package_name,
-                                file_path,
-                            )
-                            detected_packages.add(pkg_name_from_path)
-                elif file_pkg_root == package_root:
-                    logger.trace(
-                        "[PKG_DETECT] %s is in main package %s",
-                        module_name,
-                        package_name,
-                    )
-                else:
-                    logger.trace(
-                        "[PKG_DETECT] %s: no package root found (file_pkg_root=None)",
-                        module_name,
-                    )
-
-    # Also detect packages from module names
-    # (as fallback when __init__.py detection fails)
-    # Only do this if we didn't successfully detect packages from file system
-    # (i.e., if module_to_package_root is empty or all values are None)
-    if not module_to_package_root or all(
-        v is None for v in module_to_package_root.values()
-    ):
-        logger.debug(
-            "Package detection: __init__.py files not found, "
-            "falling back to module name detection"
-        )
-        # Fallback: detect packages from module names
-        for module_name in shim_names_raw:
-            if "." in module_name:
-                pkg = module_name.split(".", 1)[0]
-                # Only add if it's clearly a different package (not a subpackage)
-                # We can't reliably distinguish, so be conservative and only add
-                # if it's different from package_name
-                if pkg != package_name:
-                    logger.trace(
-                        "[PKG_DETECT] Fallback: detected package %s "
-                        "from module name %s",
-                        pkg,
-                        module_name,
-                    )
-                    detected_packages.add(pkg)
-
-    # Prepend package_name to create full module paths
-    # Module names are relative to package_root, so we need to prepend package_name
-    # to get the full import path
-    # (e.g., "utils.utils_text" -> "serger.utils.utils_text")
-    # However, if module names already start with package_name or another package,
-    # don't double-prefix (for multi-package scenarios)
-    shim_names: list[str] = []
-    for name in shim_names_raw:
-        # If name already equals package_name, it's the root module itself
-        if name == package_name:
-            full_name = package_name
-        # If name already starts with package_name, use it as-is
-        elif name.startswith(f"{package_name}."):
-            full_name = name
-        # If name contains dots and starts with a different detected package,
-        # it's from another package (multi-package scenario) - use as-is
-        elif "." in name:
-            first_part = name.split(".", 1)[0]
-            # If first part is a detected package different from package_name,
-            # it's from another package - use as-is
-            if first_part in detected_packages and first_part != package_name:
-                full_name = name
-            else:
-                # Likely a subpackage - prepend package_name
-                full_name = f"{package_name}.{name}"
-        else:
-            # Top-level module under package: prepend package_name
-            full_name = f"{package_name}.{name}"
-        shim_names.append(full_name)
-
-    # Group modules by their parent package
-    # parent_package -> list of (module_name, is_direct_child)
-    # is_direct_child means the module is directly under this package
-    # (not nested deeper)
-    packages: dict[str, list[tuple[str, bool]]] = {}
-    # parent_pkg -> [(module_name, is_direct)]
-
-    for module_name in shim_names:
-        if "." not in module_name:
-            # Top-level module, parent is the root package
-            parent = package_name
-            is_direct = True
-        else:
-            # Find the parent package (everything except the last component)
-            name_parts = module_name.split(".")
-            parent = ".".join(name_parts[:-1])
-            is_direct = True  # This module is directly under its parent
-
-        if parent not in packages:
-            packages[parent] = []
-        packages[parent].append((module_name, is_direct))
-
-    # Collect all package names (both intermediate and top-level)
-    all_packages: set[str] = set()
-    for module_name in shim_names:
-        name_parts = module_name.split(".")
-        # Add all package prefixes
-        # (e.g., for "serger.utils.utils_text" add "serger" and "serger.utils")
-        for i in range(1, len(name_parts)):
-            pkg = ".".join(name_parts[:i])
-            all_packages.add(pkg)
-        # Also add the top-level package if module has dots
-        if "." in module_name:
-            all_packages.add(name_parts[0])
-    # Add root package if not already present
-    all_packages.add(package_name)
-
-    # Sort packages by depth (shallowest first) to create parents before children
-    sorted_packages = sorted(all_packages, key=lambda p: p.count("."))
-
-    # Generate shims for each package
-    # Each package gets its own module object to maintain proper isolation
-    shim_blocks: list[str] = []
-    shim_blocks.append("# --- import shims for single-file runtime ---")
-    # Note: types and sys are imported at the top level (see all_imports)
-
-    # Helper function to create/register package modules
-    shim_blocks.append("def _create_pkg_module(pkg_name: str) -> types.ModuleType:")
-    shim_blocks.append(
-        '    """Create or get a package module and set up parent relationships."""'
-    )
-    shim_blocks.append("    _mod = sys.modules.get(pkg_name)")
-    shim_blocks.append("    if not _mod:")
-    shim_blocks.append("        _mod = types.ModuleType(pkg_name)")
-    shim_blocks.append("        _mod.__package__ = pkg_name")
-    shim_blocks.append("        sys.modules[pkg_name] = _mod")
-    shim_blocks.append("    # Set up parent-child relationships for nested packages")
-    shim_blocks.append("    if '.' in pkg_name:")
-    shim_blocks.append("        _parent_pkg = '.'.join(pkg_name.split('.')[:-1])")
-    shim_blocks.append("        _child_name = pkg_name.split('.')[-1]")
-    shim_blocks.append("        _parent = sys.modules.get(_parent_pkg)")
-    shim_blocks.append("        if _parent:")
-    shim_blocks.append("            setattr(_parent, _child_name, _mod)")
-    shim_blocks.append("    return _mod")
-    shim_blocks.append("")
-
-    shim_blocks.append(
-        "def _setup_pkg_modules(pkg_name: str, module_names: list[str]) -> None:"
-    )
-    shim_blocks.append(
-        '    """Set up package module attributes and register submodules."""'
-    )
-    shim_blocks.append("    _mod = sys.modules.get(pkg_name)")
-    shim_blocks.append("    if not _mod:")
-    shim_blocks.append("        return")
-    shim_blocks.append("    # Copy attributes from all modules under this package")
-    shim_blocks.append("    _globals = globals()")
-    shim_blocks.append("    for _key, _value in _globals.items():")
-    shim_blocks.append("        setattr(_mod, _key, _value)")
-    shim_blocks.append("    # Register all modules under this package")
-    shim_blocks.append("    for _name in module_names:")
-    shim_blocks.append("        sys.modules[_name] = _mod")
-    shim_blocks.append("    # Set submodules as attributes on parent package")
-    shim_blocks.append("    for _name in module_names:")
-    shim_blocks.append(
-        "        if _name != pkg_name and _name.startswith(pkg_name + '.'):"
-    )
-    shim_blocks.append("            _submodule_name = _name.split('.')[-1]")
-    shim_blocks.append("            if not hasattr(_mod, _submodule_name):")
-    shim_blocks.append("                setattr(_mod, _submodule_name, _mod)")
-    shim_blocks.append(
-        "            elif isinstance(getattr(_mod, _submodule_name, None), "
-        "types.ModuleType):"
-    )
-    shim_blocks.append("                setattr(_mod, _submodule_name, _mod)")
-    shim_blocks.append("")
-
-    # First pass: Create all package modules and set up parent-child relationships
-    shim_blocks.extend(
-        f"_create_pkg_module({pkg_name!r})" for pkg_name in sorted_packages
-    )
-
-    shim_blocks.append("")
-
-    # Second pass: Copy attributes and register modules
-    # Process in any order since all modules are now created
-    for pkg_name in sorted_packages:
-        if pkg_name not in packages:
-            continue  # Skip packages that don't have any modules
-
-        module_names_for_pkg = [name for name, _ in packages[pkg_name]]
-        # Module names already have full paths (with package_name prefix),
-        # but ensure they're correctly formatted for registration
-        # If name equals pkg_name, it's the root module itself
-        full_module_names = [
-            (
-                name
-                if (name == pkg_name or name.startswith(f"{pkg_name}."))
-                else f"{pkg_name}.{name}"
-            )
-            for name in module_names_for_pkg
+    # Update module section headers in parts to use transformed names
+    # This must happen BEFORE shim generation, as headers are part of the stitched code
+    # Headers should be updated even when shims aren't generated (module_mode == "none")
+    # Process user-specified module_actions to update headers
+    # When scope: "original" is set, it affects original module names in stitched code
+    # (including headers), regardless of affects value
+    transformed_order_names: list[str] | None = None
+    if module_actions:
+        # Filter for actions with scope: "original"
+        # (headers are part of original code structure, so scope: "original" applies)
+        original_scope_actions_for_headers = [
+            a for a in module_actions if a.get("scope") == "original"
         ]
-        module_names_str = ", ".join(repr(name) for name in full_module_names)
-        shim_blocks.append(f"_setup_pkg_modules({pkg_name!r}, [{module_names_str}])")
+        if original_scope_actions_for_headers:
+            # Apply actions to order_names to get transformed names for headers
+            transformed_order_names = apply_module_actions(
+                list(order_names), original_scope_actions_for_headers, detected_packages
+            )
+            logger.debug(
+                "Header update: order_names=%s, transformed_order_names=%s",
+                order_names,
+                transformed_order_names,
+            )
+            # Build mapping from order_names to transformed_order_names
+            # (for updating headers)
+            if len(transformed_order_names) != len(order_names):
+                logger.warning(
+                    "transformed_order_names length (%d) != order_names length (%d). "
+                    "Header update may be incomplete.",
+                    len(transformed_order_names),
+                    len(order_names),
+                )
+            for i, original_name in enumerate(order_names):
+                if i < len(transformed_order_names):
+                    transformed_name = transformed_order_names[i]
+                    if transformed_name != original_name:
+                        # Update header - search and replace in parts
+                        # Headers are created as "\n# === {module_name} ===\n"
+                        # "{module_body}\n\n"
+                        # Use simple string replacement (headers are on their own lines)
+                        header_pattern = f"# === {original_name} ==="
+                        new_header = f"# === {transformed_name} ==="
+                        logger.debug(
+                            "Header update: searching for pattern '%s' "
+                            "to replace with '%s'",
+                            header_pattern,
+                            new_header,
+                        )
+                        # Update all parts that contain this header
+                        # Replace all occurrences in each part
+                        replaced = False
+                        for j, part in enumerate(parts):
+                            if header_pattern in part:
+                                logger.debug(
+                                    "Found header pattern in part %d: %s",
+                                    j,
+                                    repr(part[:100]),
+                                )
+                                # Replace the header pattern with new header
+                                parts[j] = part.replace(header_pattern, new_header)
+                                logger.debug(
+                                    "Replaced header in part %d: %s",
+                                    j,
+                                    repr(parts[j][:100]),
+                                )
+                                replaced = True
+                        if not replaced:
+                            logger.debug(
+                                "Header pattern '%s' not found in parts for "
+                                "transformation to '%s'. Parts sample: %s",
+                                header_pattern,
+                                new_header,
+                                [repr(p[:50]) for p in parts[:5]],
+                            )
 
-    shim_text = "\n".join(shim_blocks)
+    # Build name mapping for module structure setup
+    # Maps transformed full names -> original full names
+    # This is used by _setup_pkg_modules() to find modules by original name
+    # when they're registered with transformed names
+    name_mapping: dict[str, str] = {}
+    if transformed_order_names is not None:
+        logger.trace(
+            "Building name mapping: transformed_order_names=%s, order_names=%s",
+            transformed_order_names,
+            order_names,
+        )
+        # Build mapping from transformed to original names (both as full paths)
+        for i, original_name in enumerate(order_names):
+            if i < len(transformed_order_names):
+                transformed_name = transformed_order_names[i]
+                if transformed_name != original_name:
+                    # Convert both to full paths for name mapping
+                    # Always use full paths with package_name prefix for name mapping
+                    # Original name -> full path
+                    if original_name == package_name:
+                        original_full = package_name
+                    elif original_name.startswith(f"{package_name}."):
+                        original_full = original_name
+                    else:
+                        # Always prepend package_name for name mapping
+                        # (we need consistent full paths in the mapping)
+                        original_full = f"{package_name}.{original_name}"
+
+                    # Transformed name -> full path
+                    # Always use full paths with package_name prefix for name mapping
+                    if transformed_name == package_name:
+                        transformed_full = package_name
+                    elif transformed_name.startswith(f"{package_name}."):
+                        transformed_full = transformed_name
+                    else:
+                        # Always prepend package_name for name mapping
+                        transformed_full = f"{package_name}.{transformed_name}"
+
+                    # Map transformed -> original
+                    name_mapping[transformed_full] = original_full
+                    logger.trace(
+                        "Name mapping entry: %s -> %s (original: %s, transformed: %s)",
+                        transformed_full,
+                        original_full,
+                        original_name,
+                        transformed_name,
+                    )
+
+    # Generate import shims based on module_actions and shim setting
+    # If shim == "none" or module_mode == "none", skip shim generation
+    if shim == "none" or module_mode == "none":
+        # No shims generated
+        shim_text = ""
+    else:
+        # IMPORTANT: Module names in order_names are relative to package_root
+        # (e.g., "utils.utils_text"), but shims need full paths
+        # (e.g., "serger.utils.utils_text").
+        # Note: If specific modules should be excluded, use the 'exclude' config option
+        # When files are filtered by affects: "stitching", use original module names
+        # for shim generation (shims should still be generated even if files are
+        # filtered from stitching)
+        if _original_order_names_for_shims is not None:
+            shim_names_raw = list(_original_order_names_for_shims)
+        else:
+            shim_names_raw = list(order_names)
+
+        # Generate actions from module_mode if specified (and not "none"/"multi")
+        # Actions should be applied to original module names BEFORE prepending
+        # package_name
+        all_actions: list[ModuleActionFull] = []
+        if module_mode and module_mode not in ("none", "multi"):
+            auto_actions = generate_actions_from_mode(
+                module_mode,
+                detected_packages,
+                package_name,
+                module_names=shim_names_raw,
+            )
+            # Apply defaults to mode-generated actions (scope: "original" set here)
+            normalized_actions = [
+                set_mode_generated_action_defaults(action) for action in auto_actions
+            ]
+            all_actions.extend(normalized_actions)
+
+        # Add user-specified module_actions from RootConfigResolved
+        # These are already fully normalized with scope: "shim" set (iteration 04)
+        if module_actions:  # Already list[ModuleActionFull] with all defaults applied
+            all_actions.extend(module_actions)
+
+        # Separate actions by affects value
+        (
+            shims_only_actions,
+            _stitching_only_actions,
+            both_actions,
+        ) = separate_actions_by_affects(all_actions)
+
+        # Separate shim actions by scope
+        # Note: Actions with scope: "original" must be applied BEFORE prepending
+        # package_name (they operate on original module names), so we include them
+        # from both shims_only_actions and both_actions
+        # Actions with scope: "shim" and affects: "shims" are applied after
+        # prepending (they operate on full module paths)
+        original_scope_actions = [
+            a for a in shims_only_actions + both_actions if a.get("scope") == "original"
+        ]
+        shim_scope_actions = [a for a in both_actions if a.get("scope") == "shim"]
+
+        # Apply scope: "original" actions to original module names (before prepending)
+        transformed_names = shim_names_raw
+        if original_scope_actions:
+            # Build available_modules set for validation
+            available_modules_for_validation = set(shim_names_raw)
+            # Add all action sources to available_modules since mode-generated
+            # actions only reference root packages that should exist
+            for action in original_scope_actions:
+                source = action.get("source")
+                if source:
+                    available_modules_for_validation.add(source)
+            # Also add package names from detected_packages that appear anywhere
+            # in module names (as a fallback for edge cases)
+            for pkg in detected_packages:
+                if pkg != package_name and pkg not in available_modules_for_validation:
+                    # Check if this package appears anywhere in module names
+                    for mod_name in shim_names_raw:
+                        if (
+                            f".{pkg}." in mod_name
+                            or mod_name.startswith(f"{pkg}.")
+                            or mod_name == pkg
+                            or mod_name.endswith(f".{pkg}")
+                        ):
+                            available_modules_for_validation.add(pkg)
+                            break
+            # Validate other constraints (dest conflicts, circular moves, etc.)
+            validate_module_actions(
+                original_scope_actions,
+                available_modules_for_validation,
+                detected_packages,
+                scope="original",
+            )
+            transformed_names = apply_module_actions(
+                transformed_names, original_scope_actions, detected_packages
+            )
+            # Note: Header updates are now handled outside the shim generation block
+            # (before this conditional) so they work even when module_mode == "none"
+
+        # Now prepend package_name to create full module paths
+        # Module names are relative to package_root, so we need to prepend package_name
+        # to get the full import path
+        # (e.g., "utils.utils_text" -> "serger.utils.utils_text")
+        # Note: flat mode has special handling for loose files (keeps them top-level)
+        shim_names: list[str] = []
+        for name in transformed_names:
+            # Flat mode: treat loose files as top-level modules (not under package)
+            # Packages still get shims as usual
+            if module_mode == "flat":
+                if name == package_name:
+                    full_name = package_name
+                elif name.startswith(f"{package_name}."):
+                    full_name = name
+                elif "." in name:
+                    # Has dots: treat as package structure, use multi mode logic
+                    first_part = name.split(".", 1)[0]
+                    if first_part in detected_packages and first_part != package_name:
+                        full_name = name
+                    else:
+                        full_name = f"{package_name}.{name}"
+                else:
+                    # Loose file: keep as top-level module (no package prefix)
+                    full_name = name
+            # Multi mode logic: use detected packages (default behavior)
+            # If name already equals package_name, it's the root module itself
+            elif name == package_name:
+                full_name = package_name
+            # If name already starts with package_name, use it as-is
+            elif name.startswith(f"{package_name}."):
+                full_name = name
+            # If name contains dots and starts with a different detected package,
+            # it's from another package (multi-package scenario) - use as-is
+            elif "." in name:
+                first_part = name.split(".", 1)[0]
+                # If first part is a detected package different from package_name,
+                # check if it's actually a subpackage of package_name
+                # (i.e., if it appears as a top-level module in transformed_names)
+                if (
+                    first_part in detected_packages
+                    and first_part != package_name
+                    and first_part not in transformed_names
+                ):
+                    # First part is a separate package (not in our module list)
+                    # - use as-is
+                    full_name = name
+                else:
+                    # Likely a subpackage of package_name - prepend package_name
+                    full_name = f"{package_name}.{name}"
+            else:
+                # Top-level module under package: prepend package_name
+                full_name = f"{package_name}.{name}"
+            shim_names.append(full_name)
+
+        # Validate and apply scope: "shim" actions (incremental validation)
+        if shim_scope_actions:
+            for action in shim_scope_actions:
+                # Skip source validation for delete actions (they match flexibly)
+                action_type = action.get("action", "move")
+                if action_type != "delete":
+                    # For move/copy actions, validate source exists
+                    # After mode transformations, source might need component matching
+                    # (e.g., "mypkg.module" might need to match "mypkg.pkg1.module")
+                    source = action.get("source")
+                    if source:
+                        if source not in shim_names:
+                            # Check if source matches any component in shim_names
+                            # For "mypkg.module", check if it matches
+                            # "mypkg.pkg1.module" by checking if all components
+                            # of source appear in module name
+                            source_parts = source.split(".")
+                            matching_modules = [
+                                name
+                                for name in shim_names
+                                if (
+                                    name == source
+                                    or name.startswith(f"{source}.")
+                                    or all(
+                                        part in name.split(".") for part in source_parts
+                                    )
+                                )
+                            ]
+                            if not matching_modules:
+                                available = sorted(shim_names)
+                                msg = (
+                                    f"Module action source '{source}' "
+                                    f"does not exist in available modules "
+                                    f"(scope: 'shim'). Available: {available}"
+                                )
+                                raise ValueError(msg)
+                            # Component matching found - skip exact validation
+                            # The action handler will use component matching
+                        else:
+                            # Exact match found - use standard validation
+                            validate_action_source_exists(
+                                action, set(shim_names), scope="shim"
+                            )
+                shim_names = apply_single_action(shim_names, action, detected_packages)
+
+        # Apply shims_only_actions after prepending package_name
+        # These actions only affect shim generation, so they're applied to
+        # the final shim_names list (after prepending package_name)
+        # This allows delete actions to match against full module paths like
+        # "mypkg.pkg1"
+        # Note: Exclude scope: "original" actions from shims_only_actions since
+        # they've already been applied in original_scope_actions (before prepending)
+        shims_only_actions_filtered = [
+            a for a in shims_only_actions if a.get("scope") != "original"
+        ]
+        if shims_only_actions_filtered:
+            for action in shims_only_actions_filtered:
+                # Skip source validation for delete actions (they match flexibly)
+                action_type = action.get("action", "move")
+                if action_type != "delete":
+                    # For non-delete actions, validate source exists
+                    # Note: source might be relative (scope: "original") or absolute
+                    # (scope: "shim"), so we need to handle both cases
+                    action_scope = action.get("scope", "shim")
+                    if action_scope == "shim":
+                        source = action.get("source")
+                        if source:
+                            if source not in shim_names:
+                                # Check if source matches any component in shim_names
+                                # For "mypkg.module", check if it matches
+                                # "mypkg.pkg1.module" by checking if all components
+                                # of source appear in the module name
+                                source_parts = source.split(".")
+                                matching_modules = [
+                                    name
+                                    for name in shim_names
+                                    if (
+                                        name == source
+                                        or name.startswith(f"{source}.")
+                                        or all(
+                                            part in name.split(".")
+                                            for part in source_parts
+                                        )
+                                    )
+                                ]
+                                if not matching_modules:
+                                    available = sorted(shim_names)
+                                    msg = (
+                                        f"Module action source '{source}' "
+                                        f"does not exist in available modules "
+                                        f"(scope: 'shim', affects: 'shims'). "
+                                        f"Available: {available}"
+                                    )
+                                    raise ValueError(msg)
+                                # Component matching found - skip exact validation
+                            else:
+                                # Exact match found - use standard validation
+                                validate_action_source_exists(
+                                    action, set(shim_names), scope="shim"
+                                )
+                    # For scope: "original", the source is relative, so we need to
+                    # check if it matches any component in shim_names
+                    # (e.g., source "pkg1" should match "mypkg.pkg1")
+                    elif action_scope == "original":
+                        source = action.get("source")
+                        if source:
+                            # Check if source appears as a component in any shim_name
+                            source_found = False
+                            for shim_name in shim_names:
+                                if (
+                                    shim_name == source
+                                    or shim_name.startswith(f"{source}.")
+                                    or source in shim_name.split(".")
+                                ):
+                                    source_found = True
+                                    break
+                            if not source_found:
+                                available = sorted(shim_names)
+                                msg = (
+                                    f"Module action source '{source}' does not exist "
+                                    f"in available modules (scope: 'original', "
+                                    f"affects: 'shims'). Available: {available}"
+                                )
+                                raise ValueError(msg)
+                shim_names = apply_single_action(shim_names, action, detected_packages)
+
+        # Check for shim-stitching mismatches and apply cleanup
+        # Build set of modules that are in stitched code
+        # (from order_names after filtering)
+        # order_names contains the module names that were actually stitched
+        # Convert to full module paths (with package_name prefix) for comparison
+        # This matches the format of shim_names
+        stitched_modules_full: set[str] = set()
+        for name in order_names:
+            # Apply same logic as shim name generation to get full path
+            if module_mode == "flat":
+                if name == package_name:
+                    full_name = package_name
+                elif name.startswith(f"{package_name}."):
+                    full_name = name
+                elif "." in name:
+                    first_part = name.split(".", 1)[0]
+                    if first_part in detected_packages and first_part != package_name:
+                        full_name = name
+                    else:
+                        full_name = f"{package_name}.{name}"
+                else:
+                    full_name = name
+            elif name == package_name:
+                full_name = package_name
+            elif name.startswith(f"{package_name}."):
+                full_name = name
+            elif "." in name:
+                first_part = name.split(".", 1)[0]
+                if first_part in detected_packages and first_part != package_name:
+                    full_name = name
+                else:
+                    full_name = f"{package_name}.{name}"
+            else:
+                full_name = f"{package_name}.{name}"
+            stitched_modules_full.add(full_name)
+
+        # Check for mismatches
+        shim_modules_set = set(shim_names)
+        mismatches = check_shim_stitching_mismatches(
+            shim_modules_set, stitched_modules_full, all_actions
+        )
+
+        # Apply cleanup behavior
+        if mismatches:
+            updated_shims, _warnings = apply_cleanup_behavior(
+                mismatches, shim_modules_set
+            )
+            # Update shim_names to reflect cleanup
+            shim_names = sorted(updated_shims)
+
+        # Group modules by their parent package
+        # parent_package -> list of (module_name, is_direct_child)
+        # is_direct_child means the module is directly under this package
+        # (not nested deeper)
+        packages: dict[str, list[tuple[str, bool]]] = {}
+        # parent_pkg -> [(module_name, is_direct)]
+        # Track top-level modules for flat mode
+        top_level_modules: list[str] = []
+
+        # Use transformed_order_names for module structure if available
+        # (for actions with scope: "original", the module structure should use
+        # transformed names, not original names)
+        # However, if shim transformations have been applied, use final shim_names
+        # instead (which includes all transformations)
+        # shim_names is used for shim generation, but module structure should
+        # use transformed names when scope: "original" actions are applied
+        # transformed_order_names is initialized above (line 1829) and set if
+        # original_scope_actions_for_headers is not empty
+        module_names_for_structure = shim_names
+        logger.trace(
+            "Module structure setup: shim_names=%s, transformed_order_names=%s",
+            shim_names,
+            transformed_order_names,
+        )
+        # Only use transformed_order_names if no shim transformations were applied
+        # (shim_names already includes all transformations if shim actions exist)
+        has_shim_transformations = any(
+            a.get("scope") == "shim"
+            for a in (module_actions or [])
+            if a.get("affects", "shims") in ("shims", "both")
+        )
+        if transformed_order_names is not None and not has_shim_transformations:  # pyright: ignore[reportPossiblyUnboundVariable]
+            # transformed_order_names contains transformed module names
+            # (relative to package_root)
+            # We need to convert them to full module paths (with package_name prefix)
+            # to match the format of shim_names
+            transformed_full_names: list[str] = []
+            for name in transformed_order_names:  # pyright: ignore[reportPossiblyUnboundVariable]
+                # Apply same logic as shim name generation to get full path
+                if module_mode == "flat":
+                    if name == package_name:
+                        full_name = package_name
+                    elif name.startswith(f"{package_name}."):
+                        full_name = name
+                    elif "." in name:
+                        first_part = name.split(".", 1)[0]
+                        if (
+                            first_part in detected_packages
+                            and first_part != package_name
+                        ):
+                            full_name = name
+                        else:
+                            full_name = f"{package_name}.{name}"
+                    else:
+                        full_name = name
+                elif name == package_name:
+                    full_name = package_name
+                elif name.startswith(f"{package_name}."):
+                    full_name = name
+                elif "." in name:
+                    first_part = name.split(".", 1)[0]
+                    if first_part in detected_packages and first_part != package_name:
+                        full_name = name
+                    else:
+                        full_name = f"{package_name}.{name}"
+                else:
+                    full_name = f"{package_name}.{name}"
+                transformed_full_names.append(full_name)
+            module_names_for_structure = transformed_full_names
+            logger.trace(
+                "Using transformed names for structure: %s (package_name=%s)",
+                transformed_full_names,
+                package_name,
+            )
+
+        for module_name in module_names_for_structure:
+            logger.trace(
+                "Processing module for structure: %s (package_name=%s)",
+                module_name,
+                package_name,
+            )
+            if "." not in module_name:
+                # Top-level module
+                if module_mode == "flat":
+                    # In flat mode, top-level modules are not under any package
+                    top_level_modules.append(module_name)
+                else:
+                    # In other modes, parent is the root package
+                    parent = package_name
+                    is_direct = True
+                    if parent not in packages:
+                        packages[parent] = []
+                    packages[parent].append((module_name, is_direct))
+                    logger.trace(
+                        "Added module %s to package %s (is_direct=%s)",
+                        module_name,
+                        parent,
+                        is_direct,
+                    )
+            else:
+                # Find the parent package (everything except the last component)
+                name_parts = module_name.split(".")
+                parent = ".".join(name_parts[:-1])
+                is_direct = True  # This module is directly under its parent
+
+                if parent not in packages:
+                    packages[parent] = []
+                packages[parent].append((module_name, is_direct))
+                logger.trace(
+                    "Added module %s to package %s (is_direct=%s)",
+                    module_name,
+                    parent,
+                    is_direct,
+                )
+
+        # Rebuild name mapping using final shim_names (after all transformations)
+        # This ensures the mapping reflects the final state after both original and
+        # shim transformations
+        if transformed_order_names is not None:
+            logger.trace(
+                "Rebuilding name mapping from final shim_names: shim_names=%s, "
+                "order_names=%s",
+                shim_names,
+                order_names,
+            )
+            # Build mapping from final transformed names to original names
+            # We need to match shim_names (final) back to order_names (original)
+            name_mapping.clear()
+            # Convert order_names to full paths for matching
+            original_full_paths: list[str] = []
+            for original_name in order_names:
+                if original_name == package_name:
+                    original_full = package_name
+                elif original_name.startswith(f"{package_name}."):
+                    original_full = original_name
+                else:
+                    original_full = f"{package_name}.{original_name}"
+                original_full_paths.append(original_full)
+
+            # Match shim_names to original_full_paths by position
+            # (assuming they're in the same order)
+            for i, final_name in enumerate(shim_names):
+                if i < len(original_full_paths):
+                    original_full = original_full_paths[i]
+                    if final_name != original_full:
+                        name_mapping[final_name] = original_full
+                        logger.trace(
+                            "Rebuilt name mapping: %s -> %s",
+                            final_name,
+                            original_full,
+                        )
+
+        # Collect all package names (both intermediate and top-level)
+        # Use module_names_for_structure to include packages from transformed names
+        all_packages: set[str] = set()
+        logger.trace(
+            "Collecting packages from shim_names=%s and module_names_for_structure=%s",
+            shim_names,
+            module_names_for_structure,
+        )
+        # Collect from both shim_names (for shim generation) and
+        # module_names_for_structure (for transformed structure)
+        for module_name in shim_names:
+            # Skip top-level modules in flat mode (they're not in packages)
+            if module_mode == "flat" and "." not in module_name:
+                continue
+            name_parts = module_name.split(".")
+            # Add all package prefixes
+            # (e.g., for "serger.utils.utils_text" add "serger" and "serger.utils")
+            for i in range(1, len(name_parts)):
+                pkg = ".".join(name_parts[:i])
+                all_packages.add(pkg)
+            # Also add the top-level package if module has dots
+            if "." in module_name:
+                all_packages.add(name_parts[0])
+        # Also collect packages from transformed structure
+        for module_name in module_names_for_structure:
+            # Skip top-level modules in flat mode (they're not in packages)
+            if module_mode == "flat" and "." not in module_name:
+                continue
+            name_parts = module_name.split(".")
+            # Add all package prefixes
+            for i in range(1, len(name_parts)):
+                pkg = ".".join(name_parts[:i])
+                all_packages.add(pkg)
+            # Also add the top-level package if module has dots
+            if "." in module_name:
+                all_packages.add(name_parts[0])
+        # Add root package if not already present (unless flat mode with no packages)
+        if module_mode != "flat" or all_packages:
+            all_packages.add(package_name)
+
+        logger.trace(
+            "Collected packages: %s (package_name=%s)",
+            sorted(all_packages),
+            package_name,
+        )
+
+        # Sort packages by depth (shallowest first) to create parents before children
+        sorted_packages = sorted(all_packages, key=lambda p: p.count("."))
+        logger.trace("Sorted packages (by depth): %s", sorted_packages)
+
+        # Generate shims for each package
+        # Each package gets its own module object to maintain proper isolation
+        shim_blocks: list[str] = []
+        shim_blocks.append("# --- import shims for single-file runtime ---")
+        # Note: types and sys are imported at the top level (see all_imports)
+
+        # Helper function to create/register package modules
+        shim_blocks.append("def _create_pkg_module(pkg_name: str) -> types.ModuleType:")
+        shim_blocks.append(
+            '    """Create or get a package module and set up parent relationships."""'
+        )
+        shim_blocks.append("    _mod = sys.modules.get(pkg_name)")
+        shim_blocks.append("    if not _mod:")
+        shim_blocks.append("        _mod = types.ModuleType(pkg_name)")
+        shim_blocks.append("        _mod.__package__ = pkg_name")
+        shim_blocks.append("        sys.modules[pkg_name] = _mod")
+        shim_blocks.append(
+            "    # Set up parent-child relationships for nested packages"
+        )
+        shim_blocks.append("    if '.' in pkg_name:")
+        shim_blocks.append("        _parent_pkg = '.'.join(pkg_name.split('.')[:-1])")
+        shim_blocks.append("        _child_name = pkg_name.split('.')[-1]")
+        shim_blocks.append("        _parent = sys.modules.get(_parent_pkg)")
+        shim_blocks.append("        if _parent:")
+        shim_blocks.append("            setattr(_parent, _child_name, _mod)")
+        shim_blocks.append("    return _mod")
+        shim_blocks.append("")
+
+        shim_blocks.append(
+            "def _setup_pkg_modules("
+            "pkg_name: str, module_names: list[str], "
+            "name_mapping: dict[str, str] | None = None"
+            ") -> None:"
+        )
+        shim_blocks.append(
+            '    """Set up package module attributes and register submodules."""'
+        )
+        shim_blocks.append("    _mod = sys.modules.get(pkg_name)")
+        shim_blocks.append("    if not _mod:")
+        shim_blocks.append("        return")
+        shim_blocks.append("    # Copy attributes from all modules under this package")
+        shim_blocks.append("    _globals = globals()")
+        shim_blocks.append("    # Debug: log what's in globals for this package")
+        shim_blocks.append("    # Note: This copies all globals to the package module")
+        shim_blocks.append("    for _key, _value in _globals.items():")
+        shim_blocks.append("        setattr(_mod, _key, _value)")
+        shim_blocks.append(
+            "    # Set up package attributes for nested packages BEFORE registering"
+        )
+        shim_blocks.append(
+            "    # modules (so packages are available when modules are registered)"
+        )
+        shim_blocks.append("    _seen_packages: set[str] = set()")
+        shim_blocks.append("    for _name in module_names:")
+        shim_blocks.append(
+            "        if _name != pkg_name and _name.startswith(pkg_name + '.'):"
+        )
+        shim_blocks.append(
+            "            # Extract parent package (e.g., mypkg.public from"
+        )
+        shim_blocks.append("            # mypkg.public.utils)")
+        shim_blocks.append("            _name_parts = _name.split('.')")
+        shim_blocks.append("            if len(_name_parts) > 2:")
+        shim_blocks.append("                # Has at least one intermediate package")
+        shim_blocks.append("                _parent_pkg = '.'.join(_name_parts[:-1])")
+        shim_blocks.append(
+            "                if _parent_pkg.startswith(pkg_name + '.') and "
+            "_parent_pkg not in _seen_packages:"
+        )
+        shim_blocks.append("                    _seen_packages.add(_parent_pkg)")
+        shim_blocks.append(
+            "                    _pkg_obj = sys.modules.get(_parent_pkg)"
+        )
+        shim_blocks.append("                    if _pkg_obj and _pkg_obj != _mod:")
+        shim_blocks.append("                        # Set parent package as attribute")
+        shim_blocks.append("                        _pkg_attr_name = _name_parts[1]")
+        shim_blocks.append(
+            "                        if not hasattr(_mod, _pkg_attr_name):"
+        )
+        shim_blocks.append(
+            "                            setattr(_mod, _pkg_attr_name, _pkg_obj)"
+        )
+        shim_blocks.append("    # Register all modules under this package")
+        shim_blocks.append("    for _name in module_names:")
+        shim_blocks.append("        # Try to find module by transformed name first")
+        shim_blocks.append("        _module_obj = sys.modules.get(_name)")
+        shim_blocks.append("        if not _module_obj and name_mapping:")
+        shim_blocks.append("            # If not found, try to find by original name")
+        shim_blocks.append("            _original_name = name_mapping.get(_name)")
+        shim_blocks.append("            if _original_name:")
+        shim_blocks.append(
+            "                _module_obj = sys.modules.get(_original_name)"
+        )
+        shim_blocks.append("                if not _module_obj:")
+        shim_blocks.append(
+            "                    # Also check globals() for module object"
+        )
+        shim_blocks.append("                    # Module objects might be in globals()")
+        shim_blocks.append("                    # with their original names")
+        shim_blocks.append(
+            "                    _last_part = _original_name.split('.')[-1]"
+        )
+        shim_blocks.append("                    _module_obj = _globals.get(_last_part)")
+        shim_blocks.append("                if _module_obj:")
+        shim_blocks.append("                    # Register with transformed name")
+        shim_blocks.append("                    sys.modules[_name] = _module_obj")
+        shim_blocks.append("        # If still not found, use package module")
+        shim_blocks.append("        if not _module_obj:")
+        shim_blocks.append("            sys.modules[_name] = _mod")
+        shim_blocks.append("    # Set submodules as attributes on parent package")
+        shim_blocks.append("    for _name in module_names:")
+        shim_blocks.append(
+            "        if _name != pkg_name and _name.startswith(pkg_name + '.'):"
+        )
+        shim_blocks.append("            _submodule_name = _name.split('.')[-1]")
+        shim_blocks.append("            # Try to get actual module object")
+        shim_blocks.append("            _module_obj = sys.modules.get(_name)")
+        shim_blocks.append("            if not _module_obj and name_mapping:")
+        shim_blocks.append("                _original_name = name_mapping.get(_name)")
+        shim_blocks.append("                if _original_name:")
+        shim_blocks.append(
+            "                    _module_obj = sys.modules.get(_original_name)"
+        )
+        shim_blocks.append("                    if not _module_obj:")
+        shim_blocks.append("                        # Also check globals()")
+        shim_blocks.append(
+            "                        _last_part = _original_name.split('.')[-1]"
+        )
+        shim_blocks.append(
+            "                        _module_obj = _globals.get(_last_part)"
+        )
+        shim_blocks.append(
+            "            # Use actual module object if found, otherwise package"
+        )
+        shim_blocks.append("            _target = _module_obj if _module_obj else _mod")
+        shim_blocks.append("            if not hasattr(_mod, _submodule_name):")
+        shim_blocks.append("                setattr(_mod, _submodule_name, _target)")
+        shim_blocks.append(
+            "            elif isinstance(getattr(_mod, _submodule_name, None), "
+            "types.ModuleType):"
+        )
+        shim_blocks.append("                setattr(_mod, _submodule_name, _target)")
+        shim_blocks.append("")
+
+        # First pass: Create all package modules and set up parent-child relationships
+        shim_blocks.extend(
+            f"_create_pkg_module({pkg_name!r})" for pkg_name in sorted_packages
+        )
+
+        shim_blocks.append("")
+
+        # Build name mapping dict as string for shim code
+        # Maps transformed full names -> original full names
+        name_mapping_str = (
+            "{"
+            + ", ".join(f"{k!r}: {v!r}" for k, v in sorted(name_mapping.items()))
+            + "}"
+            if name_mapping
+            else "None"
+        )
+        _max_name_mapping_log_length = 200
+        logger.trace(
+            "Name mapping for shim code: %s (dict size: %d)",
+            (
+                name_mapping_str[:_max_name_mapping_log_length]
+                if len(name_mapping_str) > _max_name_mapping_log_length
+                else name_mapping_str
+            ),
+            len(name_mapping),
+        )
+
+        # Second pass: Copy attributes and register modules
+        # Process in any order since all modules are now created
+        logger.trace("Packages dict: %s", packages)
+        for pkg_name in sorted_packages:
+            logger.trace(
+                "Processing package %s (in packages dict: %s)",
+                pkg_name,
+                pkg_name in packages,
+            )
+            if pkg_name not in packages:
+                # Package has no direct modules, but might have subpackages
+                # We still need to set it up so it's accessible
+                logger.trace(
+                    "Package %s has no direct modules, but setting up anyway",
+                    pkg_name,
+                )
+                # Set up empty package - just register it
+                shim_blocks.append(
+                    f"_setup_pkg_modules({pkg_name!r}, [], {name_mapping_str})"
+                )
+                continue
+
+            # Sort module names for deterministic output
+            module_names_for_pkg = sorted([name for name, _ in packages[pkg_name]])
+            logger.trace(
+                "Setting up package %s with modules: %s",
+                pkg_name,
+                module_names_for_pkg,
+            )
+            # Module names already have full paths (with package_name prefix),
+            # but ensure they're correctly formatted for registration
+            # If name equals pkg_name, it's the root module itself
+            full_module_names = [
+                (
+                    name
+                    if (name == pkg_name or name.startswith(f"{pkg_name}."))
+                    else f"{pkg_name}.{name}"
+                )
+                for name in module_names_for_pkg
+            ]
+            module_names_str = ", ".join(repr(name) for name in full_module_names)
+            logger.trace(
+                "Calling _setup_pkg_modules for %s with modules: %s",
+                pkg_name,
+                full_module_names,
+            )
+            shim_blocks.append(
+                f"_setup_pkg_modules({pkg_name!r}, [{module_names_str}], "
+                f"{name_mapping_str})"
+            )
+
+        # Handle top-level modules for flat mode
+        if module_mode == "flat" and top_level_modules:
+            # Register top-level modules directly in sys.modules
+            shim_blocks.extend(
+                f"sys.modules[{module_name!r}] = globals()"
+                for module_name in sorted(top_level_modules)
+            )
+
+        # Set up root module to have access to top-level packages
+        # When transformed packages like mypkg.public exist, make public accessible
+        # at root level for convenience (module.public works, not just
+        # module.mypkg.public)
+        if transformed_order_names is not None and package_name:
+            logger.trace(
+                "Setting up root module access for transformed packages: "
+                "transformed_order_names=%s, package_name=%s, "
+                "all_packages=%s",
+                transformed_order_names,
+                package_name,
+                sorted(all_packages),
+            )
+            # Find top-level transformed packages (e.g., "public" from "mypkg.public")
+            for transformed_name in transformed_order_names:
+                if "." in transformed_name:
+                    # Extract first part (e.g., "public" from "public.utils")
+                    first_part = transformed_name.split(".", 1)[0]
+                    # Check if this is a package (has submodules)
+                    full_pkg_name = f"{package_name}.{first_part}"
+                    logger.trace(
+                        "Checking transformed package: first_part=%s, "
+                        "full_pkg_name=%s, in all_packages=%s",
+                        first_part,
+                        full_pkg_name,
+                        full_pkg_name in all_packages,
+                    )
+                    if full_pkg_name in all_packages:
+                        logger.trace(
+                            "Making transformed package %s accessible at root level",
+                            first_part,
+                        )
+                        logger.trace(
+                            "Adding shim blocks for root module access (current "
+                            "shim_blocks length: %d)",
+                            len(shim_blocks),
+                        )
+                        shim_blocks.append(
+                            f"# Make {first_part} accessible at root level"
+                        )
+                        logger.trace(
+                            "After adding comment (shim_blocks length: %d)",
+                            len(shim_blocks),
+                        )
+                        shim_blocks.append(
+                            f"_transformed_pkg = sys.modules.get({full_pkg_name!r})"
+                        )
+                        shim_blocks.append("if _transformed_pkg:")
+                        # Set on root package if it exists
+                        shim_blocks.append(
+                            f"    _root_pkg = sys.modules.get({package_name!r})"
+                        )
+                        shim_blocks.append(
+                            f"    if _root_pkg and not hasattr(_root_pkg, "
+                            f"{first_part!r}):"
+                        )
+                        shim_blocks.append(
+                            f"        setattr(_root_pkg, {first_part!r}, "
+                            f"_transformed_pkg)"
+                        )
+                        # Set in globals() for script execution
+                        shim_blocks.append(
+                            f"    globals()[{first_part!r}] = _transformed_pkg"
+                        )
+                        # Also set on current module for importlib compatibility
+                        # This ensures module.public works when imported via importlib
+                        shim_blocks.append("    try:")
+                        shim_blocks.append(
+                            "        _current_mod = sys.modules.get(__name__)"
+                        )
+                        shim_blocks.append("        if _current_mod:")
+                        shim_blocks.append(
+                            f"            setattr(_current_mod, {first_part!r}, "
+                            f"_transformed_pkg)"
+                        )
+                        shim_blocks.append("    except NameError:")
+                        shim_blocks.append("        # __name__ not set yet, skip")
+                        shim_blocks.append("        pass")
+
+        shim_text = "\n".join(shim_blocks)
+
+    # Auto-rename collision handling (raw mode only)
+    # After applying module_mode transformations and user's module_actions,
+    # check if multiple functions exist with the same name as the main function.
+    # If yes, and in raw mode, auto-rename others to main_1, main_2, etc.
+    stitch_mode = config.get("stitch_mode", "raw") if config else "raw"
+    if (
+        stitch_mode == "raw"
+        and main_function_result is not None
+        and module_sources is not None
+    ):
+        # Extract module names from module_sources keys (remove .py suffix)
+        # This ensures we use the actual module names after any transformations
+        module_names_from_sources = [
+            key[:-3] for key in sorted(module_sources.keys()) if key.endswith(".py")
+        ]
+
+        # Detect collisions
+        collisions = detect_collisions(
+            main_function_result=main_function_result,
+            module_sources=module_sources,
+            module_names=module_names_from_sources,
+        )
+
+        # Generate auto-rename mappings (filters out main function automatically)
+        renames = generate_auto_renames(
+            collisions=collisions,
+            main_function_result=main_function_result,
+        )
+
+        # If we have renames to apply
+        if renames:
+            main_function_name, _main_file_path, _main_module_path = (
+                main_function_result
+            )
+
+            # Apply renames to module_sources and parts
+            for module_name, new_function_name in sorted(renames.items()):
+                module_key = f"{module_name}.py"
+                if module_key in module_sources:
+                    old_source = module_sources[module_key]
+                    new_source = rename_function_in_source(
+                        old_source, main_function_name, new_function_name
+                    )
+                    module_sources[module_key] = new_source
+
+                    # Update corresponding part in parts list
+                    # Find the part that contains this module
+                    for i, part in enumerate(parts):
+                        # Check if this part contains the module header
+                        header_pattern = f"# === {module_name} ==="
+                        if header_pattern in part:
+                            # Replace the old function definition with new one
+                            # Use regex to find and replace function definition
+                            pattern = (
+                                rf"^(\s*)(async\s+)?def\s+"
+                                rf"{re.escape(main_function_name)}\s*\("
+                            )
+                            replacement = rf"\1\2def {new_function_name}("
+                            parts[i] = re.sub(
+                                pattern, replacement, part, flags=re.MULTILINE
+                            )
+                            break
+
+                    # Log the rename
+                    logger.info(
+                        "Auto-renamed...........%s.%s() → %s()",
+                        module_name,
+                        main_function_name,
+                        new_function_name,
+                    )
 
     # Generate formatted header line
-    header_line = _format_header_line(
-        display_name=display_name,
-        description=description,
-        package_name=package_name,
-    )
+    # Use custom_header if provided, otherwise use formatted header
+    if config and config.get("custom_header"):
+        header_line = config.get("custom_header", "")
+    else:
+        header_line = _format_header_line(
+            display_name=display_name,
+            description=description,
+            package_name=package_name,
+        )
 
     # Build license/header section
-    # Prefix each line of the license header with "# " if provided
-    license_section = ""
-    if license_header:
-        lines = license_header.strip().split("\n")
-        prefixed_lines = [f"# {line}" for line in lines]
-        license_section = "\n".join(prefixed_lines) + "\n"
+    # Format license text (single line or multi-line block format)
+    license_section = _format_license(license_text)
     repo_line = f"# Repo: {repo}\n" if repo else ""
+    authors_line = f"# Authors: {authors}\n" if authors else ""
 
-    # Check if main() function exists in the stitched code
-    # Use the pre-collected function names to avoid parsing again
-    has_main = "main" in all_function_names
-
-    # Only add __main__ block if main() function exists
+    # Determine __main__ block to use
     main_block = ""
-    if has_main:
-        main_block = "\nif __name__ == '__main__':\n    sys.exit(main(sys.argv[1:]))\n"
+    main_mode = config.get("main_mode", "auto") if config else "auto"
+    main_name = config.get("main_name") if config else None
+
+    if main_mode == "auto":
+        # If we have a selected __main__ block, use it
+        if selected_main_block is not None:
+            logger.info(
+                "__main__ block...........selected from %s",
+                selected_main_block.file_path,
+            )
+            # Use the selected block content
+            main_block = f"\n{selected_main_block.content}\n"
+        elif main_function_result is not None:
+            # No existing block found, but we have a main function
+            # Generate our own __main__ block
+            function_name, _file_path, _module_path = main_function_result
+
+            # Get the function node to detect parameters
+            # We need to find it in module_sources
+            has_params = True  # Default to True (safe)
+            if module_sources is not None:
+                # Find the module that contains the function
+                module_key = f"{_module_path}.py"
+                if module_key in module_sources:
+                    source = module_sources[module_key]
+                    # Parse and find the function
+                    # Note: This is a minor redundant parse (only for one module,
+                    # only when main_mode == "auto" and main_function_result is not
+                    # None). The complexity of caching ASTs here is not worth it for
+                    # this single-use case that only affects one module.
+                    try:
+                        tree = ast.parse(source)
+                        for node in tree.body:
+                            if (
+                                isinstance(
+                                    node, (ast.FunctionDef, ast.AsyncFunctionDef)
+                                )
+                                and node.name == function_name
+                            ):
+                                has_params = detect_function_parameters(node)
+                                break
+                    except (SyntaxError, ValueError):
+                        pass
+
+            # Generate block based on parameters
+            if has_params:
+                main_block = (
+                    f"\nif __name__ == '__main__':\n"
+                    f"    sys.exit({function_name}(sys.argv[1:]))\n"
+                )
+            else:
+                main_block = (
+                    f"\nif __name__ == '__main__':\n    sys.exit({function_name}())\n"
+                )
+            logger.info("__main__ block...........inserted")
+        elif main_name is not None:
+            # main_name was specified but not found - this is an error
+            msg = (
+                f"main_name '{main_name}' was specified but the function "
+                "was not found in the stitched code"
+            )
+            raise ValueError(msg)
+        # If no main function found and main_name not specified,
+        # this is a non-main build (acceptable)
+        # Note: We already logged this in stitch_modules, so we don't log again here
+    # If main_mode == "none", don't add any __main__ block
 
     script_text = (
         "#!/usr/bin/env python3\n"
@@ -6039,48 +11972,59 @@ def _build_final_script(  # noqa: C901, PLR0912, PLR0913, PLR0915
         f"# Version: {version}\n"
         f"# Commit: {commit}\n"
         f"# Build Date: {build_date}\n"
+        f"{authors_line}"
         f"{repo_line}"
-        "\n# ruff: noqa: E402\n"
+        "\n# noqa: E402\n"
         "\n"
         f"{future_block}\n"
         '"""\n'
-        f"{header_line}\n"
-        "This single-file version is auto-generated from modular sources.\n"
-        f"Version: {version}\n"
-        f"Commit: {commit}\n"
-        f"Built: {build_date}\n"
-        '"""\n\n'
+        + (
+            config.get("file_docstring", "")
+            if config and config.get("file_docstring")
+            else (
+                f"{header_line}\n"
+                "This single-file version is auto-generated from modular sources.\n"
+                f"Version: {version}\n"
+                f"Commit: {commit}\n"
+                f"Built: {build_date}\n" + (f"Authors: {authors}\n" if authors else "")
+            )
+        )
+        + '"""\n\n'
         f"{import_block}\n"
         "\n"
         # constants come *after* imports to avoid breaking __future__ rules
         f"__version__ = {json.dumps(version)}\n"
         f"__commit__ = {json.dumps(commit)}\n"
         f"__build_date__ = {json.dumps(build_date)}\n"
-        f"__STANDALONE__ = True\n"
+        + (f"__AUTHORS__ = {json.dumps(authors)}\n" if authors else "")
+        + f"__STANDALONE__ = True\n"
         f"__STITCH_SOURCE__ = {json.dumps(PROGRAM_PACKAGE)}\n"
         f"__package__ = {json.dumps(package_name)}\n"
         "\n"
-        "\n" + "\n".join(parts) + "\n"
-        f"{shim_text}\n"
-        f"{main_block}"
+        "\n"
+        + "\n".join(parts)
+        + "\n"
+        + (f"{shim_text}\n" if shim_text else "")
+        + f"{main_block}"
     )
 
     # Return script text and detected packages (sorted for consistency)
     return script_text, sorted(detected_packages)
 
 
-def stitch_modules(  # noqa: PLR0915, PLR0912, C901
+def stitch_modules(  # noqa: PLR0915, PLR0912, PLR0913, C901
     *,
     config: dict[str, object],
     file_paths: list[Path],
     package_root: Path,
     file_to_include: dict[Path, IncludeResolved],
     out_path: Path,
-    license_header: str = "",
+    license_text: str = "",
     version: str = "unknown",
     commit: str = "unknown",
     build_date: str = "unknown",
     post_processing: PostProcessingConfigResolved | None = None,
+    is_serger_build: bool,
 ) -> None:
     """Orchestrate stitching of multiple Python modules into a single file.
 
@@ -6099,28 +12043,47 @@ def stitch_modules(  # noqa: PLR0915, PLR0912, C901
     8. Optionally runs post-processing tools (static checker, formatter, import sorter)
 
     Args:
-        config: BuildConfigResolved with stitching fields (package, order).
+        config: RootConfigResolved with stitching fields (package, order).
                 Must include 'package' field for stitching. 'order' is optional
                 and will be auto-discovered via topological sort if not provided.
         file_paths: List of file paths to stitch (in order)
         package_root: Common root of all included files
         file_to_include: Mapping of file path to its include (for dest access)
         out_path: Path where final stitched script should be written
-        license_header: Optional license header text for generated script
+        license_text: Optional license text for generated script
+            (will be formatted automatically)
         version: Version string to embed in script metadata
         commit: Commit hash to embed in script metadata
         build_date: Build timestamp to embed in script metadata
         post_processing: Post-processing configuration (if None, skips post-processing)
+        is_serger_build: Whether the output file is safe to overwrite.
+                True if file doesn't exist or is a serger build, False otherwise.
+                Pre-computed in run_build() to avoid recomputation.
 
     Raises:
-        RuntimeError: If any validation or stitching step fails
+        RuntimeError: If any validation or stitching step fails, or if attempting
+                to overwrite a non-serger file (is_serger_build=False)
         AssertionError: If mtime advancing fails
     """
     logger = get_app_logger()
 
+    # Bail out early if attempting to overwrite a non-serger file
+    # (primary check is in run_build, this is defensive for direct calls)
+    if out_path.exists() and not is_serger_build:
+        xmsg = (
+            f"Refusing to overwrite {out_path} because it does not appear "
+            "to be a serger-generated build. If you want to overwrite this "
+            "file, please delete it first or rename it."
+        )
+        raise RuntimeError(xmsg)
+
+    # package is required for stitching
+    validate_required_keys(config, {"package"}, "config")
     package_name_raw = config.get("package", "unknown")
     order_paths_raw = config.get("order", [])
     exclude_paths_raw = config.get("exclude_names", [])
+    stitch_mode_raw = config.get("stitch_mode", DEFAULT_STITCH_MODE)
+    module_mode_raw = config.get("module_mode", DEFAULT_MODULE_MODE)
 
     # Type guards for mypy/pyright
     if not isinstance(package_name_raw, str):
@@ -6131,6 +12094,12 @@ def stitch_modules(  # noqa: PLR0915, PLR0912, C901
         raise TypeError(msg)
     if not isinstance(exclude_paths_raw, list):
         msg = "Config 'exclude_names' must be a list"
+        raise TypeError(msg)
+    if not isinstance(stitch_mode_raw, str):
+        msg = "Config 'stitch_mode' must be a string"
+        raise TypeError(msg)
+    if not isinstance(module_mode_raw, str):
+        msg = "Config 'module_mode' must be a string"
         raise TypeError(msg)
 
     # Cast to known types after type guards
@@ -6163,7 +12132,87 @@ def stitch_modules(  # noqa: PLR0915, PLR0912, C901
         )
         raise RuntimeError(msg)
 
+    # Validate stitch_mode
+    valid_modes = literal_to_set(StitchMode)
+    stitch_mode = stitch_mode_raw
+    if stitch_mode not in valid_modes:
+        msg = (
+            f"Invalid stitch_mode: {stitch_mode!r}. "
+            f"Must be one of: {', '.join(sorted(valid_modes))}"
+        )
+        raise ValueError(msg)
+
+    # Validate module_mode
+    valid_module_modes = literal_to_set(ModuleMode)
+    module_mode = module_mode_raw
+    if module_mode not in valid_module_modes:
+        msg = (
+            f"Invalid module_mode: {module_mode!r}. "
+            f"Must be one of: {', '.join(sorted(valid_module_modes))}"
+        )
+        raise ValueError(msg)
+
+    # Extract shim setting from config
+    shim_raw = config.get("shim", DEFAULT_SHIM)
+    if not isinstance(shim_raw, str):
+        msg = "Config 'shim' must be a string"
+        raise TypeError(msg)
+    valid_shim_settings = literal_to_set(ShimSetting)
+    shim = cast("ShimSetting", shim_raw)
+    if shim not in valid_shim_settings:
+        msg = (
+            f"Invalid shim setting: {shim!r}. "
+            f"Must be one of: {', '.join(sorted(valid_shim_settings))}"
+        )
+        raise ValueError(msg)
+
+    # Extract module_actions from config (already normalized in RootConfigResolved)
+    module_actions_raw = config.get("module_actions", [])
+    if not isinstance(module_actions_raw, list):
+        msg = "Config 'module_actions' must be a list"
+        raise TypeError(msg)
+    # module_actions is already list[ModuleActionFull] with all defaults applied
+    module_actions = cast("list[ModuleActionFull]", module_actions_raw)
+
+    # Check if non-raw modes are implemented
+    if stitch_mode != "raw":
+        msg = (
+            f"stitch_mode '{stitch_mode}' is not yet implemented. "
+            "Only 'raw' mode is currently supported."
+        )
+        raise NotImplementedError(msg)
+
     logger.info("Starting stitch process for package: %s", package_name)
+
+    # --- Package Detection (once, at the start) ---
+    # Use pre-detected packages from run_build (already excludes exclude_paths)
+    detected_packages_raw = config.get("detected_packages")
+    if detected_packages_raw is not None and isinstance(detected_packages_raw, set):
+        # Type narrowing: cast to set[str] after isinstance check
+        detected_packages = cast("set[str]", detected_packages_raw)
+        logger.debug("Using pre-detected packages: %s", sorted(detected_packages))
+    else:
+        # Fallback: detect from order_paths (shouldn't happen in normal flow)
+        logger.debug("Detecting packages from order_paths (fallback)...")
+        module_bases_raw = config.get("module_bases")
+        module_bases: list[str] | None = (
+            cast("list[str]", module_bases_raw)
+            if isinstance(module_bases_raw, list)
+            and all(isinstance(x, str) for x in module_bases_raw)  # pyright: ignore[reportUnknownVariableType]
+            else None
+        )
+        config_dir = None
+        meta = config.get("__meta__")
+        if meta and isinstance(meta, dict):
+            config_dir_raw = meta.get("config_root")  # pyright: ignore[reportUnknownMemberType,reportUnknownVariableType]
+            if isinstance(config_dir_raw, Path):
+                config_dir = config_dir_raw
+        detected_packages = detect_packages_from_files(
+            order_paths,
+            package_name,
+            module_bases=module_bases,
+            config_dir=config_dir,
+        )
 
     # --- Validation Phase ---
     logger.debug("Validating module listing...")
@@ -6182,13 +12231,192 @@ def stitch_modules(  # noqa: PLR0915, PLR0912, C901
             elif isinstance(item, Path):  # pyright: ignore[reportUnnecessaryIsInstance]
                 topo_paths.append(item)
     suggest_order_mismatch(
-        order_paths, package_root, package_name, file_to_include, topo_paths
+        order_paths,
+        package_root,
+        package_name,
+        file_to_include,
+        detected_packages=detected_packages,
+        topo_paths=topo_paths,
     )
+
+    # --- Apply affects: "stitching" actions to filter files ---
+    # Before collecting modules, apply actions that affect stitching
+    # to determine which files should be excluded
+    # IMPORTANT: We need to preserve original module names for shim generation
+    # even when files are filtered from stitching
+    original_order_names_for_shims: list[str] | None = None
+    if module_actions:
+        # Build module-to-file mapping from order_paths
+        # Check if package_root is a package directory itself
+        # (when all files are in a single package, package_root is that package)
+        is_package_dir = (package_root / "__init__.py").exists()
+        package_name_from_root: str | None = None
+        if is_package_dir:
+            package_name_from_root = package_root.name
+
+        module_to_file_for_filtering: dict[str, Path] = {}
+        for file_path in order_paths:
+            include = file_to_include.get(file_path)
+            module_name = derive_module_name(file_path, package_root, include)
+
+            # If package_root is a package directory, preserve package structure
+            if is_package_dir and package_name_from_root:
+                # Handle __init__.py special case: represents the package itself
+                if file_path.name == "__init__.py" and file_path.parent == package_root:
+                    # Use package name as the module name (represents the package)
+                    module_name = package_name_from_root
+                else:
+                    # Prepend package name to preserve structure
+                    # e.g., "core" -> "oldpkg.core"
+                    module_name = f"{package_name_from_root}.{module_name}"
+
+            module_to_file_for_filtering[module_name] = file_path
+
+        # Preserve original module names for shim generation
+        # (before filtering affects shim generation)
+        original_order_names_for_shims = sorted(module_to_file_for_filtering.keys())
+
+        # Separate actions by affects value
+        (
+            _shims_only_actions,
+            stitching_only_actions,
+            both_actions,
+        ) = separate_actions_by_affects(module_actions)
+
+        # Combine stitching-only and both actions
+        stitching_actions = stitching_only_actions + both_actions
+
+        if stitching_actions:
+            # Extract deleted package/module names from stitching actions
+            # Actions reference package names (e.g., "pkg1"), but we need to
+            # check file paths to see if they belong to deleted packages
+            deleted_sources: set[str] = set()
+            for action in stitching_actions:
+                action_type = action.get("action", "move")
+                if action_type == "delete":
+                    source = action["source"]  # pyright: ignore[reportTypedDictNotRequiredAccess]
+                    deleted_sources.add(source)
+
+            # Filter order_paths to exclude files belonging to deleted packages
+            if deleted_sources:
+                logger.debug(
+                    "Filtering files: excluding modules deleted by "
+                    "stitching actions: %s",
+                    sorted(deleted_sources),
+                )
+                filtered_order_paths: list[Path] = []
+                for file_path in order_paths:
+                    # Check if file belongs to a deleted package
+                    # package_root might be the package directory itself
+                    # (e.g., tmp_path/pkg1), so we need to check if the
+                    # package_root's name matches a deleted source, or if
+                    # the file path contains the deleted source
+                    should_exclude = False
+                    excluded_by = None
+
+                    # Check if package_root's name matches deleted_source
+                    # (package_root is the package directory, e.g., tmp_path/pkg1)
+                    package_root_name = package_root.name
+                    for deleted_source in deleted_sources:
+                        if package_root_name == deleted_source:
+                            # All files under this package_root belong to deleted
+                            # package
+                            should_exclude = True
+                            excluded_by = deleted_source
+                            break
+
+                    # Also check file path structure for nested packages
+                    # (e.g., if package_root is tmp_path but file is
+                    # tmp_path/pkg1/module.py)
+                    if not should_exclude:
+                        try:
+                            file_relative = file_path.relative_to(package_root.parent)
+                        except (ValueError, AttributeError):
+                            # Fallback: check absolute path
+                            file_str = str(file_path).replace("\\", "/")
+                            for deleted_source in deleted_sources:
+                                if f"/{deleted_source}/" in file_str:
+                                    should_exclude = True
+                                    excluded_by = deleted_source
+                                    break
+                        else:
+                            file_str = str(file_relative).replace("\\", "/")
+                            for deleted_source in deleted_sources:
+                                # Check if file path starts with deleted_source/
+                                if file_str.startswith(f"{deleted_source}/"):
+                                    should_exclude = True
+                                    excluded_by = deleted_source
+                                    break
+                                # Check if file path contains deleted_source as
+                                # directory
+                                if f"/{deleted_source}/" in file_str:
+                                    should_exclude = True
+                                    excluded_by = deleted_source
+                                    break
+
+                    if not should_exclude:
+                        filtered_order_paths.append(file_path)
+                    else:
+                        logger.debug(
+                            "Excluding file %s (deleted by stitching action: %s)",
+                            file_path,
+                            excluded_by,
+                        )
+                logger.debug(
+                    "File filtering: %d files before, %d files after",
+                    len(order_paths),
+                    len(filtered_order_paths),
+                )
+                order_paths = filtered_order_paths
+
+                # Also update derived_module_names if we're tracking it
+                # (derived_module_names will be recalculated in _collect_modules)
 
     # --- Collection Phase ---
     logger.debug("Collecting module sources...")
+    # Extract external_imports from config
+    external_imports_raw = config.get(
+        "external_imports", DEFAULT_EXTERNAL_IMPORTS[stitch_mode]
+    )
+    if not isinstance(external_imports_raw, str):
+        msg = "Config 'external_imports' must be a string"
+        raise TypeError(msg)
+    external_imports = cast("ExternalImportMode", external_imports_raw)
+
+    # Extract internal_imports from config
+    internal_imports_raw = config.get(
+        "internal_imports", DEFAULT_INTERNAL_IMPORTS[stitch_mode]
+    )
+    if not isinstance(internal_imports_raw, str):
+        msg = "Config 'internal_imports' must be a string"
+        raise TypeError(msg)
+    internal_imports = cast("InternalImportMode", internal_imports_raw)
+
+    # Extract comments_mode from config
+    comments_mode_raw = config.get("comments_mode", DEFAULT_COMMENTS_MODE)
+    if not isinstance(comments_mode_raw, str):
+        msg = "Config 'comments_mode' must be a string"
+        raise TypeError(msg)
+    comments_mode = cast("CommentsMode", comments_mode_raw)
+
+    # Extract docstring_mode from config
+    docstring_mode_raw = config.get("docstring_mode", DEFAULT_DOCSTRING_MODE)
+    # docstring_mode can be a string or dict
+    if not isinstance(docstring_mode_raw, (str, dict)):
+        msg = "Config 'docstring_mode' must be a string or dict"
+        raise TypeError(msg)
+    docstring_mode = cast("DocstringMode", docstring_mode_raw)
+
     module_sources, all_imports, parts, derived_module_names = _collect_modules(
-        order_paths, package_root, package_name, file_to_include
+        order_paths,
+        package_root,
+        package_name,
+        file_to_include,
+        detected_packages,
+        external_imports,
+        internal_imports,
+        comments_mode,
+        docstring_mode,
     )
 
     # --- Parse AST once for all modules ---
@@ -6197,19 +12425,91 @@ def stitch_modules(  # noqa: PLR0915, PLR0912, C901
     logger.debug("Extracting symbols from modules...")
     module_symbols: dict[str, ModuleSymbols] = {}
     all_function_names: set[str] = set()
-    for mod_name, source in module_sources.items():
+    # Sort for deterministic iteration order
+    for mod_name, source in sorted(module_sources.items()):
         symbols = _extract_top_level_symbols(source)
         module_symbols[mod_name] = symbols
         all_function_names.update(symbols.functions)
 
+    # --- Main Function Detection (before collision detection) ---
+    # Find main function first, so we can ignore main function collisions
+    # in raw mode when auto-rename will handle them
+    logger.debug("Finding main function...")
+    main_function_result = find_main_function(
+        config=cast("RootConfigResolved", config),
+        file_paths=order_paths,
+        module_sources=module_sources,
+        module_names=derived_module_names,
+        package_root=package_root,
+        file_to_include=file_to_include,
+        detected_packages=detected_packages,
+    )
+
+    # Determine if we should ignore main function collisions
+    # (auto-rename will handle them in raw mode)
+    ignore_functions: set[str] = set()
+    stitch_mode_raw = config.get("stitch_mode", "raw")
+    if stitch_mode_raw == "raw" and main_function_result is not None:
+        main_function_name, _main_file_path, _main_module_path = main_function_result
+        # Check if there are multiple functions with this name
+        module_names_from_sources = [
+            key[:-3] for key in sorted(module_sources.keys()) if key.endswith(".py")
+        ]
+        collisions = detect_collisions(
+            main_function_result=main_function_result,
+            module_sources=module_sources,
+            module_names=module_names_from_sources,
+        )
+        # If there are collisions, auto-rename will handle them
+        if len(collisions) > 1:
+            ignore_functions.add(main_function_name)
+
     # --- Collision Detection ---
     logger.debug("Detecting name collisions...")
-    detect_name_collisions(module_symbols)
+    detect_name_collisions(module_symbols, ignore_functions=ignore_functions)
+
+    # --- __main__ Block Detection ---
+    # Detect all __main__ blocks from original file paths (before stripping)
+    logger.debug("Detecting __main__ blocks...")
+    all_main_blocks = detect_main_blocks(
+        file_paths=order_paths,
+        package_root=package_root,
+        file_to_include=file_to_include,
+        detected_packages=detected_packages,
+    )
+
+    # Log main function status
+    if main_function_result is not None:
+        function_name, _file_path, module_path = main_function_result
+        logger.info("Main function...........%s.%s()", module_path, function_name)
+    else:
+        # Check if main_mode is "auto" to determine if this is a non-main build
+        main_mode = config.get("main_mode", "auto")
+        if main_mode == "auto":
+            logger.info("Main function...........not found (non-main build)")
+
+    # Select which __main__ block to keep
+    selected_main_block = select_main_block(
+        main_blocks=all_main_blocks,
+        main_function_result=main_function_result,
+        file_paths=order_paths,
+        module_names=derived_module_names,
+    )
+
+    # Log discarded blocks
+    if len(all_main_blocks) > 1:
+        discarded = [block for block in all_main_blocks if block != selected_main_block]
+        for block in discarded:
+            logger.info(
+                "__main__ block...........discarded from %s",
+                block.file_path,
+            )
 
     # --- Final Assembly ---
     # Extract display configuration
     display_name_raw = config.get("display_name", "")
     description_raw = config.get("description", "")
+    authors_raw = config.get("authors", "")
     repo_raw = config.get("repo", "")
 
     # Type guards
@@ -6217,42 +12517,75 @@ def stitch_modules(  # noqa: PLR0915, PLR0912, C901
         display_name_raw = ""
     if not isinstance(description_raw, str):
         description_raw = ""
+    if not isinstance(authors_raw, str):
+        authors_raw = ""
     if not isinstance(repo_raw, str):
         repo_raw = ""
 
-    final_script, detected_packages = _build_final_script(
+    final_script, _detected_packages_returned = _build_final_script(
         package_name=package_name,
         all_imports=all_imports,
         parts=parts,
         order_names=derived_module_names,
         all_function_names=all_function_names,
+        detected_packages=detected_packages,
+        module_mode=module_mode,
+        module_actions=module_actions,
+        shim=shim,
         order_paths=order_paths,
         package_root=package_root,
         file_to_include=file_to_include,
-        license_header=license_header,
+        _original_order_names_for_shims=original_order_names_for_shims,
+        license_text=license_text,
         version=version,
         commit=commit,
         build_date=build_date,
         display_name=display_name_raw,
         description=description_raw,
+        authors=authors_raw,
         repo=repo_raw,
+        config=cast("RootConfigResolved", config),
+        selected_main_block=selected_main_block,
+        main_function_result=main_function_result,
+        module_sources=module_sources,
     )
 
     # --- Verification ---
     logger.debug("Verifying assembled script...")
-    verify_no_broken_imports(final_script, detected_packages)
+    verify_no_broken_imports(final_script, sorted(detected_packages))
 
-    # --- Output ---
+    # --- Compile in-memory before writing ---
+    logger.debug("Compiling stitched code in-memory...")
+    try:
+        verify_compiles_string(final_script, filename=str(out_path))
+    except SyntaxError as e:
+        # Compilation failed - write error file and raise
+        logger.exception("Stitched code does not compile")
+        error_path = _write_error_file(out_path, final_script, e)
+        lineno = e.lineno or "unknown"
+        error_msg = e.msg or "unknown error"
+        xmsg = (
+            f"Stitched code has syntax errors at line {lineno}: {error_msg}. "
+            f"Error file written to: {error_path}"
+        )
+        raise RuntimeError(xmsg) from e
+
+    # --- Output (compilation succeeded) ---
     logger.debug("Writing output file: %s", out_path)
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text(final_script, encoding="utf-8")
     out_path.chmod(0o755)
+
+    # Clean up any existing error files (build succeeded)
+    _cleanup_error_files(out_path)
 
     # Advance mtime to ensure visibility across filesystems
     logger.debug("Advancing mtime...")
     force_mtime_advance(out_path)
 
     # Post-processing: tools, compilation checks, and verification
+    # Note: post_stitch_processing may warn but won't raise on post-processing
+    # failures - it will revert and continue
     post_stitch_processing(out_path, post_processing=post_processing)
 
     logger.info(
@@ -6280,6 +12613,7 @@ def expand_include_pattern(include: IncludeResolved) -> list[Path]:
     Returns:
         List of resolved absolute paths to matching .py files
     """
+    validate_required_keys(include, {"path", "root"}, "include")
     logger = get_app_logger()
     src_pattern = str(include["path"])
     root = Path(include["root"]).resolve()
@@ -6348,6 +12682,10 @@ def collect_included_files(
     Returns:
         Tuple of (filtered file paths, mapping of file to its include)
     """
+    for inc in includes:
+        validate_required_keys(inc, {"path", "root"}, "include")
+    for exc in excludes:
+        validate_required_keys(exc, {"path", "root"}, "exclude")
     logger = get_app_logger()
     all_files: set[Path] = set()
     # Track which include produced each file (for dest parameter and exclude checking)
@@ -6662,37 +13000,50 @@ def find_package_root(file_paths: list[Path]) -> Path:
 
 
 def _extract_build_metadata(
-    build_cfg: BuildConfigResolved,
-    root_path: Path,
+    build_cfg: RootConfigResolved,
+    project_root: Path,
+    git_root: Path | None = None,
+    *,
+    disable_timestamp: bool = False,
 ) -> tuple[str, str, str]:
     """Extract version, commit, and build date for embedding.
 
     Args:
         build_cfg: Resolved build config
-        root_path: Project root path
+        project_root: Project root path (for finding pyproject.toml)
+        git_root: Git repository root path (for finding .git, defaults to project_root)
+        disable_timestamp: If True, use placeholder instead of real timestamp
 
     Returns:
         Tuple of (version, commit, build_date)
     """
-    # Use version from resolved config if available (from pyproject.toml),
-    # otherwise fall back to extracting it directly
-    version_raw = build_cfg.get("_pyproject_version")
-    if version_raw and isinstance(version_raw, str):
-        version = version_raw
-    else:
-        version = extract_version(root_path / "pyproject.toml")
-    commit = extract_commit(root_path)
-    build_date = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
+    # Priority order for version:
+    # 1. version from resolved config (user version -> pyproject version, resolved
+    #    during config resolution if pyproject metadata was enabled)
+    # 2. timestamp as last resort
+    # Note: Version is fully resolved during config resolution, so we just need
+    # to check the resolved config and fall back to timestamp if not set
+    version = build_cfg.get("version")
+    # Use git_root for commit extraction (package root), fallback to project_root
+    commit_path = git_root if git_root is not None else project_root
+    commit = extract_commit(commit_path)
 
-    # If no version found, use timestamp as version
-    if version == "unknown":
-        version = build_date
+    if disable_timestamp:
+        build_date = BUILD_TIMESTAMP_PLACEHOLDER
+        # If still no version found, use placeholder as version
+        if not version or version == "unknown":
+            version = BUILD_TIMESTAMP_PLACEHOLDER
+    else:
+        build_date = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
+        # If still no version found, use timestamp as version
+        if not version or version == "unknown":
+            version = build_date
 
     return version, commit, build_date
 
 
-def run_build(  # noqa: PLR0915, PLR0912
-    build_cfg: BuildConfigResolved,
+def run_build(  # noqa: C901, PLR0915, PLR0912
+    build_cfg: RootConfigResolved,
 ) -> None:
     """Execute a single build task using a fully resolved config.
 
@@ -6700,33 +13051,62 @@ def run_build(  # noqa: PLR0915, PLR0912
     a single executable script). File copying is the responsibility of
     pocket-build, not serger.
     """
+    validate_required_keys(
+        build_cfg,
+        {
+            "out",
+            "__meta__",
+            "post_processing",
+            "external_imports",
+            "stitch_mode",
+            "comments_mode",
+            "docstring_mode",
+        },
+        "build_cfg",
+    )
     logger = get_app_logger()
     dry_run = build_cfg.get("dry_run", DEFAULT_DRY_RUN)
 
     # Extract stitching fields from config
     package = build_cfg.get("package")
     order = build_cfg.get("order")
-    license_header = build_cfg.get("license_header", "")
+    license_text = build_cfg.get("license", "")
     out_entry = build_cfg["out"]
 
-    # Skip if package is not provided (required for stitch builds)
-    if not package:
-        logger.warning(
-            "Skipping build: 'package' field is required for "
-            "stitch builds. This build does not have it. "
-            "(File copying is handled by pocket-build, not serger.)"
-        )
-        return
+    # Collect included files to check if this is a stitch build
+    includes = build_cfg.get("include", [])
+    excludes = build_cfg.get("exclude", [])
+    # Validation happens inside collect_included_files
+    included_files, file_to_include = collect_included_files(includes, excludes)
 
-    # Type checking - ensure correct types after narrowing
-    if not isinstance(package, str):  # pyright: ignore[reportUnnecessaryIsInstance]
-        xmsg = f"Invalid package name (expected str, got {type(package).__name__})"
-        raise TypeError(xmsg)
+    # Safety net: Defensive check for missing package
+    # This is a minimal safety check for:
+    #   - Direct calls to run_build() (bypassing CLI validation)
+    #   - Edge cases where validation might have been missed
+    # Primary validation with detailed error messages happens in _validate_package()
+    # in cli.py, which runs early in the CLI flow after config resolution.
+    # Note: Package is only required for stitch builds (which need includes).
+    # If there are no included files, package is not required.
+    if included_files:
+        if not package:
+            xmsg = (
+                "Package name is required for stitch builds. "
+                "This should have been caught during validation. "
+                "If you're calling run_build() directly, ensure package is set "
+                "in the config."
+            )
+            raise ValueError(xmsg)
+
+        # Type checking - ensure correct types after narrowing
+        if not isinstance(package, str):  # pyright: ignore[reportUnnecessaryIsInstance]
+            xmsg = f"Invalid package name (expected str, got {type(package).__name__})"
+            raise TypeError(xmsg)
     if order is not None and not isinstance(order, list):  # pyright: ignore[reportUnnecessaryIsInstance]
         xmsg = f"Invalid order (expected list, got {type(order).__name__})"
         raise TypeError(xmsg)
 
     # Determine output file path
+    validate_required_keys(out_entry, {"path", "root"}, "build_cfg['out']")
     out_path = (out_entry["root"] / out_entry["path"]).resolve()
     # Check if it's a directory (exists and is dir) or should be treated as one
     # If path doesn't exist and has no .py extension, treat as directory
@@ -6736,49 +13116,104 @@ def run_build(  # noqa: PLR0915, PLR0912
     is_directory = out_path.is_dir() or (
         not out_path.exists() and not out_path_str.endswith(".py")
     )
-    if is_directory:
+    # Only use package for output path if we have included files (stitch build)
+    if is_directory and included_files and package:
         out_path = out_path / f"{package}.py"
 
     if dry_run:
-        logger.info("🧪 (dry-run) Would stitch %s to: %s", package, out_path)
+        if included_files and package:
+            logger.info("🧪 (dry-run) Would stitch %s to: %s", package, out_path)
+        else:
+            logger.info("🧪 (dry-run) Would write to: %s", out_path)
         return
 
-    # Collect included files using new collection functions
-    includes = build_cfg.get("include", [])
-    excludes = build_cfg.get("exclude", [])
-    included_files, file_to_include = collect_included_files(includes, excludes)
-
     if not included_files:
-        xmsg = "No files found matching include patterns"
+        # No files to stitch - this is not a stitch build
+        # Return early (package validation already skipped above)
+        return
+
+    # At this point, we have included_files, so package must be set and valid
+    # (validated above). Type guard for type checker.
+    if not package or not isinstance(package, str):  # pyright: ignore[reportUnnecessaryIsInstance]
+        xmsg = (
+            "Package must be set when included_files exist. "
+            "This should have been caught during validation."
+        )
         raise ValueError(xmsg)
 
-    # Get config root for resolving order paths
+    # Safety check: Don't overwrite files that aren't serger builds
+    # (fail fast before doing expensive work)
+    # Compute once and pass down to avoid recomputation
+    is_serger_build_result = not out_path.exists() or is_serger_build(out_path)
+    if out_path.exists() and not is_serger_build_result:
+        xmsg = (
+            f"Refusing to overwrite {out_path} because it does not appear "
+            "to be a serger-generated build. If you want to overwrite this "
+            "file, please delete it first or rename it."
+        )
+        raise RuntimeError(xmsg)
+
+    # Get config root for resolving order paths and validating module_actions
+    validate_required_keys(
+        build_cfg["__meta__"], {"config_root"}, "build_cfg['__meta__']"
+    )
     config_root = build_cfg["__meta__"]["config_root"]
 
-    # Compute package root for module name derivation (needed for auto-discovery)
-    package_root = find_package_root(included_files)
+    # Validate and normalize module_actions if present
+    # (needed when module_actions are set after config resolution, e.g., in tests)
+    # Import here to avoid circular dependency
 
-    # Resolve order paths (order is list[str] of paths, or None for auto-discovery)
-    topo_paths: list[Path] | None = None
-    if order is not None:
-        # Use explicit order from config
-        order_paths = resolve_order_paths(order, included_files, config_root)
-        logger.debug("Using explicit order from config (%d entries)", len(order_paths))
-    else:
-        # Auto-discover order via topological sort
-        logger.info("Auto-discovering module order via topological sort...")
-        order_paths = compute_module_order(
-            included_files, package_root, package, file_to_include
+    module_actions_raw = build_cfg.get("module_actions")
+    if module_actions_raw:
+        module_actions = validate_and_normalize_module_actions(
+            module_actions_raw,
+            config_dir=config_root,
         )
-        logger.debug("Auto-discovered order (%d modules)", len(order_paths))
-        # When auto-discovered, order_paths IS the topological order, so we can reuse it
-        topo_paths = order_paths
+        # Update build_cfg with validated actions
+        build_cfg["module_actions"] = module_actions
+    else:
+        module_actions = []
+
+    # Collect files from source_path in module_actions
+    source_path_files: set[Path] = set()
+    for action in module_actions:
+        if "source_path" in action:
+            affects_val = action.get("affects", "shims")
+            if "stitching" in affects_val or affects_val == "both":
+                source_path_str = action["source_path"]
+                source_path_resolved = Path(source_path_str).resolve()
+
+                # Validate file exists (should have been validated in config resolution)
+                if not source_path_resolved.exists():
+                    # This should not happen if validation worked, but check anyway
+                    msg = (
+                        f"source_path file does not exist: {source_path_resolved}. "
+                        f"This should have been caught during config validation."
+                    )
+                    raise ValueError(msg)
+
+                source_path_files.add(source_path_resolved)
+
+                # Add to file_to_include if not already present
+                if source_path_resolved not in file_to_include:
+                    # Create a synthetic IncludeResolved for this file
+                    # Use the file's parent directory as root
+                    synthetic_include: IncludeResolved = {
+                        "path": str(source_path_resolved),
+                        "root": source_path_resolved.parent,
+                        "origin": "code",  # Mark as code-generated
+                    }
+                    file_to_include[source_path_resolved] = synthetic_include
+
+    # Merge source_path files into included_files
+    all_included_files = sorted(set(included_files) | source_path_files)
 
     # Resolve exclude_names to paths (exclude_names is list[str] of paths)
+    # Do this early so we can exclude them before package detection
     exclude_names_raw = build_cfg.get("exclude_names", [])
     exclude_paths: list[Path] = []
     if exclude_names_raw:
-        included_set = set(included_files)
+        included_set = set(all_included_files)
         for exclude_name in cast("list[str]", exclude_names_raw):
             # Resolve path (absolute or relative to config_root)
             if Path(exclude_name).is_absolute():
@@ -6788,24 +13223,117 @@ def run_build(  # noqa: PLR0915, PLR0912
             if exclude_path in included_set:
                 exclude_paths.append(exclude_path)
 
+    # Filter out excluded files to get final set for stitching
+    # Note: source_path files override excludes (they're added after initial collection)
+    # and should not be filtered out by exclude_paths
+    exclude_set = set(exclude_paths)
+    # Remove source_path files from exclude_set to ensure they're not filtered out
+    exclude_set -= source_path_files
+    final_files = [f for f in all_included_files if f not in exclude_set]
+
+    if not final_files:
+        xmsg = "No files remaining after exclusions"
+        raise ValueError(xmsg)
+
+    # Warn about files outside project directory
+    cwd = Path.cwd().resolve()
+    config_root_resolved = Path(config_root).resolve()
+    for file_path in final_files:
+        file_path_resolved = file_path.resolve()
+        # Check if file is outside both config_root and CWD
+        is_outside_config = not file_path_resolved.is_relative_to(config_root_resolved)
+        is_outside_cwd = not file_path_resolved.is_relative_to(cwd)
+        if is_outside_config and is_outside_cwd:
+            logger.warning(
+                "Including file outside project directory: %s "
+                "(config root: %s, CWD: %s)",
+                file_path_resolved,
+                config_root_resolved,
+                cwd,
+            )
+
+    # Compute package root for module name derivation (needed for auto-discovery)
+    package_root = find_package_root(final_files)
+
+    # Detect packages once from final files (after all exclusions)
+    logger.debug("Detecting packages from included files (after exclusions)...")
+    module_bases = build_cfg.get("module_bases", [])
+    detected_packages = detect_packages_from_files(
+        final_files, package, module_bases=module_bases, config_dir=config_root
+    )
+
+    # Resolve order paths (order is list[str] of paths, or None for auto-discovery)
+    topo_paths: list[Path] | None = None
+    if order is not None:
+        # Use explicit order from config (filtered to final_files)
+        order_paths = resolve_order_paths(order, final_files, config_root)
+        logger.debug("Using explicit order from config (%d entries)", len(order_paths))
+        # Add source_path files that aren't already in order_paths
+        order_paths_set = set(order_paths)
+        for source_path_file in sorted(source_path_files):
+            if source_path_file not in order_paths_set:
+                order_paths.append(source_path_file)
+                logger.debug("Added source_path file to order: %s", source_path_file)
+    else:
+        # Auto-discover order via topological sort (using final_files)
+        logger.info("Auto-discovering module order via topological sort...")
+        order_paths = compute_module_order(
+            final_files,
+            package_root,
+            package,
+            file_to_include,
+            detected_packages=detected_packages,
+        )
+        logger.debug("Auto-discovered order (%d modules)", len(order_paths))
+        # When auto-discovered, order_paths IS the topological order, so we can reuse it
+        topo_paths = order_paths
+
     # Prepare config dict for stitch_modules
+    # post_processing, external_imports, stitch_mode, comments_mode already validated
     display_name_raw = build_cfg.get("display_name", "")
     description_raw = build_cfg.get("description", "")
     repo_raw = build_cfg.get("repo", "")
-    post_processing = build_cfg.get("post_processing")
+    post_processing = build_cfg["post_processing"]
+    external_imports = build_cfg["external_imports"]
+    stitch_mode = build_cfg["stitch_mode"]
+    module_mode = build_cfg["module_mode"]
+    shim = build_cfg.get("shim", "all")
+    comments_mode = build_cfg["comments_mode"]
+    docstring_mode = build_cfg["docstring_mode"]
+    # module_actions already validated and normalized above
 
     stitch_config: dict[str, object] = {
         "package": package,
-        "order": order_paths,  # Pass resolved paths
-        "exclude_names": exclude_paths,  # Pass resolved paths
+        "order": order_paths,  # Pass resolved paths (already excludes exclude_paths)
+        "exclude_names": exclude_paths,  # Pass resolved paths (for validation)
         "display_name": display_name_raw,
         "description": description_raw,
         "repo": repo_raw,
         "topo_paths": topo_paths,  # Pre-computed topological order (if auto-discovered)
+        "external_imports": external_imports,
+        "stitch_mode": stitch_mode,
+        "module_mode": module_mode,
+        "shim": shim,
+        "module_actions": module_actions,
+        "comments_mode": comments_mode,
+        "docstring_mode": docstring_mode,
+        "main_mode": build_cfg.get("main_mode", "auto"),
+        "main_name": build_cfg.get("main_name"),
+        "detected_packages": detected_packages,  # Pre-detected packages
+        "module_bases": module_bases,  # For package detection fallback
+        "__meta__": build_cfg["__meta__"],  # For config_dir access in fallback
     }
 
-    # Extract metadata for embedding (use package_root as root_path)
-    version, commit, build_date = _extract_build_metadata(build_cfg, package_root)
+    # Extract metadata for embedding
+    # Use config_root for finding pyproject.toml (project root), package_root for git
+    config_root = build_cfg["__meta__"]["config_root"]
+    disable_timestamp = build_cfg.get("disable_build_timestamp", False)
+    version, commit, build_date = _extract_build_metadata(
+        build_cfg,
+        config_root,
+        package_root,
+        disable_timestamp=disable_timestamp,
+    )
 
     # Create parent directory if needed
     out_path.parent.mkdir(parents=True, exist_ok=True)
@@ -6819,11 +13347,12 @@ def run_build(  # noqa: PLR0915, PLR0912
             package_root=package_root,
             file_to_include=file_to_include,
             out_path=out_path,
-            license_header=license_header,
+            license_text=license_text,
             version=version,
             commit=commit,
             build_date=build_date,
             post_processing=post_processing,
+            is_serger_build=is_serger_build_result,
         )
         logger.info("✅ Stitch completed → %s\n", out_path)
     except RuntimeError as e:
@@ -6831,70 +13360,36 @@ def run_build(  # noqa: PLR0915, PLR0912
         raise RuntimeError(xmsg) from e
 
 
-def run_all_builds(
-    resolved_builds: list[BuildConfigResolved],
-    *,
-    dry_run: bool,
-) -> None:
-    logger = get_app_logger()
-    root_level = logger.level_name
-    logger.trace(f"[run_all_builds] Processing {len(resolved_builds)} build(s)")
-
-    for i, build_cfg in enumerate(resolved_builds, 1):
-        build_log_level = build_cfg.get("log_level")
-
-        build_cfg["dry_run"] = dry_run
-
-        # apply build-specific log level temporarily
-        needs_override = build_log_level and build_log_level != root_level
-        context = (
-            logger.use_level(cast_hint(str, build_log_level))
-            if needs_override
-            else contextlib.nullcontext()
-        )
-
-        with context:
-            if needs_override:
-                logger.debug("Overriding log level → %s", build_log_level)
-
-            logger.info("▶️  Build %d/%d", i, len(resolved_builds))
-            run_build(build_cfg)
-
-    logger.info("🎉 All builds complete.")
-
-
 # === serger.actions ===
 # src/serger/actions.py
 
 
-def _collect_included_files(resolved_builds: list[BuildConfigResolved]) -> list[Path]:
-    """Flatten all include globs into a unique list of files.
+def _collect_included_files(resolved: RootConfigResolved) -> list[Path]:
+    """Collect all include globs into a unique list of files.
 
     Uses collect_included_files() from build.py for consistency.
     Watch mode respects excludes from config.
     """
-    all_files: list[Path] = []
-
-    for b in resolved_builds:
-        includes = b.get("include", [])
-        excludes = b.get("exclude", [])
-        # Collect files for this build (watch mode respects excludes from config)
-        files, _file_to_include = collect_included_files(includes, excludes)
-        all_files.extend(files)
+    # include and exclude are optional, but if present they need validation
+    # Validation happens inside collect_included_files
+    includes = resolved.get("include", [])
+    excludes = resolved.get("exclude", [])
+    # Collect files (watch mode respects excludes from config)
+    files, _file_to_include = collect_included_files(includes, excludes)
 
     # Return unique sorted list
-    return sorted(set(all_files))
+    return sorted(set(files))
 
 
 def watch_for_changes(
     rebuild_func: Callable[[], None],
-    resolved_builds: list[BuildConfigResolved],
+    resolved: RootConfigResolved,
     interval: float = DEFAULT_WATCH_INTERVAL,
 ) -> None:
     """Poll file modification times and rebuild when changes are detected.
 
     Features:
-    - Skips files inside each build's output directory.
+    - Skips files inside the build's output directory.
     - Re-expands include patterns every loop to detect newly created files.
     - Polling interval defaults to 1 second (tune 0.5–2.0 for balance).
     Stops on KeyboardInterrupt.
@@ -6905,17 +13400,16 @@ def watch_for_changes(
     )
 
     # discover at start
-    included_files = _collect_included_files(resolved_builds)
+    included_files = _collect_included_files(resolved)
 
     mtimes: dict[Path, float] = {
         f: f.stat().st_mtime for f in included_files if f.exists()
     }
 
-    # Collect all output paths to ignore (can be directories or files)
-    out_paths: list[Path] = []
-    for b in resolved_builds:
-        out_path = (b["out"]["root"] / b["out"]["path"]).resolve()
-        out_paths.append(out_path)
+    # Collect output path to ignore (can be directory or file)
+    validate_required_keys(resolved, {"out"}, "resolved config")
+    validate_required_keys(resolved["out"], {"path", "root"}, "resolved['out']")
+    out_path = (resolved["out"]["root"] / resolved["out"]["path"]).resolve()
 
     rebuild_func()  # initial build
 
@@ -6924,14 +13418,14 @@ def watch_for_changes(
             time.sleep(interval)
 
             # 🔁 re-expand every tick so new/removed files are tracked
-            included_files = _collect_included_files(resolved_builds)
+            included_files = _collect_included_files(resolved)
 
             logger.trace(f"[watch] Checking {len(included_files)} files for changes")
 
             changed: list[Path] = []
             for f in included_files:
-                # skip files that are inside or equal to any output path
-                if any(f == out_p or f.is_relative_to(out_p) for out_p in out_paths):
+                # skip files that are inside or equal to the output path
+                if f == out_path or f.is_relative_to(out_path):
                     continue  # ignore output files/folders
                 old_m = mtimes.get(f)
                 if not f.exists():
@@ -7101,7 +13595,7 @@ def _create_test_package(pkg_dir: Path) -> None:
 
 def _create_build_config(
     test_pkg_dir: Path, out_file: Path, tmp_dir: Path
-) -> BuildConfigResolved:
+) -> RootConfigResolved:
     """Create build configuration for test package stitching.
 
     Args:
@@ -7110,7 +13604,7 @@ def _create_build_config(
         tmp_dir: Temporary directory root for path resolution
 
     Returns:
-        BuildConfigResolved configuration for stitching
+        RootConfigResolved configuration for stitching
 
     Raises:
         RuntimeError: If config construction fails (program bug)
@@ -7151,21 +13645,37 @@ def _create_build_config(
             "log_level": DEFAULT_LOG_LEVEL,
             "strict_config": DEFAULT_STRICT_CONFIG,
             "dry_run": False,
+            "watch_interval": DEFAULT_WATCH_INTERVAL,
             "__meta__": {"cli_root": tmp_dir, "config_root": tmp_dir},
+            # Required fields with defaults
+            "internal_imports": DEFAULT_INTERNAL_IMPORTS[DEFAULT_STITCH_MODE],
+            "external_imports": DEFAULT_EXTERNAL_IMPORTS[DEFAULT_STITCH_MODE],
+            "stitch_mode": DEFAULT_STITCH_MODE,
+            "module_mode": DEFAULT_MODULE_MODE,
+            "comments_mode": DEFAULT_COMMENTS_MODE,
+            "docstring_mode": DEFAULT_DOCSTRING_MODE,
+            "post_processing": cast(
+                "Any",
+                {
+                    "enabled": True,
+                    "category_order": [],
+                    "categories": {},
+                },
+            ),
         }
         logger.trace(
             "[SELFTEST] Build config created: package=%s, order=%s",
             "testpkg",
             config["order"],
         )
-        return cast("BuildConfigResolved", config)
+        return cast("RootConfigResolved", config)
     except Exception as e:
         xmsg = f"Config construction failed: {e}"
         logger.trace("[SELFTEST] Config construction error: %s", e, exc_info=True)
         raise RuntimeError(xmsg) from e
 
 
-def _execute_build(build_cfg: BuildConfigResolved) -> None:
+def _execute_selftest_build(build_cfg: RootConfigResolved) -> None:
     """Execute stitch build in both dry-run and real modes.
 
     Args:
@@ -7174,8 +13684,12 @@ def _execute_build(build_cfg: BuildConfigResolved) -> None:
     Raises:
         RuntimeError: If build execution fails (program bug)
     """
+    # run_build will validate required keys, but we need package for this function
+    validate_required_keys(build_cfg, {"package"}, "build_cfg")
     logger = get_app_logger()
-    logger.trace("[SELFTEST] _execute_build: package=%s", build_cfg.get("package"))
+    logger.trace(
+        "[SELFTEST] _execute_selftest_build: package=%s", build_cfg.get("package")
+    )
 
     for dry_run in (True, False):
         build_cfg["dry_run"] = dry_run
@@ -7348,9 +13862,9 @@ def _verify_content(stitched_file: Path) -> None:
     )
 
     expected_markers = [
-        "# === base ===",
-        "# === utils ===",
-        "# === main ===",
+        "# === testpkg.base ===",
+        "# === testpkg.utils ===",
+        "# === testpkg.main ===",
         "BASE_VALUE = 42",
         "def get_value()",
         "def main(",
@@ -7449,7 +13963,7 @@ def run_selftest() -> bool:  # noqa: PLR0915
             # --- Phase 3: Execute build (both dry and real) ---
             phase_start = time.time()
             logger.debug("[SELFTEST] Phase 3: Executing stitch build")
-            _execute_build(build_cfg)
+            _execute_selftest_build(build_cfg)
             logger.debug(
                 "[SELFTEST] Phase 3 completed in %.3fs",
                 time.time() - phase_start,
@@ -7745,6 +14259,11 @@ def _setup_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Run a built-in sanity test to verify tool correctness.",
     )
+    parser.add_argument(
+        "--disable-build-timestamp",
+        action="store_true",
+        help="Disable build timestamps for deterministic builds (uses placeholder).",
+    )
     return parser
 
 
@@ -7799,8 +14318,7 @@ class _LoadedConfig:
 
     config_path: Path | None
     root_cfg: RootConfig
-    resolved_root: RootConfigResolved
-    resolved_builds: list[BuildConfigResolved]
+    resolved: RootConfigResolved
     config_dir: Path
     cwd: Path
 
@@ -7808,7 +14326,8 @@ class _LoadedConfig:
 def _initialize_logger(args: argparse.Namespace) -> None:
     """Initialize logger with CLI args, env vars, and defaults."""
     logger = get_app_logger()
-    logger.setLevel(logger.determine_log_level(args=args))
+    log_level = logger.determine_log_level(args=args)
+    logger.setLevel(log_level)
     logger.enable_color = getattr(
         args, "enable_color", logger.determine_color_enabled()
     )
@@ -7824,67 +14343,43 @@ def _initialize_logger(args: argparse.Namespace) -> None:
 
 def _validate_includes(
     root_cfg: RootConfig,
-    resolved_builds: list[BuildConfigResolved],
-    resolved_root: RootConfigResolved,
+    resolved: RootConfigResolved,
     args: argparse.Namespace,
 ) -> bool:
     """
-    Validate that builds have include patterns.
+    Validate that the build has include patterns.
 
     Returns True if validation passes, False if we should abort.
     Logs appropriate warnings/errors.
     """
     logger = get_app_logger()
 
-    # Check for builds with missing includes. Respect per-build strict_config:
-    # - If ANY build with no includes has strict_config=true → error (abort)
-    # - If ALL builds with no includes have strict_config=false → warning (continue)
-    # - If builds=[] and root strict_config=true → error
-    # - If builds=[] and root strict_config=false → warning
-    #
     # The presence of "include" key (even if empty) signals intentional choice:
-    #   [] or includes=[]                  → include:[] in build → no check
-    #   {"include": []}                    → include:[] in build → no check
-    #   {"builds": [{"include": []}]}      → include:[] in build → no check
+    #   {"include": []}                    → include:[] in config → no check
     #
     # Missing "include" key likely means forgotten:
     #   {} or ""                           → no include key → check
-    #   {"builds": []}                     → no include key → check
     #   {"log_level": "debug"}             → no include key → check
-    #   {"builds": [{"out": "dist"}]}      → no include key → check
-    original_builds = root_cfg.get("builds", [])
-    has_explicit_include_key = any(
-        isinstance(b, dict) and "include" in b  # pyright: ignore[reportUnnecessaryIsInstance]
-        for b in original_builds
-    )
+    has_explicit_include_key = "include" in root_cfg
 
-    # Check if any builds have missing includes (respecting CLI overrides)
+    # Check if CLI provides includes
     has_cli_includes = bool(
         getattr(args, "add_include", None) or getattr(args, "include", None)
     )
 
-    # Builds with no includes
-    builds_missing_includes = [b for b in resolved_builds if not b.get("include")]
+    # Check if config has no includes
+    config_missing_includes = not resolved.get("include")
 
-    # Check if ALL builds have no includes (including zero builds)
-    all_builds_missing = len(resolved_builds) == 0 or len(
-        builds_missing_includes
-    ) == len(resolved_builds)
-
-    if not has_explicit_include_key and not has_cli_includes and all_builds_missing:
+    if (
+        not has_explicit_include_key
+        and not has_cli_includes
+        and config_missing_includes
+    ):
         # Determine if we should error or warn based on strict_config
-        # If builds exist, check ANY build for strict_config=true
-        # If no builds, use root-level strict_config
-        if builds_missing_includes:
-            any_strict = any(
-                b.get("strict_config", True) for b in builds_missing_includes
-            )
-        else:
-            # No builds at all - use root strict_config
-            any_strict = resolved_root.get("strict_config", True)
+        any_strict = resolved.get("strict_config", True)
 
         if any_strict:
-            # Error: at least one build with missing includes is strict
+            # Error: config has no includes and strict_config=true
             logger.error(
                 "No include patterns found "
                 "(strict_config=true prevents continuing).\n"
@@ -7893,12 +14388,141 @@ def _validate_includes(
             )
             return False
 
-        # Warning: builds have no includes but all are non-strict
+        # Warning: config has no includes but strict_config=false
         logger.warning(
             "No include patterns found.\n"
             "   Use 'include' in your config or pass "
             "--include / --add-include.",
         )
+
+    return True
+
+
+def _validate_package(  # noqa: PLR0912
+    root_cfg: RootConfig,
+    resolved: RootConfigResolved,
+    _args: argparse.Namespace,
+) -> bool:
+    """
+    Primary validation: Check that the build has a package name (required for
+    stitch builds).
+
+    This is the detailed validation that provides helpful error messages with
+    context:
+    - Lists available modules/packages found in module_bases
+    - Explains why auto-detection failed (multiple modules, no modules, etc.)
+    - Suggests solutions based on the specific situation
+    - Respects strict_config to determine error vs warning
+
+    This runs early in the CLI flow (after config resolution) to fail fast with
+    actionable guidance. A defensive check in run_build() serves as a safety net
+    for direct calls or edge cases.
+
+    Note: Package is only required for stitch builds (which need includes).
+    If there are no includes, package validation is skipped.
+
+    Returns True if validation passes, False if we should abort.
+    Logs appropriate warnings/errors.
+    """
+    logger = get_app_logger()
+
+    # Package is only required for stitch builds (which need includes)
+    # If there are no includes (config or CLI), skip package validation
+    # Note: CLI includes are merged during resolve_config, so resolved.get("include")
+    # should already include them. We check both resolved and args to be safe.
+    config_includes = resolved.get("include", [])
+    has_includes = len(config_includes) > 0
+    has_cli_includes = bool(
+        getattr(_args, "include", None) or getattr(_args, "add_include", None)
+    )
+    # If no includes at all, package is not required
+    if not has_includes and not has_cli_includes:
+        # No includes means no stitch build, so package is not required
+        return True
+    # If CLI provides includes, skip validation (package will be inferred from
+    # CLI includes during resolution). This handles the case where CLI includes
+    # are provided but package hasn't been resolved yet.
+    if has_cli_includes:
+        return True
+
+    # The presence of "package" key (even if None) signals intentional choice:
+    #   {"package": None}                  → package:null in config → no check
+    #
+    # Missing "package" key likely means forgotten or couldn't be auto-detected:
+    #   {}                                 → no package key → check
+    #   {"log_level": "debug"}             → no package key → check
+    has_explicit_package_key = "package" in root_cfg
+
+    # Check if package is missing in resolved config
+    package = resolved.get("package")
+    config_missing_package = not package
+
+    if not has_explicit_package_key and config_missing_package:
+        # Collect context for better error messages
+        module_bases = resolved.get("module_bases", [])
+        config_dir: Path | None = None
+        meta = resolved.get("__meta__")
+        if meta and isinstance(meta, dict):  # pyright: ignore[reportUnnecessaryIsInstance]
+            config_dir_raw = meta.get("config_root")
+            if isinstance(config_dir_raw, Path):  # pyright: ignore[reportUnnecessaryIsInstance]
+                config_dir = config_dir_raw
+
+        # Get all modules found in module_bases for helpful error messages
+        all_modules: list[str] = []
+        if module_bases and config_dir:
+            all_modules = _get_first_level_modules_from_bases(module_bases, config_dir)
+            # Remove duplicates while preserving order
+            seen: set[str] = set()
+            unique_modules: list[str] = []
+            for mod in all_modules:
+                if mod not in seen:
+                    seen.add(mod)
+                    unique_modules.append(mod)
+            all_modules = unique_modules
+
+        # Build helpful error message based on what was found
+        if not module_bases:
+            msg = (
+                "No package name found.\n"
+                "   Use 'package' in your config, or set 'module_bases' to enable "
+                "auto-detection."
+            )
+        elif len(all_modules) == 0:
+            msg = (
+                "No package name found. No modules found in module_bases: "
+                f"{module_bases}.\n"
+                "   Use 'package' in your config, or ensure module_bases contain "
+                "Python modules/packages."
+            )
+        elif len(all_modules) == 1:
+            # This shouldn't happen (should have been auto-detected), but provide
+            # helpful message
+            msg = (
+                f"No package name found. Found single module '{all_modules[0]}' "
+                f"in module_bases: {module_bases}.\n"
+                "   This should have been auto-detected. Please specify 'package' "
+                "explicitly or report this as a bug."
+            )
+        else:
+            # Multiple modules found - explain why auto-detection failed
+            modules_str = ", ".join(f"'{m}'" for m in all_modules)
+            msg = (
+                f"No package name found. Found multiple modules in module_bases "
+                f"{module_bases}: {modules_str}.\n"
+                "   Please specify 'package' explicitly in your config to "
+                "indicate which module to use."
+            )
+
+        # Determine if we should error or warn based on strict_config
+        any_strict = resolved.get("strict_config", True)
+
+        if any_strict:
+            # Error: config has no package and strict_config=true
+            logger.error(msg)
+            return False
+
+        # Warning: config has no package but strict_config=false
+        logger.warning(msg)
 
     return True
 
@@ -7922,7 +14546,7 @@ def _handle_early_exits(args: argparse.Namespace) -> int | None:
 
     # --- Python version check ---
     if get_sys_version_info() < (3, 10):
-        logger.error("%s requires Python 3.10 or newer.", {PROGRAM_DISPLAY})
+        logger.error("%s requires Python 3.10 or newer.", PROGRAM_DISPLAY)
         return 1
 
     # --- Self-test mode ---
@@ -7953,59 +14577,47 @@ def _load_and_resolve_config(
     cwd = Path.cwd().resolve()
     config_dir = config_path.parent if config_path else cwd
 
-    # --- Configless early bailout ---
-    if root_cfg is None and not can_run_configless(args):
-        logger.error(
-            "No build config found (.%s.json) and no includes provided.",
-            PROGRAM_CONFIG,
-        )
-        xmsg = "No config file or CLI includes provided"
-        raise RuntimeError(xmsg)
-
     # --- CLI-only mode fallback ---
+    # Remove early bailout check - let downstream logic (auto-include, file
+    # collection) handle validation. This allows pyproject.toml-based configless
+    # builds to proceed and fail with more appropriate error messages if needed.
     if root_cfg is None:
         logger.info("No config file found — using CLI-only mode.")
-        root_cfg = cast_hint(RootConfig, {"builds": [{}]})
+        root_cfg = cast_hint(RootConfig, {})
 
     # --- Resolve config with args and defaults ---
-    resolved_root = resolve_config(root_cfg, args, config_dir, cwd)
-    resolved_builds = resolved_root["builds"]
+    resolved = resolve_config(root_cfg, args, config_dir, cwd)
 
     return _LoadedConfig(
         config_path=config_path,
         root_cfg=root_cfg,
-        resolved_root=resolved_root,
-        resolved_builds=resolved_builds,
+        resolved=resolved,
         config_dir=config_dir,
         cwd=cwd,
     )
 
 
-def _execute_builds(
-    resolved_builds: list[BuildConfigResolved],
-    resolved_root: RootConfigResolved,
+def _execute_build(
+    resolved: RootConfigResolved,
     args: argparse.Namespace,
     argv: list[str] | None,
 ) -> None:
-    """Execute builds either in watch mode or one-time mode."""
+    """Execute build either in watch mode or one-time mode."""
     watch_enabled = getattr(args, "watch", None) is not None or (
         "--watch" in (argv or [])
     )
 
+    resolved["dry_run"] = getattr(args, "dry_run", DEFAULT_DRY_RUN)
+
     if watch_enabled:
-        watch_interval = resolved_root["watch_interval"]
+        watch_interval = resolved["watch_interval"]
         watch_for_changes(
-            lambda: run_all_builds(
-                resolved_builds,
-                dry_run=getattr(args, "dry_run", DEFAULT_DRY_RUN),
-            ),
-            resolved_builds,
+            lambda: run_build(resolved),
+            resolved,
             interval=watch_interval,
         )
     else:
-        run_all_builds(
-            resolved_builds, dry_run=getattr(args, "dry_run", DEFAULT_DRY_RUN)
-        )
+        run_build(resolved)
 
 
 # --------------------------------------------------------------------------- #
@@ -8013,7 +14625,7 @@ def _execute_builds(
 # --------------------------------------------------------------------------- #
 
 
-def main(argv: list[str] | None = None) -> int:
+def main(argv: list[str] | None = None) -> int:  # noqa: PLR0911
     logger = get_app_logger()  # init (use env + defaults)
 
     try:
@@ -8032,9 +14644,11 @@ def main(argv: list[str] | None = None) -> int:
         config = _load_and_resolve_config(args, parser)
 
         # --- Validate includes ---
-        if not _validate_includes(
-            config.root_cfg, config.resolved_builds, config.resolved_root, args
-        ):
+        if not _validate_includes(config.root_cfg, config.resolved, args):
+            return 1
+
+        # --- Validate package ---
+        if not _validate_package(config.root_cfg, config.resolved, args):
             return 1
 
         # --- Dry-run notice ---
@@ -8048,10 +14662,9 @@ def main(argv: list[str] | None = None) -> int:
             logger.info("🔧 Running in CLI-only mode (no config file).")
         logger.info("📁 Config root: %s", config.config_dir)
         logger.info("📂 Invoked from: %s", config.cwd)
-        logger.info("🔧 Running %d build(s)\n", len(config.resolved_builds))
 
-        # --- Execute builds ---
-        _execute_builds(config.resolved_builds, config.resolved_root, args, argv)
+        # --- Execute build ---
+        _execute_build(config.resolved, args, argv)
 
     except (FileNotFoundError, ValueError, TypeError, RuntimeError) as e:
         # controlled termination
@@ -8094,79 +14707,143 @@ def _create_pkg_module(pkg_name: str) -> types.ModuleType:
     return _mod
 
 
-def _setup_pkg_modules(pkg_name: str, module_names: list[str]) -> None:
+def _setup_pkg_modules(  # noqa: C901, PLR0912
+    pkg_name: str, module_names: list[str], name_mapping: dict[str, str] | None = None
+) -> None:
     """Set up package module attributes and register submodules."""
     _mod = sys.modules.get(pkg_name)
     if not _mod:
         return
     # Copy attributes from all modules under this package
     _globals = globals()
+    # Debug: log what's in globals for this package
+    # Note: This copies all globals to the package module
     for _key, _value in _globals.items():
         setattr(_mod, _key, _value)
+    # Set up package attributes for nested packages BEFORE registering
+    # modules (so packages are available when modules are registered)
+    _seen_packages: set[str] = set()
+    _min_parts_for_intermediate_pkg = 3  # e.g., mypkg.public.utils has 3 parts
+    for _name in module_names:
+        if _name != pkg_name and _name.startswith(pkg_name + "."):
+            # Extract parent package (e.g., mypkg.public from
+            # mypkg.public.utils)
+            _name_parts = _name.split(".")
+            if len(_name_parts) >= _min_parts_for_intermediate_pkg:
+                # Has at least one intermediate package
+                _parent_pkg = ".".join(_name_parts[:-1])
+                if (
+                    _parent_pkg.startswith(pkg_name + ".")
+                    and _parent_pkg not in _seen_packages
+                ):
+                    _seen_packages.add(_parent_pkg)
+                    _pkg_obj = sys.modules.get(_parent_pkg)
+                    if _pkg_obj and _pkg_obj != _mod:
+                        # Set parent package as attribute
+                        _pkg_attr_name = _name_parts[1]
+                        if not hasattr(_mod, _pkg_attr_name):
+                            setattr(_mod, _pkg_attr_name, _pkg_obj)
     # Register all modules under this package
     for _name in module_names:
-        sys.modules[_name] = _mod
+        # Try to find module by transformed name first
+        _module_obj = sys.modules.get(_name)
+        if not _module_obj and name_mapping:
+            # If not found, try to find by original name
+            _original_name = name_mapping.get(_name)
+            if _original_name:
+                _module_obj = sys.modules.get(_original_name)
+                if not _module_obj:
+                    # Also check globals() for module object
+                    # Module objects might be in globals()
+                    # with their original names
+                    _last_part = _original_name.split(".")[-1]
+                    _module_obj = _globals.get(_last_part)
+                if _module_obj:
+                    # Register with transformed name
+                    sys.modules[_name] = _module_obj
+        # If still not found, use package module
+        if not _module_obj:
+            sys.modules[_name] = _mod
     # Set submodules as attributes on parent package
     for _name in module_names:
         if _name != pkg_name and _name.startswith(pkg_name + "."):
             _submodule_name = _name.split(".")[-1]
+            # Try to get actual module object
+            _module_obj = sys.modules.get(_name)
+            if not _module_obj and name_mapping:
+                _original_name = name_mapping.get(_name)
+                if _original_name:
+                    _module_obj = sys.modules.get(_original_name)
+                    if not _module_obj:
+                        # Also check globals()
+                        _last_part = _original_name.split(".")[-1]
+                        _module_obj = _globals.get(_last_part)
+            # Use actual module object if found, otherwise package
+            _target = _module_obj if _module_obj else _mod
             if not hasattr(_mod, _submodule_name) or isinstance(
                 getattr(_mod, _submodule_name, None), types.ModuleType
             ):
-                setattr(_mod, _submodule_name, _mod)
+                setattr(_mod, _submodule_name, _target)
 
 
 _create_pkg_module("serger")
-_create_pkg_module("apathetic_utils")
-_create_pkg_module("apathetic_schema")
-_create_pkg_module("apathetic_logs")
 _create_pkg_module("serger.config")
 _create_pkg_module("serger.utils")
+_create_pkg_module("serger.apathetic_utils")
+_create_pkg_module("serger.apathetic_logs")
+_create_pkg_module("serger.apathetic_schema")
 
 _setup_pkg_modules(
     "serger",
     [
-        "serger.meta",
+        "serger.actions",
+        "serger.build",
+        "serger.cli",
         "serger.constants",
         "serger.logs",
-        "serger.verify_script",
-        "serger.stitch",
-        "serger.build",
-        "serger.actions",
+        "serger.main_config",
+        "serger.meta",
+        "serger.module_actions",
         "serger.selftest",
-        "serger.cli",
+        "serger.stitch",
+        "serger.verify_script",
     ],
+    None,
 )
-_setup_pkg_modules(
-    "apathetic_utils",
-    [
-        "apathetic_utils.system",
-        "apathetic_utils.text",
-        "apathetic_utils.types",
-        "apathetic_utils.files",
-        "apathetic_utils.paths",
-        "apathetic_utils.matching",
-    ],
-)
-_setup_pkg_modules("apathetic_schema", ["apathetic_schema.schema"])
-_setup_pkg_modules("apathetic_logs", ["apathetic_logs.logs"])
 _setup_pkg_modules(
     "serger.config",
     [
-        "serger.config.config_types",
-        "serger.config.config_validate",
         "serger.config.config_loader",
         "serger.config.config_resolve",
+        "serger.config.config_types",
+        "serger.config.config_validate",
     ],
+    None,
 )
 _setup_pkg_modules(
     "serger.utils",
     [
-        "serger.utils.utils_types",
         "serger.utils.utils_matching",
         "serger.utils.utils_modules",
+        "serger.utils.utils_types",
+        "serger.utils.utils_validation",
     ],
+    None,
 )
+_setup_pkg_modules(
+    "serger.apathetic_utils",
+    [
+        "serger.apathetic_utils.files",
+        "serger.apathetic_utils.matching",
+        "serger.apathetic_utils.paths",
+        "serger.apathetic_utils.system",
+        "serger.apathetic_utils.text",
+        "serger.apathetic_utils.types",
+    ],
+    None,
+)
+_setup_pkg_modules("serger.apathetic_logs", ["serger.apathetic_logs.logs"], None)
+_setup_pkg_modules("serger.apathetic_schema", ["serger.apathetic_schema.schema"], None)
 
 if __name__ == "__main__":
     sys.exit(main(sys.argv[1:]))

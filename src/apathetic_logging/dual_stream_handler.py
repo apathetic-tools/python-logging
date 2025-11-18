@@ -17,12 +17,14 @@ class ApatheticLogging_Priv_DualStreamHandler:  # noqa: N801  # pyright: ignore[
     class DualStreamHandler(logging.StreamHandler):  # type: ignore[type-arg]
         """Send info to stdout, everything else to stderr.
 
-        TRACE, DEBUG, and DETAIL go to stderr normally.
-        INFO and MINIMAL go to stdout.
-        When logger level is TEST, TEST/TRACE/DEBUG/DETAIL messages bypass
-        capture by writing to sys.__stderr__ instead of sys.stderr.
-        This allows debugging tests without breaking output assertions while
-        still being capturable by subprocess.run(capture_output=True).
+        INFO, MINIMAL, and DETAIL go to stdout (normal program output).
+        TRACE, DEBUG, WARNING, ERROR, and CRITICAL go to stderr
+        (diagnostic/error output).
+        When logger level is TEST, TEST/TRACE/DEBUG messages bypass capture
+        by writing to sys.__stderr__ instead of sys.stderr. This allows
+        debugging tests without breaking output assertions while still being
+        capturable by subprocess.run(capture_output=True).
+        WARNING, ERROR, and CRITICAL always use normal stderr, even in TEST mode.
         """
 
         enable_color: bool = False
@@ -54,16 +56,11 @@ class ApatheticLogging_Priv_DualStreamHandler:  # noqa: N801  # pyright: ignore[
 
             # Determine target stream
             if level >= logging.WARNING:
-                # Warnings and errors always go to stderr (normal behavior)
+                # WARNING, ERROR, CRITICAL → stderr (always, even in TEST mode)
                 # This ensures they still break tests as expected
-                # Even in TEST mode, warnings/errors use normal stderr
                 self.stream = sys.stderr
-            # In TEST mode, TEST/TRACE/DEBUG/DETAIL bypass capture via __stderr__
-            elif (
-                level <= logging.DEBUG
-                or level == ApatheticLogging_Priv_Constants.DETAIL_LEVEL
-            ):
-                # Use bypass stream for TEST/TRACE/DEBUG/DETAIL in test mode
+            elif level <= logging.DEBUG:
+                # TEST, TRACE, DEBUG → stderr (normal) or __stderr__ (TEST mode bypass)
                 # Use __stderr__ so they bypass pytest capsys but are still
                 # capturable by subprocess.run(capture_output=True)
                 if is_test_mode:
@@ -71,7 +68,7 @@ class ApatheticLogging_Priv_DualStreamHandler:  # noqa: N801  # pyright: ignore[
                 else:
                     self.stream = sys.stderr
             else:
-                # INFO, MINIMAL, and other levels go to stdout
+                # MINIMAL, INFO, DETAIL → stdout (normal program output)
                 self.stream = sys.stdout
 
             # used by TagFormatter

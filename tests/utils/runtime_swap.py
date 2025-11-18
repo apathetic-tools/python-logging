@@ -24,6 +24,7 @@ from tests.utils.constants import (
     PROJ_ROOT,
 )
 
+from .package_detection import find_all_packages_under_path
 from .test_trace import make_test_trace
 
 
@@ -91,10 +92,17 @@ def runtime_swap() -> bool:
         )
         raise pytest.UsageError(xmsg)
 
-    # Nuke any already-imported apathetic_logging modules to avoid stale refs.
+    # Nuke any already-imported modules from src/ to avoid stale refs.
+    # Dynamically detect all packages under src/ instead of hardcoding names.
+    src_dir = PROJ_ROOT / "src"
+    packages_to_nuke = find_all_packages_under_path(src_dir)
+
     for name in list(sys.modules):
-        if name == PROGRAM_PACKAGE or name.startswith(f"{PROGRAM_PACKAGE}."):
-            del sys.modules[name]
+        # Check if module name matches any detected package or is a submodule
+        for pkg_name in packages_to_nuke:
+            if name == pkg_name or name.startswith(f"{pkg_name}."):
+                del sys.modules[name]
+                break
 
     # Load standalone script as the apathetic_logging package.
     spec = importlib.util.spec_from_file_location(PROGRAM_PACKAGE, bin_path)

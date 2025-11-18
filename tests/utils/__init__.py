@@ -1,5 +1,6 @@
 # tests/utils/__init__.py
 
+from .ci import if_ci, is_ci
 from .constants import (
     BUNDLER_SCRIPT,
     PROGRAM_CONFIG,
@@ -14,6 +15,9 @@ from .test_trace import TEST_TRACE, make_test_trace
 
 
 __all__ = [  # noqa: RUF022
+    # ci
+    "if_ci",
+    "is_ci",
     # constants
     "BUNDLER_SCRIPT",
     "PROJ_ROOT",

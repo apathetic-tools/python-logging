@@ -24,24 +24,29 @@ def direct_logger() -> mod_alogs.Logger:
 
     This fixture does NOT affect get_logger() or global state —
     it's just a clean logger instance for isolated testing.
+
+    Default log level is set to "test" for maximum verbosity in test output.
     """
     # Give each test's logger a unique name for debug clarity
     name = f"test_logger{_suffix()}"
-    return mod_alogs.Logger(name, enable_color=False)
+    logger = mod_alogs.Logger(name)
+    logger.setLevel("test")
+    return logger
 
 
 @pytest.fixture
-def module_logger(
-    monkeypatch: pytest.MonkeyPatch,
-) -> mod_alogs.Logger:
+def module_logger(monkeypatch: pytest.MonkeyPatch) -> mod_alogs.Logger:
     """Replace get_logger() everywhere with a new isolated instance.
 
     Ensures all modules calling get_logger()
     will use this test logger for the duration of the test.
 
     Automatically reverts after test completion.
+
+    Default log level is set to "test" for maximum verbosity in test output.
     """
-    new_logger = mod_alogs.Logger(f"isolated_logger{_suffix()}", enable_color=False)
+    new_logger = mod_alogs.Logger(f"isolated_logger{_suffix()}")
+    new_logger.setLevel("test")
     patch_everywhere(monkeypatch, mod_alogs, "get_logger", lambda: new_logger)
     TEST_TRACE(
         "module_logger fixture",
