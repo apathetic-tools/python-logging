@@ -83,22 +83,20 @@ def main(_argv: list[str] | None = None) -> int:
         # Use absolute path for project src (serger handles absolute paths)
         src_pattern = str(PROJ_ROOT / "src" / "apathetic_*" / "**" / "*.py")
         config = {
-            "builds": [
-                {
-                    "package": "test_embedded",
-                    "include": [
-                        "source_to_join/*.py",
-                        src_pattern,
-                    ],
-                    "exclude": [
-                        "__pycache__/**",
-                        "*.pyc",
-                        "**/__init__.py",
-                        "**/__main__.py",
-                    ],
-                    "out": "stitched_output.py",
-                }
-            ]
+            "package": "test_embedded",
+            "include": [
+                "source_to_join/*.py",
+                src_pattern,
+            ],
+            "exclude": [
+                "__pycache__/**",
+                "*.pyc",
+                "**/__init__.py",
+                "**/__main__.py",
+            ],
+            "out": "stitched_output.py",
+            "module_bases": [str(PROJ_ROOT / "src")],
+            "internal_imports": "keep",
         }
         config_file.write_text(json.dumps(config, indent=2))
 

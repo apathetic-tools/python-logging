@@ -287,9 +287,40 @@ class ApatheticLogging_Priv_Logger:  # noqa: N801  # pyright: ignore[reportUnuse
                 return cast("str", args_level).upper()
 
             # Check registered environment variables, or fall back to "LOG_LEVEL"
-            registered_env_vars = (
-                ApatheticLogging_Priv_Registry.registered_priv_log_level_env_vars
-            )
+            # Access registry via namespace class MRO to ensure correct resolution
+            # in both installed and stitched builds
+            namespace_module = sys.modules.get("apathetic_logging")
+            if namespace_module is not None:
+                namespace_class = getattr(namespace_module, "apathetic_logging", None)
+                if namespace_class is not None:
+                    # Use namespace class MRO to access registry
+                    # (handles shadowed attributes correctly)
+                    registered_env_vars = getattr(
+                        namespace_class,
+                        "registered_priv_log_level_env_vars",
+                        None,
+                    )
+                    registered_default = getattr(
+                        namespace_class,
+                        "registered_priv_default_log_level",
+                        None,
+                    )
+                else:
+                    # Fallback to direct registry access
+                    registry_cls = ApatheticLogging_Priv_Registry
+                    registered_env_vars = (
+                        registry_cls.registered_priv_log_level_env_vars
+                    )
+                    registered_default = registry_cls.registered_priv_default_log_level
+            else:
+                # Fallback to direct registry access
+                registered_env_vars = (
+                    ApatheticLogging_Priv_Registry.registered_priv_log_level_env_vars
+                )
+                registered_default = (
+                    ApatheticLogging_Priv_Registry.registered_priv_default_log_level
+                )
+
             env_vars_to_check = (
                 registered_env_vars
                 or ApatheticLogging_Priv_Constants.DEFAULT_APATHETIC_LOG_LEVEL_ENV_VARS
@@ -303,9 +334,6 @@ class ApatheticLogging_Priv_Logger:  # noqa: N801  # pyright: ignore[reportUnuse
                 return root_log_level.upper()
 
             # Use registered default, or fall back to module default
-            registered_default = (
-                ApatheticLogging_Priv_Registry.registered_priv_default_log_level
-            )
             default_level: str = (
                 registered_default
                 or ApatheticLogging_Priv_Constants.DEFAULT_APATHETIC_LOG_LEVEL
