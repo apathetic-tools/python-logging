@@ -79,6 +79,9 @@ def test_add_level_name_sets_convenience_attribute() -> None:
     level_value = 30
     level_name = "CONVENIENCE_TEST"
 
+    # Save original level name mapping (30 is WARNING)
+    original_level_name = logging.getLevelName(level_value)
+
     # Clean up if it exists
     if hasattr(logging, level_name):
         delattr(logging, level_name)
@@ -94,8 +97,11 @@ def test_add_level_name_sets_convenience_attribute() -> None:
     logger.setLevel(getattr(logging, level_name))
     assert logger.level == level_value
 
-    # Clean up
+    # Clean up: restore original level name mapping
     delattr(logging, level_name)
+    # Restore original level name in _levelToName dict
+    if original_level_name and original_level_name != f"Level {level_value}":
+        logging.addLevelName(level_value, original_level_name)
 
 
 def test_add_level_name_zero_raises() -> None:

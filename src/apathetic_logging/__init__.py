@@ -27,7 +27,11 @@ if _is_standalone:
     apathetic_logging = cast("type[_apathetic_logging_class]", _apathetic_logging_raw)
 else:
     # Installed mode: import from namespace module
+    # This block is only executed in installed mode, not in standalone builds
     from .namespace import apathetic_logging
+
+    # Ensure the else block is not empty (build script may remove import)
+    _ = apathetic_logging
 
 # Export all namespace items for convenience
 # These are aliases to apathetic_logging.*
