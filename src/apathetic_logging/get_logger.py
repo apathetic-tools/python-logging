@@ -85,6 +85,20 @@ class ApatheticLogging_Priv_GetLogger:  # noqa: N801  # pyright: ignore[reportUn
             raise RuntimeError(_msg)
 
         logger = logging.getLogger(registered_logger_name)
+
+        # Check if the logger is the correct type. If a logger was created before
+        # extend_logging_module() was called, it might be a standard logging.Logger.
+        # In that case, we need to delete it and create a new one with the correct type.
+        # We check for the presence of 'level_name' attribute which is specific to
+        # apathetic_logging.Logger, rather than relying on getLoggerClass() which
+        # might not be set correctly in all scenarios.
+        if not hasattr(logger, "level_name"):
+            # Remove the existing logger from the manager so we can create a new one
+            if registered_logger_name in logging.Logger.manager.loggerDict:
+                logging.Logger.manager.loggerDict.pop(registered_logger_name, None)
+            # Now get a new logger, which will be created with the correct class
+            logger = logging.getLogger(registered_logger_name)
+
         typed_logger = cast("Any", logger)  # apathetic_logging.Logger
         ApatheticLogging_Priv_TestTrace.TEST_TRACE(
             "get_logger() called",

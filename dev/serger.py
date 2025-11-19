@@ -4,7 +4,7 @@ Serger — Stitch your module into a single file.
 This single-file version is auto-generated from modular sources.
 Version: 0.1.0
 Commit: unknown (local build)
-Built: 2025-11-19 00:19:29 UTC
+Built: 2025-11-19 01:34:02 UTC
 """
 # Serger — Stitch your module into a single file.
 # ============LICENSE============
@@ -13,7 +13,7 @@ Built: 2025-11-19 00:19:29 UTC
 # ================================
 # Version: 0.1.0
 # Commit: unknown (local build)
-# Build Date: 2025-11-19 00:19:29 UTC
+# Build Date: 2025-11-19 01:34:02 UTC
 # Repo: https://github.com/apathetic-tools/serger
 
 from __future__ import annotations
@@ -66,7 +66,7 @@ from typing_extensions import NotRequired
 
 __version__ = "0.1.0"
 __commit__ = "unknown (local build)"
-__build_date__ = "2025-11-19 00:19:29 UTC"
+__build_date__ = "2025-11-19 01:34:02 UTC"
 __STANDALONE__ = True
 __STITCH_SOURCE__ = "serger"
 __package__ = "serger"
@@ -1753,6 +1753,40 @@ class Metadata:
         return f"{self.version} ({self.commit})"
 
 
+# === serger.utils.utils_validation ===
+# src/serger/utils/utils_validation.py
+
+
+def validate_required_keys(
+    config: dict[str, Any] | Any,
+    required_keys: set[str],
+    param_name: str,
+) -> None:
+    """Validate that a config dict contains all required keys.
+
+    Args:
+        config: The config dict to validate (TypedDict or dict)
+        required_keys: Set of required key names
+        param_name: Name of the parameter (for error messages)
+
+    Raises:
+        TypeError: If any required keys are missing
+    """
+    if not required_keys:
+        return
+
+    # TypedDict is a dict at runtime, but type checkers need help
+    config_dict = cast("dict[str, Any]", config)
+    missing = required_keys - config_dict.keys()
+    if missing:
+        missing_str = ", ".join(sorted(missing))
+        xmsg = (
+            f"Missing required keys in {param_name}: {missing_str}. "
+            f"Required keys: {', '.join(sorted(required_keys))}"
+        )
+        raise TypeError(xmsg)
+
+
 # === serger.constants ===
 # src/serger/constants.py
 """Central constants used across the project."""
@@ -1873,40 +1907,6 @@ DEFAULT_CATEGORIES: dict[str, dict[str, Any]] = {
         },
     },
 }
-
-
-# === serger.utils.utils_validation ===
-# src/serger/utils/utils_validation.py
-
-
-def validate_required_keys(
-    config: dict[str, Any] | Any,
-    required_keys: set[str],
-    param_name: str,
-) -> None:
-    """Validate that a config dict contains all required keys.
-
-    Args:
-        config: The config dict to validate (TypedDict or dict)
-        required_keys: Set of required key names
-        param_name: Name of the parameter (for error messages)
-
-    Raises:
-        TypeError: If any required keys are missing
-    """
-    if not required_keys:
-        return
-
-    # TypedDict is a dict at runtime, but type checkers need help
-    config_dict = cast("dict[str, Any]", config)
-    missing = required_keys - config_dict.keys()
-    if missing:
-        missing_str = ", ".join(sorted(missing))
-        xmsg = (
-            f"Missing required keys in {param_name}: {missing_str}. "
-            f"Required keys: {', '.join(sorted(required_keys))}"
-        )
-        raise TypeError(xmsg)
 
 
 # === serger.config.config_types ===
@@ -3271,20 +3271,26 @@ def _interpret_dest_for_module_name(  # noqa: PLR0911
         return dest_path / file_path.name
 
 
-def derive_module_name(
+def derive_module_name(  # noqa: PLR0912, PLR0915, C901
     file_path: Path,
     package_root: Path,
     include: IncludeResolved | None = None,
+    module_bases: list[str] | None = None,
+    user_provided_module_bases: list[str] | None = None,
 ) -> str:
     """Derive module name from file path for shim generation.
 
     Default behavior: Preserve directory structure from file path relative to
     package root. With dest: Preserve structure from dest path instead.
+    With module_bases: For external files, derive relative to matching module_base.
 
     Args:
         file_path: The file path to derive module name from
         package_root: Common root of all included files
         include: Optional include that produced this file (for dest access)
+        module_bases: Optional list of module base directories for external files
+        user_provided_module_bases: Optional list of user-provided module bases
+            (from config, excludes auto-discovered package directories)
 
     Returns:
         Derived module name (e.g., "core.base" from "src/core/base.py")
@@ -3339,15 +3345,102 @@ def derive_module_name(
         )
         return module_name
 
-    # Default: derive from file path relative to package root, preserving structure
+    # Check if file is under package_root
+    package_root_rel: Path | None = None
     try:
-        rel_path = file_path_resolved.relative_to(package_root_resolved)
+        package_root_rel = file_path_resolved.relative_to(package_root_resolved)
+        is_under_package_root = True
     except ValueError:
-        # File not under package root - use just filename
-        logger.trace(
-            f"[DERIVE] file={file_path} not under root={package_root}, using filename",
-        )
-        rel_path = Path(file_path.name)
+        is_under_package_root = False
+
+    # Check module_bases if provided
+    # If file is under both package_root and a module_base, prefer module_base
+    # when it's more specific (deeper in the tree than package_root)
+    # BUT: Don't use module_base if it's the file's parent directory
+    # (would lose package name)
+    # Use user_provided_module_bases for the fix (external files),
+    # fall back to all module_bases for backward compatibility
+    rel_path = None
+    # Prefer user-provided module_bases (from config) over auto-discovered ones
+    bases_to_use = (
+        user_provided_module_bases if user_provided_module_bases else module_bases
+    )
+    if bases_to_use:
+        file_parent = file_path_resolved.parent
+        # Try each module_base in order (first match wins)
+        for module_base_str in bases_to_use:
+            module_base = Path(module_base_str).resolve()
+            # Skip if module_base is the file's parent directory
+            # (this would cause files in package dirs to lose their package name)
+            if module_base == file_parent:
+                logger.trace(
+                    f"[DERIVE] file={file_path} parent={file_parent} equals "
+                    f"module_base={module_base}, skipping (would lose package name)",
+                )
+                continue
+            try:
+                module_base_rel = file_path_resolved.relative_to(module_base)
+                # Use module_base if:
+                # 1. File is not under package_root, OR
+                # 2. File is under both, but module_base is more specific (deeper)
+                if not is_under_package_root:
+                    rel_path = module_base_rel
+                    logger.trace(
+                        f"[DERIVE] file={file_path} not under root={package_root}, "
+                        f"but under module_base={module_base}, using relative path",
+                    )
+                    break
+                # Check if module_base is more specific (deeper) than package_root
+                try:
+                    module_base.relative_to(package_root_resolved)
+                    # module_base is under package_root - check if it's deeper
+                    package_root_parts = len(package_root_resolved.parts)
+                    module_base_parts = len(module_base.parts)
+                    # Only use module_base if it's strictly deeper (more specific)
+                    if module_base_parts > package_root_parts:
+                        # module_base is deeper, use it
+                        rel_path = module_base_rel
+                        logger.trace(
+                            f"[DERIVE] file={file_path} under both root={package_root} "
+                            f"and module_base={module_base}, using module_base "
+                            f"(more specific: {module_base_parts} > "
+                            f"{package_root_parts})",
+                        )
+                        break
+                    # module_base is at same level or higher, don't use it
+                    # (preserve original behavior for files under package_root)
+                except ValueError:
+                    # module_base is not under package_root
+                    # Only use it if file is also not under package_root
+                    # (if file is under package_root, preserve original behavior)
+                    if not is_under_package_root:
+                        rel_path = module_base_rel
+                        logger.trace(
+                            f"[DERIVE] file={file_path} not under root={package_root}, "
+                            f"but under module_base={module_base}, using module_base",
+                        )
+                        break
+                    # File is under package_root but module_base is not
+                    # Don't use module_base (preserve original behavior)
+            except ValueError:
+                # Not under this module_base, try next
+                continue
+
+    # If not using module_base, derive from file path relative to package root
+    if rel_path is None:
+        if is_under_package_root and package_root_rel is not None:
+            rel_path = package_root_rel
+            logger.trace(
+                f"[DERIVE] file={file_path} under package_root={package_root}, "
+                f"using relative path",
+            )
+        else:
+            # File not under package root or any module_base - use just filename
+            logger.trace(
+                f"[DERIVE] file={file_path} not under root={package_root} "
+                f"or any module_base, using filename",
+            )
+            rel_path = Path(file_path.name)
 
     # Convert path to module name, preserving directory structure
     # path/to/file.py → path.to.file
@@ -7907,10 +8000,23 @@ def find_main_function(  # noqa: PLR0912, C901, PLR0915
                 # If we can't read the file, skip the check
                 pass
 
+    # Extract module_bases from config for external files
+    # module_bases is validated and normalized to list[str] in config resolution
+    # It's always present in RootConfigResolved, but .get() returns object | None
+    module_bases_raw = config.get("module_bases")
+    module_bases: list[str] | None = None
+    if module_bases_raw is not None:  # pyright: ignore[reportUnnecessaryComparison]
+        # Type narrowing: config is RootConfigResolved where module_bases is list[str]
+        # Cast is safe because module_bases is validated in config resolution
+        # mypy sees cast as redundant, but pyright needs it for type narrowing
+        module_bases = [str(mb) for mb in cast("list[str]", module_bases_raw)]  # type: ignore[redundant-cast]  # pyright: ignore[reportUnnecessaryCast]
+
     module_to_file: dict[str, Path] = {}
     for file_path in file_paths:
         include = file_to_include.get(file_path)
-        module_name = derive_module_name(file_path, package_root, include)
+        module_name = derive_module_name(
+            file_path, package_root, include, module_bases=module_bases
+        )
 
         # If package_root is a package directory, preserve package structure
         if is_package_dir and package_name_from_root:
@@ -10233,6 +10339,8 @@ def compute_module_order(  # noqa: C901, PLR0912
     file_to_include: dict[Path, IncludeResolved],
     *,
     detected_packages: set[str],
+    module_bases: list[str] | None = None,
+    user_provided_module_bases: list[str] | None = None,
 ) -> list[Path]:
     """Compute correct module order based on import dependencies.
 
@@ -10245,6 +10353,9 @@ def compute_module_order(  # noqa: C901, PLR0912
         _package_name: Root package name (unused, kept for API consistency)
         file_to_include: Mapping of file path to its include (for dest access)
         detected_packages: Pre-detected package names
+        module_bases: Optional list of module base directories for external files
+        user_provided_module_bases: Optional list of user-provided module bases
+            (from config, excludes auto-discovered package directories)
 
     Returns:
         Topologically sorted list of file paths
@@ -10258,7 +10369,13 @@ def compute_module_order(  # noqa: C901, PLR0912
     module_to_file: dict[str, Path] = {}
     for file_path in file_paths:
         include = file_to_include.get(file_path)
-        module_name = derive_module_name(file_path, package_root, include)
+        module_name = derive_module_name(
+            file_path,
+            package_root,
+            include,
+            module_bases=module_bases,
+            user_provided_module_bases=user_provided_module_bases,
+        )
         file_to_module[file_path] = module_name
         module_to_file[module_name] = file_path
 
@@ -10380,6 +10497,8 @@ def suggest_order_mismatch(
     *,
     detected_packages: set[str],
     topo_paths: list[Path] | None = None,
+    module_bases: list[str] | None = None,
+    user_provided_module_bases: list[str] | None = None,
 ) -> None:
     """Warn if module order violates dependencies.
 
@@ -10392,6 +10511,9 @@ def suggest_order_mismatch(
         topo_paths: Optional pre-computed topological order. If provided,
                     skips recomputing the order. If None, computes it via
                     compute_module_order.
+        module_bases: Optional list of module base directories for external files
+        user_provided_module_bases: Optional list of user-provided module bases
+            (from config, excludes auto-discovered package directories)
     """
     logger = get_app_logger()
     if topo_paths is None:
@@ -10401,6 +10523,7 @@ def suggest_order_mismatch(
             _package_name,
             file_to_include,
             detected_packages=detected_packages,
+            module_bases=module_bases,
         )
 
     # compare order_paths to topological sort
@@ -10414,10 +10537,22 @@ def suggest_order_mismatch(
 
         for p in mismatched:
             include = file_to_include.get(p)
-            module_name = derive_module_name(p, package_root, include)
+            module_name = derive_module_name(
+                p,
+                package_root,
+                include,
+                module_bases=module_bases,
+                user_provided_module_bases=user_provided_module_bases,
+            )
             logger.warning("  - %s appears before one of its dependencies", module_name)
         topo_modules = [
-            derive_module_name(p, package_root, file_to_include.get(p))
+            derive_module_name(
+                p,
+                package_root,
+                file_to_include.get(p),
+                module_bases=module_bases,
+                user_provided_module_bases=user_provided_module_bases,
+            )
             for p in topo_paths
         ]
         logger.warning("Suggested order: %s", ", ".join(topo_modules))
@@ -10489,8 +10624,10 @@ def _is_inside_string_literal(text: str, pos: int) -> bool:
     return in_string
 
 
-def verify_no_broken_imports(  # noqa: C901
-    final_text: str, package_names: list[str]
+def verify_no_broken_imports(  # noqa: C901, PLR0912
+    final_text: str,
+    package_names: list[str],
+    internal_imports: InternalImportMode | None = None,
 ) -> None:
     """Verify all internal imports have been resolved in stitched script.
 
@@ -10498,16 +10635,28 @@ def verify_no_broken_imports(  # noqa: C901
         final_text: Final stitched script text
         package_names: List of all package names to check
             (e.g., ["serger", "apathetic_logs"])
+        internal_imports: How internal imports are handled. If "keep", validation
+            is skipped for kept imports since they are intentionally preserved.
 
     Raises:
         RuntimeError: If unresolved imports remain
     """
+    # When internal_imports is "keep", skip validation for kept imports
+    # since they are intentionally preserved and will work at runtime
+    if internal_imports == "keep":
+        return
+
     broken: set[str] = set()
 
     for package_name in package_names:
         # Pattern for nested imports: package.core.base or package.core
         # Matches: import package.module or import package.sub.module
         import_pattern = re.compile(rf"\bimport {re.escape(package_name)}\.([\w.]+)")
+        # Pattern for top-level package import: import package
+        # Matches: import package (without "from" and without a dot)
+        import_package_pattern = re.compile(
+            rf"\bimport {re.escape(package_name)}\b(?!\s*\.)"
+        )
         # Pattern for from imports: from package.core import base or
         # from package.core.base import something
         from_pattern = re.compile(
@@ -10549,7 +10698,7 @@ def verify_no_broken_imports(  # noqa: C901
                 or shim_pattern_new.search(final_text) is not None
             )
 
-        # Check import statements
+        # Check import statements (nested: import package.module)
         for m in import_pattern.finditer(final_text):
             # Skip if inside string literal (docstring/comment)
             if _is_inside_string_literal(final_text, m.start()):
@@ -10559,6 +10708,39 @@ def verify_no_broken_imports(  # noqa: C901
             full_module_name = f"{package_name}.{mod_suffix}"
             if not module_exists(full_module_name, mod_suffix):
                 broken.add(full_module_name)
+
+        # Check top-level package import: import package
+        for m in import_package_pattern.finditer(final_text):
+            # Skip if inside string literal (docstring/comment)
+            if _is_inside_string_literal(final_text, m.start()):
+                continue
+
+            # For top-level package imports, check if the package itself exists
+            # This would be in a header like # === package === or
+            # # === package.__init__ ===
+            # OR it could be created via shims (when __init__.py is excluded)
+            header_pattern = re.compile(
+                rf"# === {re.escape(package_name)}(?:\.__init__)? ==="
+            )
+            # Check for shim-created package:
+            # Old pattern: _pkg = 'package_name' followed by sys.modules[_pkg] = _mod
+            # New pattern: _create_pkg_module('package_name')
+            # Handle both single and double quotes (formatter may change them)
+            escaped_name = re.escape(package_name)
+            shim_pattern_old = re.compile(
+                rf"_pkg\s*=\s*(?:['\"]){escaped_name}(?:['\"]).*?"
+                rf"sys\.modules\[_pkg\]\s*=\s*_mod",
+                re.DOTALL,
+            )
+            shim_pattern_new = re.compile(
+                rf"_create_pkg_module\s*\(\s*(?:['\"]){escaped_name}(?:['\"])"
+            )
+            if (
+                not header_pattern.search(final_text)
+                and not shim_pattern_old.search(final_text)
+                and not shim_pattern_new.search(final_text)
+            ):
+                broken.add(package_name)
 
         # Check from ... import statements
         for m in from_pattern.finditer(final_text):
@@ -10838,6 +11020,8 @@ def _collect_modules(  # noqa: PLR0912, PLR0915
     internal_imports: InternalImportMode = "force_strip",
     comments_mode: CommentsMode = "keep",
     docstring_mode: DocstringMode = "keep",
+    module_bases: list[str] | None = None,
+    user_provided_module_bases: list[str] | None = None,
 ) -> tuple[dict[str, str], OrderedDict[str, None], list[str], list[str]]:
     """Collect and process module sources from file paths.
 
@@ -10851,6 +11035,9 @@ def _collect_modules(  # noqa: PLR0912, PLR0915
         internal_imports: How to handle internal imports
         comments_mode: How to handle comments in stitched output
         docstring_mode: How to handle docstrings in stitched output
+        module_bases: Optional list of module base directories for external files
+        user_provided_module_bases: Optional list of user-provided module bases
+            (from config, excludes auto-discovered package directories)
 
     Returns:
         Tuple of (module_sources, all_imports, parts, derived_module_names)
@@ -10915,7 +11102,13 @@ def _collect_modules(  # noqa: PLR0912, PLR0915
 
         # Derive module name from file path
         include = file_to_include.get(file_path)
-        module_name = derive_module_name(file_path, package_root, include)
+        module_name = derive_module_name(
+            file_path,
+            package_root,
+            include,
+            module_bases=module_bases,
+            user_provided_module_bases=user_provided_module_bases,
+        )
 
         # If package_root is a package directory, preserve package structure
         if is_package_dir and package_name_from_root:
@@ -11844,12 +12037,14 @@ def _build_final_script(  # noqa: C901, PLR0912, PLR0913, PLR0915
         shim_blocks.append("    return _mod")
         shim_blocks.append("")
 
+        # ignores must be on their own line
+        # or they may get reformated to the wrong place
         shim_blocks.append("def _setup_pkg_modules(  # noqa: C901, PLR0912")
         shim_blocks.append(
             "pkg_name: str, module_names: list[str], "
             "name_mapping: dict[str, str] | None = None"
-            ") -> None:"
         )
+        shim_blocks.append(") -> None:")
         shim_blocks.append(
             '    """Set up package module attributes and register submodules."""'
         )
@@ -12503,6 +12698,24 @@ def stitch_modules(  # noqa: PLR0915, PLR0912, PLR0913, C901
 
     logger.info("Starting stitch process for package: %s", package_name)
 
+    # Extract module_bases from config
+    # (needed for package detection and module derivation)
+    # module_bases is validated and normalized to list[str] in config resolution
+    # It's always present in resolved config, but .get() returns object | None
+    module_bases_raw = config.get("module_bases")
+    user_provided_module_bases_raw = config.get("_user_provided_module_bases")
+    module_bases: list[str] | None = None
+    if module_bases_raw is not None:  # pyright: ignore[reportUnnecessaryComparison]
+        # Type narrowing: module_bases is list[str] after config resolution
+        # Cast is safe because module_bases is validated in config resolution
+        module_bases = [str(mb) for mb in cast("list[str]", module_bases_raw)]  # pyright: ignore[reportUnnecessaryCast]
+    user_provided_module_bases: list[str] | None = None
+    if user_provided_module_bases_raw is not None:  # pyright: ignore[reportUnnecessaryComparison]
+        # Type narrowing: _user_provided_module_bases is list[str] after build
+        user_provided_module_bases = [
+            str(mb) for mb in cast("list[str]", user_provided_module_bases_raw)
+        ]  # pyright: ignore[reportUnnecessaryCast]
+
     # --- Package Detection (once, at the start) ---
     # Use pre-detected packages from run_build (already excludes exclude_paths)
     detected_packages_raw = config.get("detected_packages")
@@ -12513,13 +12726,6 @@ def stitch_modules(  # noqa: PLR0915, PLR0912, PLR0913, C901
     else:
         # Fallback: detect from order_paths (shouldn't happen in normal flow)
         logger.debug("Detecting packages from order_paths (fallback)...")
-        module_bases_raw = config.get("module_bases")
-        module_bases: list[str] | None = (
-            cast("list[str]", module_bases_raw)
-            if isinstance(module_bases_raw, list)
-            and all(isinstance(x, str) for x in module_bases_raw)  # pyright: ignore[reportUnknownVariableType]
-            else None
-        )
         detected_packages, _discovered_parent_dirs = detect_packages_from_files(
             order_paths,
             package_name,
@@ -12549,6 +12755,8 @@ def stitch_modules(  # noqa: PLR0915, PLR0912, PLR0913, C901
         file_to_include,
         detected_packages=detected_packages,
         topo_paths=topo_paths,
+        module_bases=module_bases,
+        user_provided_module_bases=user_provided_module_bases,
     )
 
     # --- Apply affects: "stitching" actions to filter files ---
@@ -12569,7 +12777,13 @@ def stitch_modules(  # noqa: PLR0915, PLR0912, PLR0913, C901
         module_to_file_for_filtering: dict[str, Path] = {}
         for file_path in order_paths:
             include = file_to_include.get(file_path)
-            module_name = derive_module_name(file_path, package_root, include)
+            module_name = derive_module_name(
+                file_path,
+                package_root,
+                include,
+                module_bases=module_bases,
+                user_provided_module_bases=user_provided_module_bases,
+            )
 
             # If package_root is a package directory, preserve package structure
             if is_package_dir and package_name_from_root:
@@ -12719,6 +12933,7 @@ def stitch_modules(  # noqa: PLR0915, PLR0912, PLR0913, C901
         raise TypeError(msg)
     docstring_mode = cast("DocstringMode", docstring_mode_raw)
 
+    # module_bases already extracted above (before package detection)
     module_sources, all_imports, parts, derived_module_names = _collect_modules(
         order_paths,
         package_root,
@@ -12729,6 +12944,8 @@ def stitch_modules(  # noqa: PLR0915, PLR0912, PLR0913, C901
         internal_imports,
         comments_mode,
         docstring_mode,
+        module_bases=module_bases,
+        user_provided_module_bases=user_provided_module_bases,
     )
 
     # --- Parse AST once for all modules ---
@@ -12864,7 +13081,9 @@ def stitch_modules(  # noqa: PLR0915, PLR0912, PLR0913, C901
 
     # --- Verification ---
     logger.debug("Verifying assembled script...")
-    verify_no_broken_imports(final_script, sorted(detected_packages))
+    verify_no_broken_imports(
+        final_script, sorted(detected_packages), internal_imports=internal_imports
+    )
 
     # --- Compile in-memory before writing ---
     logger.debug("Compiling stitched code in-memory...")
@@ -13592,6 +13811,21 @@ def run_build(  # noqa: C901, PLR0915, PLR0912
     # Detect packages once from final files (after all exclusions)
     logger.debug("Detecting packages from included files (after exclusions)...")
     module_bases = build_cfg.get("module_bases", [])
+    # Save user-provided module_bases (from config, before adding discovered ones)
+    # Filter out package directories (those with __init__.py) as they shouldn't be used
+    # for module name derivation (would lose package name)
+    user_provided_module_bases: list[str] = []
+    for base_str in module_bases:
+        base_path = Path(base_str)
+        # Skip if this is a package directory (has __init__.py)
+        # Package directories extracted from includes shouldn't be used for derivation
+        if (base_path / "__init__.py").exists():
+            logger.trace(
+                "[MODULE_BASES] Skipping package directory for user-provided bases: %s",
+                base_str,
+            )
+            continue
+        user_provided_module_bases.append(base_str)
     detected_packages, discovered_parent_dirs = detect_packages_from_files(
         final_files, package, module_bases=module_bases
     )
@@ -13610,6 +13844,13 @@ def run_build(  # noqa: C901, PLR0915, PLR0912
                 )
         # Update build_cfg with extended module_bases
         build_cfg["module_bases"] = module_bases
+    # Store user-provided module_bases (filtered) for use in derive_module_name
+    # This excludes package directories extracted from includes
+    # Use dict update to avoid TypedDict type error for internal field
+    build_cfg_dict: dict[str, object] = build_cfg  # type: ignore[assignment]
+    build_cfg_dict["_user_provided_module_bases"] = (
+        user_provided_module_bases if user_provided_module_bases else []
+    )
 
     # Resolve order paths (order is list[str] of paths, or None for auto-discovery)
     topo_paths: list[Path] | None = None
@@ -13632,6 +13873,8 @@ def run_build(  # noqa: C901, PLR0915, PLR0912
             package,
             file_to_include,
             detected_packages=detected_packages,
+            module_bases=module_bases,
+            user_provided_module_bases=user_provided_module_bases,
         )
         logger.debug("Auto-discovered order (%d modules)", len(order_paths))
         # When auto-discovered, order_paths IS the topological order, so we can reuse it
@@ -13670,6 +13913,9 @@ def run_build(  # noqa: C901, PLR0915, PLR0912
         "main_name": build_cfg.get("main_name"),
         "detected_packages": detected_packages,  # Pre-detected packages
         "module_bases": module_bases,  # For package detection fallback
+        "_user_provided_module_bases": build_cfg.get(
+            "_user_provided_module_bases", []
+        ),  # User-provided (filtered) for derive_module_name
         "__meta__": build_cfg["__meta__"],  # For config_dir access in fallback
     }
 
@@ -15181,9 +15427,9 @@ def _setup_pkg_modules(  # noqa: C901, PLR0912
 _create_pkg_module("serger")
 _create_pkg_module("serger.apathetic_schema")
 _create_pkg_module("serger.apathetic_utils")
-_create_pkg_module("serger.utils")
-_create_pkg_module("serger.apathetic_logs")
 _create_pkg_module("serger.config")
+_create_pkg_module("serger.apathetic_logs")
+_create_pkg_module("serger.utils")
 
 _setup_pkg_modules(
     "serger",
@@ -15216,6 +15462,17 @@ _setup_pkg_modules(
     None,
 )
 _setup_pkg_modules(
+    "serger.config",
+    [
+        "serger.config.config_loader",
+        "serger.config.config_resolve",
+        "serger.config.config_types",
+        "serger.config.config_validate",
+    ],
+    None,
+)
+_setup_pkg_modules("serger.apathetic_logs", ["serger.apathetic_logs.logs"], None)
+_setup_pkg_modules(
     "serger.utils",
     [
         "serger.utils.utils_matching",
@@ -15223,17 +15480,6 @@ _setup_pkg_modules(
         "serger.utils.utils_paths",
         "serger.utils.utils_types",
         "serger.utils.utils_validation",
-    ],
-    None,
-)
-_setup_pkg_modules("serger.apathetic_logs", ["serger.apathetic_logs.logs"], None)
-_setup_pkg_modules(
-    "serger.config",
-    [
-        "serger.config.config_loader",
-        "serger.config.config_resolve",
-        "serger.config.config_types",
-        "serger.config.config_validate",
     ],
     None,
 )

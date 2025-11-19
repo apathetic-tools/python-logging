@@ -97,6 +97,7 @@ def main(_argv: list[str] | None = None) -> int:
             "out": "stitched_output.py",
             "module_bases": [str(PROJ_ROOT / "src")],
             "internal_imports": "keep",
+            "module_mode": "multi",
         }
         config_file.write_text(json.dumps(config, indent=2))
 

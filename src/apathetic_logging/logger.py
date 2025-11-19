@@ -247,8 +247,16 @@ class ApatheticLogging_Priv_Logger:  # noqa: N801  # pyright: ignore[reportUnuse
             """The return value tells you if we ran or not.
             If it is False and you're calling it via super(),
             you can likely skip your code too."""
-            # ensure module-level logging setup runs only once
-            if cls._logging_module_extended:
+            # Check if this specific class has already extended the module
+            # (not inherited from base class)
+            already_extended = getattr(cls, "_logging_module_extended", False)
+
+            # Always set the logger class to cls, even if already extended.
+            # This allows subclasses to override the logger class.
+            logging.setLoggerClass(cls)
+
+            # If already extended, skip the rest (level registration, etc.)
+            if already_extended:
                 return False
             cls._logging_module_extended = True
 
@@ -261,8 +269,6 @@ class ApatheticLogging_Priv_Logger:  # noqa: N801  # pyright: ignore[reportUnuse
                 if not _tag_levels <= _known_levels:
                     _msg = "TAG_STYLES contains unknown levels"
                     raise AssertionError(_msg)
-
-            logging.setLoggerClass(cls)
 
             # Register custom levels with validation
             # addLevelName() also sets logging.TEST, logging.TRACE, etc. attributes
