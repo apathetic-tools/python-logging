@@ -56,7 +56,11 @@ def test_get_logger_raises_when_not_registered() -> None:
 
 
 def test_get_logger_auto_infers_from_caller_package() -> None:
-    """get_logger() should auto-infer logger name from caller's __package__."""
+    """get_logger() should auto-infer logger name from caller's __package__.
+
+    Note: This test must carefully construct an identical callstack to mimic
+    the frames between get_logger() and calling _resolve_logger_name().
+    """
     # --- setup ---
     # Create a fake module with __package__ attribute
     fake_module = type(sys)("fake_module")
@@ -66,11 +70,13 @@ def test_get_logger_auto_infers_from_caller_package() -> None:
     # --- execute ---
     with patch("inspect.currentframe") as mock_frame:
         # Mock the frame to return our fake caller
-        # Frame structure: _resolve_logger_name -> get_logger -> actual caller
+        # Frame structure: _resolve_logger_name -> get_logger_of_type -> get_logger
+        # -> actual caller
         frame = type(sys)("frame")
-        frame.f_back = type(sys)("get_logger_frame")  # type: ignore[attr-defined]
-        frame.f_back.f_back = type(sys)("caller_frame")
-        frame.f_back.f_back.f_globals = fake_globals
+        frame.f_back = type(sys)("get_logger_of_type_frame")  # type: ignore[attr-defined]
+        frame.f_back.f_back = type(sys)("get_logger_frame")
+        frame.f_back.f_back.f_back = type(sys)("caller_frame")
+        frame.f_back.f_back.f_back.f_globals = fake_globals
         mock_frame.return_value = frame
 
         try:

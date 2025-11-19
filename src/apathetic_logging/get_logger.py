@@ -32,31 +32,31 @@ class ApatheticLogging_Priv_GetLogger:  # noqa: N801  # pyright: ignore[reportUn
     def get_logger(
         logger_name: str | None = None,
     ) -> ApatheticLogging_Priv_Logger.Logger:
-        registered_logger_name = ApatheticLogging_Priv_GetLogger._resolve_logger_name(
-            logger_name, skip_frames=1
-        )
-        logger = logging.getLogger(registered_logger_name)
+        """Get a logger of type ApatheticLogging_Priv_Logger.Logger.
 
-        if not hasattr(logger, "level_name"):
-            if registered_logger_name in logging.Logger.manager.loggerDict:
-                logging.Logger.manager.loggerDict.pop(registered_logger_name, None)
-            logger = logging.getLogger(registered_logger_name)
+        Args:
+            logger_name: The name of the logger to get. If None, the logger name
+                will be auto-inferred from the calling module's __package__.
 
-        typed_logger = cast("ApatheticLogging_Priv_Logger.Logger", logger)
-        return typed_logger
+        Returns:
+            A logger of type ApatheticLogging_Priv_Logger.Logger.
 
-    @staticmethod
-    def get_logger_b(
-        logger_name: str | None = None,
-    ) -> ApatheticLogging_Priv_Logger.Logger:
+        Raises:
+        Note: you must carefully pass skip_frames based on the height of your callstack
+        between this function and _resolve_logger_name. The test
+        test_get_logger_auto_infers_from_caller_package must also carefully construct
+        an identical callstack to mimic the frames here.
+        """
         return ApatheticLogging_Priv_GetLogger.get_logger_of_type(
-            logger_name, ApatheticLogging_Priv_Logger.Logger
+            logger_name, ApatheticLogging_Priv_Logger.Logger, skip_frames=2
         )
 
     @staticmethod
-    def get_logger_of_type(logger_name: str | None, _logger_class: type[_T]) -> _T:
+    def get_logger_of_type(
+        logger_name: str | None, _logger_class: type[_T], *, skip_frames: int = 1
+    ) -> _T:
         registered_logger_name = ApatheticLogging_Priv_GetLogger._resolve_logger_name(
-            logger_name, skip_frames=2
+            logger_name, skip_frames=skip_frames
         )
         logger = logging.getLogger(registered_logger_name)
 
