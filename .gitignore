@@ -261,3 +261,6 @@ Desktop.ini
 .plans/*
 !.plans/_format.md
 !.plans/_template.md
+.plan/*
+!.plan/_format.md
+!.plan/_template.md
