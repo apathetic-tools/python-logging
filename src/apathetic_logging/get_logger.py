@@ -10,8 +10,8 @@ from typing import Protocol, TypeVar, cast
 from .logger import (
     ApatheticLogging_Internal_Logger,
 )
-from .register_logger_name import (
-    ApatheticLogging_Internal_RegisterLoggerName,
+from .registry import (
+    ApatheticLogging_Internal_Registry,
 )
 from .registry_data import (
     ApatheticLogging_Internal_RegistryData,
@@ -90,12 +90,12 @@ class ApatheticLogging_Internal_GetLogger:  # noqa: N801  # pyright: ignore[repo
 
     @staticmethod
     def resolve_logger_name(logger_name: str | None, *, skip_frames: int = 2) -> str:
-        _registry = ApatheticLogging_Internal_RegistryData
-        _register_logger_name = ApatheticLogging_Internal_RegisterLoggerName
+        _registry = ApatheticLogging_Internal_Registry
+        _registry_data = ApatheticLogging_Internal_RegistryData
         if logger_name is not None:
             return logger_name
 
-        registered_logger_name = _registry.registered_internal_logger_name
+        registered_logger_name = _registry_data.registered_internal_logger_name
 
         if registered_logger_name is None:
             # Try to auto-infer from the calling module's package
@@ -111,11 +111,12 @@ class ApatheticLogging_Internal_GetLogger:  # noqa: N801  # pyright: ignore[repo
                     if caller_frame is not None:
                         caller_module = caller_frame.f_globals.get("__package__")
                         if caller_module:
-                            _extract = _register_logger_name.extract_top_level_package
+                            _extract = _registry.extract_top_level_package
                             inferred_name = _extract(caller_module)
                             if inferred_name:
-                                registry = _registry
-                                registry.registered_internal_logger_name = inferred_name
+                                _registry_data.registered_internal_logger_name = (
+                                    inferred_name
+                                )
                                 registered_logger_name = inferred_name
                 finally:
                     del frame

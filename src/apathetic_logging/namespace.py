@@ -15,14 +15,8 @@ from .get_logger import (
 from .logger import (
     ApatheticLogging_Internal_Logger,
 )
-from .register_default_log_level import (
-    ApatheticLogging_Internal_RegisterDefaultLogLevel,
-)
-from .register_log_level_env_vars import (
-    ApatheticLogging_Internal_RegisterLogLevelEnvVars,
-)
-from .register_logger_name import (
-    ApatheticLogging_Internal_RegisterLoggerName,
+from .registry import (
+    ApatheticLogging_Internal_Registry,
 )
 from .registry_data import (
     ApatheticLogging_Internal_RegistryData,
@@ -43,9 +37,7 @@ class apathetic_logging(  # noqa: N801
     ApatheticLogging_Internal_DualStreamHandler,
     ApatheticLogging_Internal_GetLogger,
     ApatheticLogging_Internal_Logger,
-    ApatheticLogging_Internal_RegisterDefaultLogLevel,
-    ApatheticLogging_Internal_RegisterLogLevelEnvVars,
-    ApatheticLogging_Internal_RegisterLoggerName,
+    ApatheticLogging_Internal_Registry,
     ApatheticLogging_Internal_RegistryData,
     ApatheticLogging_Internal_SafeLogging,
     ApatheticLogging_Internal_TagFormatter,
@@ -62,11 +54,9 @@ class apathetic_logging(  # noqa: N801
 
     **Static Methods:**
     - ``get_logger()`` → ``ApatheticLogging_Internal_GetLogger``
-    - ``register_default_log_level()`` →
-      ``ApatheticLogging_Internal_RegisterDefaultLogLevel``
-    - ``register_log_level_env_vars()`` →
-      ``ApatheticLogging_Internal_RegisterLogLevelEnvVars``
-    - ``register_logger_name()`` → ``ApatheticLogging_Internal_RegisterLoggerName``
+    - ``register_default_log_level()`` → ``ApatheticLogging_Internal_Registry``
+    - ``register_log_level_env_vars()`` → ``ApatheticLogging_Internal_Registry``
+    - ``register_logger_name()`` → ``ApatheticLogging_Internal_Registry``
     - ``safe_log()`` → ``ApatheticLogging_Internal_SafeLogging``
     - ``safe_trace()`` → ``ApatheticLogging_Internal_SafeLogging``
     - ``make_safe_trace()`` → ``ApatheticLogging_Internal_SafeLogging``
