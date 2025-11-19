@@ -10,6 +10,9 @@ from typing import Protocol, TypeVar, cast
 from .logger import (
     ApatheticLogging_Internal_Logger,
 )
+from .logging_utils import (
+    ApatheticLogging_Internal_LoggingUtils,
+)
 from .registry import (
     ApatheticLogging_Internal_Registry,
 )
@@ -67,22 +70,23 @@ class ApatheticLogging_Internal_GetLogger:  # noqa: N801  # pyright: ignore[repo
         logger_name: str | None, logger_class: type[_T], *, skip_frames: int = 1
     ) -> _T:
         _get_logger = ApatheticLogging_Internal_GetLogger
+        _logging_utils = ApatheticLogging_Internal_LoggingUtils
         register_name = _get_logger.resolve_logger_name(
             logger_name, skip_frames=skip_frames
         )
-        registered = register_name in logging.Logger.manager.loggerDict
+        registered = _logging_utils.has_logger(register_name)
 
         logger = None
         if registered:
             logger = logging.getLogger(register_name)
             if not isinstance(logger, logger_class):
-                logging.Logger.manager.loggerDict.pop(register_name, None)
+                _logging_utils.remove_logger(register_name)
 
         logger = logging.getLogger(register_name)
 
         if not hasattr(logger, "level_name"):
-            if register_name in logging.Logger.manager.loggerDict:
-                logging.Logger.manager.loggerDict.pop(register_name, None)
+            if _logging_utils.has_logger(register_name):
+                _logging_utils.remove_logger(register_name)
             logger = logging.getLogger(register_name)
 
         typed_logger = cast("_T", logger)
@@ -137,22 +141,23 @@ class ApatheticLogging_Internal_GetLogger:  # noqa: N801  # pyright: ignore[repo
         logger_class: type[_LoggerClassWithExtend] | None = None,
     ) -> logging.Logger:
         _logger = ApatheticLogging_Internal_Logger
+        _logging_utils = ApatheticLogging_Internal_LoggingUtils
         extend_class = logger_class if logger_class is not None else _logger.Logger
 
-        logger_exists = logger_name in logging.Logger.manager.loggerDict
+        logger_exists = _logging_utils.has_logger(logger_name)
 
         if not logger_exists:
             extend_class.extend_logging_module()
             logging.setLoggerClass(cast("type[logging.Logger]", extend_class))
-            if logger_name in logging.Logger.manager.loggerDict:
-                logging.Logger.manager.loggerDict.pop(logger_name, None)
+            if _logging_utils.has_logger(logger_name):
+                _logging_utils.remove_logger(logger_name)
             logger = logging.getLogger(logger_name)
         else:
             logger = logging.getLogger(logger_name)
             if not hasattr(logger, "level_name"):
                 extend_class.extend_logging_module()
                 logging.setLoggerClass(cast("type[logging.Logger]", extend_class))
-                logging.Logger.manager.loggerDict.pop(logger_name, None)
+                _logging_utils.remove_logger(logger_name)
                 logger = logging.getLogger(logger_name)
 
         return logger
