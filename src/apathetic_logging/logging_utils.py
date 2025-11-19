@@ -4,6 +4,10 @@
 from __future__ import annotations
 
 import logging
+from typing import TypeVar, cast
+
+
+_LoggerType = TypeVar("_LoggerType", bound=logging.Logger)
 
 
 class ApatheticLogging_Internal_LoggingUtils:  # noqa: N801  # pyright: ignore[reportUnusedClass]
@@ -38,3 +42,26 @@ class ApatheticLogging_Internal_LoggingUtils:  # noqa: N801  # pyright: ignore[r
             logger_name: The name of the logger to remove.
         """
         logging.Logger.manager.loggerDict.pop(logger_name, None)
+
+    @staticmethod
+    def set_logger_class_temporarily(
+        logger_name: str, logger_class: type[_LoggerType]
+    ) -> _LoggerType:
+        """Temporarily set the logger class, get/create a logger, then restore.
+
+        This function temporarily sets the logger class to the desired type,
+        gets or creates the logger, then restores the original logger class.
+
+        Args:
+            logger_name: The name of the logger to get.
+            logger_class: The desired logger class type.
+
+        Returns:
+            A logger instance of the specified type.
+        """
+        original_class = logging.getLoggerClass()
+        logging.setLoggerClass(logger_class)
+        logger = logging.getLogger(logger_name)
+        logging.setLoggerClass(original_class)
+        typed_logger = cast("_LoggerType", logger)
+        return typed_logger
