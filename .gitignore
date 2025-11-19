@@ -258,5 +258,6 @@ Desktop.ini
 
 # AI files
 .claude/settings.local.json
-.plan/
-.plans/
+.plans/*
+!.plans/_format.md
+!.plans/_template.md

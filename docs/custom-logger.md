@@ -221,7 +221,7 @@ class AppLogger(ApatheticLogger):
 
 ## Key Points
 
-1. **Call `extend_logging_module()`** - This must be called before creating any loggers to register TRACE and SILENT levels.
+1. **Call `extend_logging_module()`** - This should be called before creating any loggers to register TRACE and SILENT levels. However, both `get_logger()` and `get_app_logger()` have defensive code that can fix logger instances created before `extend_logging_module()` was called.
 
 2. **Register environment variables** - Use `register_log_level_env_vars()` to tell the logger which environment variables to check.
 
@@ -231,7 +231,28 @@ class AppLogger(ApatheticLogger):
 
 5. **Use type casting** - When getting the logger from `logging.getLogger()`, cast it to your custom type for proper type hints.
 
-6. **Create a typed getter** - Provide a `get_app_logger()` function that returns your custom logger type for better IDE support.
+6. **Create a typed getter** - Provide a `get_app_logger()` function that returns your custom logger type for better IDE support. You can implement it in two ways:
+   - **Option A (Recommended)**: Call `get_logger()` internally - this is the simplest and safest approach:
+     ```python
+     def get_app_logger() -> AppLogger:
+         """Return the configured application logger."""
+         logger = cast("AppLogger", get_logger())
+         return logger
+     ```
+   - **Option B**: Return a pre-created logger with defensive checks - use this if you want to cache the logger instance:
+     ```python
+     _APP_LOGGER = cast("AppLogger", logging.getLogger(APP_NAME))
+     
+     def get_app_logger() -> AppLogger:
+         """Return the configured application logger."""
+         global _APP_LOGGER
+         # Defensive check: fix logger type if needed
+         if not hasattr(_APP_LOGGER, "level_name"):
+             if APP_NAME in logging.Logger.manager.loggerDict:
+                 logging.Logger.manager.loggerDict.pop(APP_NAME, None)
+             _APP_LOGGER = cast("AppLogger", logging.getLogger(APP_NAME))
+         return _APP_LOGGER
+     ```
 
 ## Integration with Existing Code
 

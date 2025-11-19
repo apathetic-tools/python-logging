@@ -14,17 +14,16 @@ Exploring bundling options for generating the single-file release:
 - serger for stitched file
 
 ## 🧪 Tests
-- How can we report what we comment tool ignore, in src and in tests?
+
 
 ## 🧑‍💻 Development
-- Evaluate ignores and determine if we can fix them instead of ignore them
-- AI command to do common tasks based on reddit advice for dealing with AI.
+
 
 ## 🚀 Deployment
 - Deploy action when I tag a release should create a release and attach it to the tagged release.
 
 ## 🔌 API
-- do we need to call extend before the get_logger() gets called? what about get_app_logger()?
+- ✅ **RESOLVED**: `get_logger()` is safe - `extend_logging_module()` is called automatically at import time, and `get_logger()` has defensive code to fix logger instances created before extend was called. `get_app_logger()` can also be made safe by adding defensive checks (see `dev/serger.py` for implementation pattern).
 - if we call extend, does that mess up the app class?
 
 
