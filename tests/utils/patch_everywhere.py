@@ -9,8 +9,8 @@ from typing import Any
 import pytest
 
 from .constants import PROGRAM_PACKAGE, PROGRAM_SCRIPT
+from .safe_trace import safe_trace
 from .strip_common_prefix import strip_common_prefix
-from .test_trace import TEST_TRACE
 
 
 _PATCH_PATH = Path(__file__).resolve()
@@ -46,7 +46,7 @@ def patch_everywhere(
 
     # Patch in the defining module
     mp.setattr(mod_env, func_name, replacement_func)
-    TEST_TRACE(f"Patched {mod_name}.{func_name}")
+    safe_trace(f"Patched {mod_name}.{func_name}")
 
     stitch_hints = {"/dist/", "standalone", f"{PROGRAM_SCRIPT}.py"}
     package_prefix = PROGRAM_PACKAGE
@@ -81,5 +81,5 @@ def patch_everywhere(
             did_patch = True
 
         if did_patch and id(m) not in patched_ids:
-            TEST_TRACE(f"  also patched {name} (path={_short_path(path)})")
+            safe_trace(f"  also patched {name} (path={_short_path(path)})")
             patched_ids.add(id(m))

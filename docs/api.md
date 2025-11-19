@@ -368,7 +368,7 @@ message = f"{ANSIColors.CYAN}Colored text{ANSIColors.RESET}"
 
 ## Testing Utilities
 
-### `TEST_TRACE(label: str, *args: Any, icon: str = "🧵") -> None`
+### `SAFE_TRACE(label: str, *args: Any, icon: str = "🧵") -> None`
 
 Debug tracing function for test development. Only active when `TEST_TRACE` environment variable is set.
 
@@ -387,7 +387,7 @@ Create a test trace function with a custom icon.
 **Returns:**
 - `Callable`: Test trace function
 
-### `TEST_TRACE_ENABLED: bool`
+### `SAFE_TRACE_ENABLED: bool`
 
 Boolean flag indicating if test tracing is enabled (checks `TEST_TRACE` environment variable).
 

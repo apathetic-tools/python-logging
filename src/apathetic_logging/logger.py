@@ -20,11 +20,11 @@ from .dual_stream_handler import (
 from .registry import (
     ApatheticLogging_Priv_Registry,  # pyright: ignore[reportPrivateUsage]
 )
+from .safe_trace import (
+    ApatheticLogging_Priv_SafeTrace,  # pyright: ignore[reportPrivateUsage]
+)
 from .tag_formatter import (
     ApatheticLogging_Priv_TagFormatter,  # pyright: ignore[reportPrivateUsage]
-)
-from .test_trace import (
-    ApatheticLogging_Priv_TestTrace,  # pyright: ignore[reportPrivateUsage]
 )
 
 
@@ -88,14 +88,14 @@ class ApatheticLogging_Priv_Logger:  # noqa: N801  # pyright: ignore[reportUnuse
                 h.enable_color = self.enable_color
                 self.addHandler(h)
                 self._last_stream_ids = (sys.stdout, sys.stderr)
-                ApatheticLogging_Priv_TestTrace.TEST_TRACE(
+                ApatheticLogging_Priv_SafeTrace.safe_trace(
                     "ensure_handlers()", f"rebuilt_handlers={self.handlers}"
                 )
 
         def _log(  # type: ignore[override]
             self, level: int, msg: str, args: tuple[Any, ...], **kwargs: Any
         ) -> None:
-            ApatheticLogging_Priv_TestTrace.TEST_TRACE(
+            ApatheticLogging_Priv_SafeTrace.safe_trace(
                 "_log",
                 f"logger={self.name}",
                 f"id={id(self)}",

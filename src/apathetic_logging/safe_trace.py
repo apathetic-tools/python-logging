@@ -1,5 +1,5 @@
-# src/apathetic_logging/test_trace.py
-"""TestTrace functionality for Apathetic Logging."""
+# src/apathetic_logging/safe_trace.py
+"""Safe trace functionality for Apathetic Logging."""
 
 from __future__ import annotations
 
@@ -19,23 +19,23 @@ from .constants import (
 _real_time = importlib.import_module("time")
 
 
-class ApatheticLogging_Priv_TestTrace:  # noqa: N801  # pyright: ignore[reportUnusedClass]
-    """Mixin class that provides the TEST_TRACE and make_test_trace static methods.
+class ApatheticLogging_Priv_SafeTrace:  # noqa: N801  # pyright: ignore[reportUnusedClass]
+    """Mixin class that provides the safe_trace and make_safe_trace static methods.
 
-    This class contains the TEST_TRACE implementation as static methods.
-    When mixed into apathetic_logging, it provides apathetic_logging.TEST_TRACE
-    and apathetic_logging.make_test_trace.
+    This class contains the safe_trace implementation as static methods.
+    When mixed into apathetic_logging, it provides apathetic_logging.safe_trace
+    and apathetic_logging.make_safe_trace.
     """
 
     @staticmethod
-    def make_test_trace(icon: str = "🧪") -> Callable[..., Any]:
+    def make_safe_trace(icon: str = "🧪") -> Callable[..., Any]:
         def local_trace(label: str, *args: Any) -> Any:
-            return ApatheticLogging_Priv_TestTrace.TEST_TRACE(label, *args, icon=icon)
+            return ApatheticLogging_Priv_SafeTrace.safe_trace(label, *args, icon=icon)
 
         return local_trace
 
     @staticmethod
-    def TEST_TRACE(label: str, *args: Any, icon: str = "🧪") -> None:  # noqa: N802
+    def safe_trace(label: str, *args: Any, icon: str = "🧪") -> None:
         """Emit a synchronized, flush-safe diagnostic line.
 
         Args:
@@ -44,13 +44,13 @@ class ApatheticLogging_Priv_TestTrace:  # noqa: N801  # pyright: ignore[reportUn
             icon: Emoji prefix/suffix for easier visual scanning.
 
         """
-        if not ApatheticLogging_Priv_Constants.TEST_TRACE_ENABLED:
+        if not ApatheticLogging_Priv_Constants.SAFE_TRACE_ENABLED:
             return
 
         ts = _real_time.monotonic()
         # builtins.print more reliable than sys.stdout.write + sys.stdout.flush
         builtins.print(
-            f"{icon} [TEST TRACE {ts:.6f}] {label}",
+            f"{icon} [SAFE TRACE {ts:.6f}] {label}",
             *args,
             file=sys.__stderr__,
             flush=True,

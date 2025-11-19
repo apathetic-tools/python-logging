@@ -12,7 +12,7 @@ import os
 
 import pytest
 
-from tests.utils import make_test_trace, runtime_swap
+from tests.utils import make_safe_trace, runtime_swap
 from tests.utils.log_fixtures import (
     direct_logger,
     module_logger,
@@ -25,7 +25,7 @@ __all__ = [
     "module_logger",
 ]
 
-TEST_TRACE = make_test_trace("⚡️")
+safe_trace = make_safe_trace("⚡️")
 
 # early jank hook
 runtime_swap()

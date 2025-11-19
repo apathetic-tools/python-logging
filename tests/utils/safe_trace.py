@@ -1,4 +1,4 @@
-# tests/utils/test_trace.py
+# tests/utils/safe_trace.py
 """Unified trace logger for pytest diagnostics.
 
 Uses monotonic timestamps for ordering and writes directly to sys.__stderr__
@@ -15,21 +15,21 @@ from typing import Any
 
 
 # Flag for quick runtime enable/disable
-TEST_TRACE_ENABLED = os.getenv("TEST_TRACE", "").lower() in {"1", "true", "yes"}
+SAFE_TRACE_ENABLED = os.getenv("SAFE_TRACE", "").lower() in {"1", "true", "yes"}
 
 # Lazy, safe import — avoids patched time modules
 #   in environments like pytest or eventlet
 _real_time = importlib.import_module("time")
 
 
-def make_test_trace(icon: str = "🧪") -> Callable[..., Any]:
+def make_safe_trace(icon: str = "🧪") -> Callable[..., Any]:
     def local_trace(label: str, *args: Any) -> Any:
-        return TEST_TRACE(label, *args, icon=icon)
+        return safe_trace(label, *args, icon=icon)
 
     return local_trace
 
 
-def TEST_TRACE(label: str, *args: Any, icon: str = "🧪") -> None:  # noqa: N802
+def safe_trace(label: str, *args: Any, icon: str = "🧪") -> None:
     """Emit a synchronized, flush-safe diagnostic line.
 
     Args:
@@ -38,13 +38,13 @@ def TEST_TRACE(label: str, *args: Any, icon: str = "🧪") -> None:  # noqa: N80
         icon: Emoji prefix/suffix for easier visual scanning.
 
     """
-    if not TEST_TRACE_ENABLED:
+    if not SAFE_TRACE_ENABLED:
         return
 
     ts = _real_time.monotonic()
     # builtins.print more reliable than sys.stdout.write + sys.stdout.flush
     builtins.print(
-        f"{icon} [TEST TRACE {ts:.6f}] {label}",
+        f"{icon} [SAFE TRACE {ts:.6f}] {label}",
         *args,
         file=sys.__stderr__,
         flush=True,

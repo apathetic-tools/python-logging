@@ -6,8 +6,8 @@ from __future__ import annotations
 from .registry import (
     ApatheticLogging_Priv_Registry,  # pyright: ignore[reportPrivateUsage]
 )
-from .test_trace import (
-    ApatheticLogging_Priv_TestTrace,  # pyright: ignore[reportPrivateUsage]
+from .safe_trace import (
+    ApatheticLogging_Priv_SafeTrace,  # pyright: ignore[reportPrivateUsage]
 )
 
 
@@ -37,7 +37,7 @@ class ApatheticLogging_Priv_RegisterLogLevelEnvVars:  # noqa: N801  # pyright: i
             ... )
         """
         ApatheticLogging_Priv_Registry.registered_priv_log_level_env_vars = env_vars
-        ApatheticLogging_Priv_TestTrace.TEST_TRACE(
+        ApatheticLogging_Priv_SafeTrace.safe_trace(
             "register_log_level_env_vars() called",
             f"env_vars={env_vars}",
         )

@@ -19,7 +19,7 @@ class ApatheticLogging_Priv_Constants:  # noqa: N801  # pyright: ignore[reportUn
     DEFAULT_APATHETIC_LOG_LEVEL_ENV_VARS: ClassVar[list[str]] = ["LOG_LEVEL"]
 
     # Flag for quick runtime enable/disable
-    TEST_TRACE_ENABLED: bool = os.getenv("TEST_TRACE", "").lower() in {
+    SAFE_TRACE_ENABLED: bool = os.getenv("SAFE_TRACE", "").lower() in {
         "1",
         "true",
         "yes",

@@ -8,8 +8,8 @@ import sys
 from .registry import (
     ApatheticLogging_Priv_Registry,  # pyright: ignore[reportPrivateUsage]
 )
-from .test_trace import (
-    ApatheticLogging_Priv_TestTrace,  # pyright: ignore[reportPrivateUsage]
+from .safe_trace import (
+    ApatheticLogging_Priv_SafeTrace,  # pyright: ignore[reportPrivateUsage]
 )
 
 
@@ -84,7 +84,7 @@ class ApatheticLogging_Priv_RegisterLoggerName:  # noqa: N801  # pyright: ignore
                 raise RuntimeError(_msg)
 
         ApatheticLogging_Priv_Registry.registered_priv_logger_name = logger_name
-        ApatheticLogging_Priv_TestTrace.TEST_TRACE(
+        ApatheticLogging_Priv_SafeTrace.safe_trace(
             "register_logger_name() called",
             f"name={logger_name}",
             f"auto_inferred={auto_inferred}",

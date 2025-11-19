@@ -7,7 +7,9 @@ from typing import TYPE_CHECKING
 import pytest
 
 import apathetic_logging as mod_alogs
-from tests.utils import make_test_trace, patch_everywhere
+
+from .patch_everywhere import patch_everywhere
+from .safe_trace import make_safe_trace
 
 
 if TYPE_CHECKING:
@@ -16,7 +18,7 @@ else:
     Logger = mod_alogs.Logger
 
 
-TEST_TRACE = make_test_trace(icon="📏")
+safe_trace = make_safe_trace(icon="📏")
 
 
 def _suffix() -> str:
@@ -55,7 +57,7 @@ def module_logger(monkeypatch: pytest.MonkeyPatch) -> Logger:
     new_logger = mod_alogs.Logger(f"isolated_logger{_suffix()}")
     new_logger.setLevel("test")
     patch_everywhere(monkeypatch, mod_alogs, "get_logger", lambda: new_logger)
-    TEST_TRACE(
+    safe_trace(
         "module_logger fixture",
         f"id={id(new_logger)}",
         f"level={new_logger.level_name}",

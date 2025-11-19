@@ -25,7 +25,7 @@ from tests.utils.constants import (
 )
 
 from .package_detection import find_all_packages_under_path
-from .test_trace import make_test_trace
+from .safe_trace import make_safe_trace
 
 
 if TYPE_CHECKING:
@@ -34,7 +34,7 @@ if TYPE_CHECKING:
 
 # --- helpers --------------------------------------------------------------------
 
-TEST_TRACE = make_test_trace("🧬")
+safe_trace = make_safe_trace("🧬")
 
 
 def _mode() -> str:
@@ -114,7 +114,7 @@ def runtime_swap() -> bool:
         mod: ModuleType = importlib.util.module_from_spec(spec)
         sys.modules[PROGRAM_PACKAGE] = mod
         spec.loader.exec_module(mod)
-        TEST_TRACE(f"Loaded standalone module from {bin_path}")
+        safe_trace(f"Loaded standalone module from {bin_path}")
     except Exception as e:
         # Fail fast with context; this is a config/runtime problem.
         error_name = type(e).__name__
@@ -125,6 +125,6 @@ def runtime_swap() -> bool:
         )
         raise pytest.UsageError(xmsg) from e
 
-    TEST_TRACE(f"✅ Loaded standalone runtime early from {bin_path}")
+    safe_trace(f"✅ Loaded standalone runtime early from {bin_path}")
 
     return True

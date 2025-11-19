@@ -28,11 +28,11 @@ from .registry import (
 from .safe_log import (
     ApatheticLogging_Priv_SafeLog,  # pyright: ignore[reportPrivateUsage]
 )
+from .safe_trace import (
+    ApatheticLogging_Priv_SafeTrace,  # pyright: ignore[reportPrivateUsage]
+)
 from .tag_formatter import (
     ApatheticLogging_Priv_TagFormatter,  # pyright: ignore[reportPrivateUsage]
-)
-from .test_trace import (
-    ApatheticLogging_Priv_TestTrace,  # pyright: ignore[reportPrivateUsage]
 )
 
 
@@ -50,7 +50,7 @@ class apathetic_logging(  # pyright: ignore[reportPrivateUsage] # noqa: N801
     ApatheticLogging_Priv_Registry,
     ApatheticLogging_Priv_SafeLog,
     ApatheticLogging_Priv_TagFormatter,
-    ApatheticLogging_Priv_TestTrace,
+    ApatheticLogging_Priv_SafeTrace,
 ):
     """Namespace for apathetic logging functionality.
 
@@ -70,13 +70,13 @@ class apathetic_logging(  # pyright: ignore[reportPrivateUsage] # noqa: N801
       ``ApatheticLogging_Priv_RegisterLogLevelEnvVars``
     - ``register_logger_name()`` → ``ApatheticLogging_Priv_RegisterLoggerName``
     - ``safe_log()`` → ``ApatheticLogging_Priv_SafeLog``
-    - ``TEST_TRACE()`` → ``ApatheticLogging_Priv_TestTrace``
-    - ``make_test_trace()`` → ``ApatheticLogging_Priv_TestTrace``
+    - ``SAFE_TRACE()`` → ``ApatheticLogging_Priv_SafeTrace``
+    - ``make_test_trace()`` → ``ApatheticLogging_Priv_SafeTrace``
 
     **Constants:**
     - ``DEFAULT_APATHETIC_LOG_LEVEL`` → ``ApatheticLogging_Priv_Constants``
     - ``DEFAULT_APATHETIC_LOG_LEVEL_ENV_VARS`` → ``ApatheticLogging_Priv_Constants``
-    - ``TEST_TRACE_ENABLED`` → ``ApatheticLogging_Priv_Constants``
+    - ``SAFE_TRACE_ENABLED`` → ``ApatheticLogging_Priv_Constants``
     - ``TEST_LEVEL`` → ``ApatheticLogging_Priv_Constants``
     - ``TRACE_LEVEL`` → ``ApatheticLogging_Priv_Constants``
     - ``MINIMAL_LEVEL`` → ``ApatheticLogging_Priv_Constants``

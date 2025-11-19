@@ -1,5 +1,5 @@
-# tests/30_independant/test_make_test_trace.py
-"""Tests for make_test_trace function."""
+# tests/30_independant/test_make_safe_trace.py
+"""Tests for make_safe_trace function."""
 
 import sys
 from collections.abc import Generator
@@ -12,32 +12,32 @@ import apathetic_logging.constants as mod_constants
 
 
 @pytest.fixture(autouse=True)
-def reset_test_trace_enabled() -> Generator[None, None, None]:
-    """Reset TEST_TRACE_ENABLED before and after each test."""
+def reset_safe_trace_enabled() -> Generator[None, None, None]:
+    """Reset SAFE_TRACE_ENABLED before and after each test."""
     constants = mod_constants.ApatheticLogging_Priv_Constants  # pyright: ignore[reportPrivateUsage]
-    original = constants.TEST_TRACE_ENABLED
+    original = constants.SAFE_TRACE_ENABLED
     yield
-    constants.TEST_TRACE_ENABLED = original
+    constants.SAFE_TRACE_ENABLED = original
 
 
-def test_make_test_trace_returns_callable() -> None:
-    """make_test_trace() should return a callable function."""
+def test_make_safe_trace_returns_callable() -> None:
+    """make_safe_trace() should return a callable function."""
     # --- execute ---
-    trace_func = mod_alogs.make_test_trace()
+    trace_func = mod_alogs.make_safe_trace()
 
     # --- verify ---
     assert callable(trace_func)
 
 
-def test_make_test_trace_custom_icon(
+def test_make_safe_trace_custom_icon(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """make_test_trace() should use custom icon when provided."""
+    """make_safe_trace() should use custom icon when provided."""
     # --- setup ---
     custom_icon = "🔍"
-    trace_func = mod_alogs.make_test_trace(icon=custom_icon)
+    trace_func = mod_alogs.make_safe_trace(icon=custom_icon)
     constants = mod_constants.ApatheticLogging_Priv_Constants  # pyright: ignore[reportPrivateUsage]
-    constants.TEST_TRACE_ENABLED = True
+    constants.SAFE_TRACE_ENABLED = True
     buf = StringIO()
 
     # --- execute ---
@@ -49,14 +49,14 @@ def test_make_test_trace_custom_icon(
     assert custom_icon in output
 
 
-def test_make_test_trace_default_icon(
+def test_make_safe_trace_default_icon(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """make_test_trace() should use default icon when not provided."""
+    """make_safe_trace() should use default icon when not provided."""
     # --- setup ---
-    trace_func = mod_alogs.make_test_trace()
+    trace_func = mod_alogs.make_safe_trace()
     constants = mod_constants.ApatheticLogging_Priv_Constants  # pyright: ignore[reportPrivateUsage]
-    constants.TEST_TRACE_ENABLED = True
+    constants.SAFE_TRACE_ENABLED = True
     buf = StringIO()
 
     # --- execute ---
@@ -68,14 +68,14 @@ def test_make_test_trace_default_icon(
     assert "🧪" in output
 
 
-def test_make_test_trace_respects_test_trace_disabled(
+def test_make_safe_trace_respects_safe_trace_disabled(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """make_test_trace() should not output when TEST_TRACE is disabled."""
+    """make_safe_trace() should not output when safe_trace is disabled."""
     # --- setup ---
-    trace_func = mod_alogs.make_test_trace()
+    trace_func = mod_alogs.make_safe_trace()
     constants = mod_constants.ApatheticLogging_Priv_Constants  # pyright: ignore[reportPrivateUsage]
-    constants.TEST_TRACE_ENABLED = False
+    constants.SAFE_TRACE_ENABLED = False
     buf = StringIO()
 
     # --- execute ---
@@ -87,14 +87,14 @@ def test_make_test_trace_respects_test_trace_disabled(
     assert output == ""
 
 
-def test_make_test_trace_outputs_to_stderr(
+def test_make_safe_trace_outputs_to_stderr(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """make_test_trace() should write to sys.__stderr__."""
+    """make_safe_trace() should write to sys.__stderr__."""
     # --- setup ---
-    trace_func = mod_alogs.make_test_trace()
+    trace_func = mod_alogs.make_safe_trace()
     constants = mod_constants.ApatheticLogging_Priv_Constants  # pyright: ignore[reportPrivateUsage]
-    constants.TEST_TRACE_ENABLED = True
+    constants.SAFE_TRACE_ENABLED = True
     buf = StringIO()
 
     # --- execute ---

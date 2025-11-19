@@ -6,8 +6,8 @@ from __future__ import annotations
 from .registry import (
     ApatheticLogging_Priv_Registry,  # pyright: ignore[reportPrivateUsage]
 )
-from .test_trace import (
-    ApatheticLogging_Priv_TestTrace,  # pyright: ignore[reportPrivateUsage]
+from .safe_trace import (
+    ApatheticLogging_Priv_SafeTrace,  # pyright: ignore[reportPrivateUsage]
 )
 
 
@@ -31,7 +31,7 @@ class ApatheticLogging_Priv_RegisterDefaultLogLevel:  # noqa: N801  # pyright: i
             >>> apathetic_logging.register_default_log_level("warning")
         """
         ApatheticLogging_Priv_Registry.registered_priv_default_log_level = default_level
-        ApatheticLogging_Priv_TestTrace.TEST_TRACE(
+        ApatheticLogging_Priv_SafeTrace.safe_trace(
             "register_default_log_level() called",
             f"default_level={default_level}",
         )

@@ -47,8 +47,8 @@ LEVEL_ORDER = apathetic_logging.LEVEL_ORDER
 SILENT_LEVEL = apathetic_logging.SILENT_LEVEL
 TAG_STYLES = apathetic_logging.TAG_STYLES
 TEST_LEVEL = apathetic_logging.TEST_LEVEL
-TEST_TRACE = apathetic_logging.TEST_TRACE
-TEST_TRACE_ENABLED = apathetic_logging.TEST_TRACE_ENABLED
+safe_trace = apathetic_logging.safe_trace
+SAFE_TRACE_ENABLED = apathetic_logging.SAFE_TRACE_ENABLED
 TRACE_LEVEL = apathetic_logging.TRACE_LEVEL
 MINIMAL_LEVEL = apathetic_logging.MINIMAL_LEVEL
 DETAIL_LEVEL = apathetic_logging.DETAIL_LEVEL
@@ -69,7 +69,7 @@ else:
 
 # Functions
 get_logger = apathetic_logging.get_logger
-make_test_trace = apathetic_logging.make_test_trace
+make_safe_trace = apathetic_logging.make_safe_trace
 register_default_log_level = apathetic_logging.register_default_log_level
 register_log_level_env_vars = apathetic_logging.register_log_level_env_vars
 register_logger_name = apathetic_logging.register_logger_name
@@ -82,11 +82,10 @@ __all__ = [
     "DETAIL_LEVEL",
     "LEVEL_ORDER",
     "MINIMAL_LEVEL",
+    "SAFE_TRACE_ENABLED",
     "SILENT_LEVEL",
     "TAG_STYLES",
     "TEST_LEVEL",
-    "TEST_TRACE",
-    "TEST_TRACE_ENABLED",
     "TRACE_LEVEL",
     "ANSIColors",
     "DualStreamHandler",
@@ -94,9 +93,10 @@ __all__ = [
     "TagFormatter",
     "apathetic_logging",
     "get_logger",
-    "make_test_trace",
+    "make_safe_trace",
     "register_default_log_level",
     "register_log_level_env_vars",
     "register_logger_name",
     "safe_log",
+    "safe_trace",
 ]

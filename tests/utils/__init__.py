@@ -10,8 +10,8 @@ from .constants import (
 )
 from .patch_everywhere import patch_everywhere
 from .runtime_swap import runtime_swap
+from .safe_trace import make_safe_trace, safe_trace
 from .strip_common_prefix import strip_common_prefix
-from .test_trace import TEST_TRACE, make_test_trace
 
 
 __all__ = [  # noqa: RUF022
@@ -30,7 +30,7 @@ __all__ = [  # noqa: RUF022
     "runtime_swap",
     # strip_common_prefix
     "strip_common_prefix",
-    # test_trace
-    "TEST_TRACE",
-    "make_test_trace",
+    # safe_trace
+    "safe_trace",
+    "make_safe_trace",
 ]
