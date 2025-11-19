@@ -300,6 +300,18 @@ I'm working on [feature/change description]. I've made a checkpoint commit after
 Please help me resolve the remaining issues to get `poetry run poe check:fix` passing.
 ```
 
+# Communication
+
+### Asking Questions and Waiting for Responses
+
+- **When asking a question**: If you ask the user a question (e.g., "Should I...?", "Would you like me to...?", "Do you want...?"), you **must pause and wait for their response** before proceeding with any actions related to that question.
+
+- **Do NOT proceed automatically**: After asking a question, do not assume the answer and proceed with the suggested action. Wait for explicit confirmation or direction from the user.
+
+- **Exception**: If the user's query is a direct instruction (e.g., "add a function that...", "fix the bug in..."), you should proceed with the implementation without asking for confirmation, as the instruction itself is the confirmation.
+
+- **Clarifying questions**: When you need clarification to understand the user's request, ask the question and wait for the response before continuing.
+
 # Git Conventions
 
 ### Git Commit Conventions
