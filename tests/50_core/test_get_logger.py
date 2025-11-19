@@ -66,9 +66,11 @@ def test_get_logger_auto_infers_from_caller_package() -> None:
     # --- execute ---
     with patch("inspect.currentframe") as mock_frame:
         # Mock the frame to return our fake caller
+        # Frame structure: _resolve_logger_name -> get_logger -> actual caller
         frame = type(sys)("frame")
-        frame.f_back = type(sys)("caller_frame")  # type: ignore[attr-defined]
-        frame.f_back.f_globals = fake_globals
+        frame.f_back = type(sys)("get_logger_frame")  # type: ignore[attr-defined]
+        frame.f_back.f_back = type(sys)("caller_frame")
+        frame.f_back.f_back.f_globals = fake_globals
         mock_frame.return_value = frame
 
         try:

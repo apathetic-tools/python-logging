@@ -49,40 +49,11 @@ class ApatheticLogging_Priv_GetLogger:  # noqa: N801  # pyright: ignore[reportUn
     #     return result
 
     @staticmethod
-    def get_logger() -> Any:  # Returns apathetic_logging.Logger
-        registered_logger_name = (
-            ApatheticLogging_Priv_Registry.registered_priv_logger_name
+    def get_logger(logger_name: str | None = None) -> Any:
+        # Returns apathetic_logging.Logger
+        registered_logger_name = ApatheticLogging_Priv_GetLogger._resolve_logger_name(
+            logger_name
         )
-
-        if registered_logger_name is None:
-            # Try to auto-infer from the calling module's package
-            frame = inspect.currentframe()
-            if frame is not None:
-                try:
-                    # Get the calling frame (skip get_logger itself)
-                    caller_frame = frame.f_back
-                    if caller_frame is not None:
-                        caller_module = caller_frame.f_globals.get("__package__")
-                        if caller_module:
-                            _extract = (
-                                ApatheticLogging_Priv_RegisterLoggerName._extract_top_level_package  # noqa: SLF001  # pyright: ignore[reportPrivateUsage]
-                            )
-                            inferred_name = _extract(caller_module)
-                            if inferred_name:
-                                registry = ApatheticLogging_Priv_Registry
-                                registry.registered_priv_logger_name = inferred_name
-                                registered_logger_name = inferred_name
-                finally:
-                    del frame
-
-        if registered_logger_name is None:
-            _msg = (
-                "Logger name not registered and could not be auto-inferred. "
-                "Call register_logger_name() or ensure your app's logs "
-                "module is imported."
-            )
-            raise RuntimeError(_msg)
-
         logger = logging.getLogger(registered_logger_name)
 
         # Check if the logger is the correct type. If a logger was created before
@@ -115,19 +86,22 @@ class ApatheticLogging_Priv_GetLogger:  # noqa: N801  # pyright: ignore[reportUn
             frame = inspect.currentframe()
             if frame is not None:
                 try:
-                    # Get the calling frame (skip _resolve_logger_name itself)
+                    # Get the calling frame (skip _resolve_logger_name and get_logger)
                     caller_frame = frame.f_back
                     if caller_frame is not None:
-                        caller_module = caller_frame.f_globals.get("__package__")
-                        if caller_module:
-                            _extract = (
-                                ApatheticLogging_Priv_RegisterLoggerName._extract_top_level_package  # noqa: SLF001  # pyright: ignore[reportPrivateUsage]
-                            )
-                            inferred_name = _extract(caller_module)
-                            if inferred_name:
-                                registry = ApatheticLogging_Priv_Registry
-                                registry.registered_priv_logger_name = inferred_name
-                                registered_logger_name = inferred_name
+                        # Skip get_logger frame to get to the actual caller
+                        caller_frame = caller_frame.f_back
+                        if caller_frame is not None:
+                            caller_module = caller_frame.f_globals.get("__package__")
+                            if caller_module:
+                                _extract = (
+                                    ApatheticLogging_Priv_RegisterLoggerName._extract_top_level_package  # noqa: SLF001  # pyright: ignore[reportPrivateUsage]
+                                )
+                                inferred_name = _extract(caller_module)
+                                if inferred_name:
+                                    registry = ApatheticLogging_Priv_Registry
+                                    registry.registered_priv_logger_name = inferred_name
+                                    registered_logger_name = inferred_name
                 finally:
                     del frame
 
