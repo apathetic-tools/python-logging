@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import inspect
 import logging
-from typing import TypeVar, cast
+from typing import Protocol, TypeVar, cast
 
 from .logger import (
     ApatheticLogging_Priv_Logger,  # pyright: ignore[reportPrivateUsage]
@@ -19,6 +19,15 @@ from .registry import (
 
 
 _T = TypeVar("_T", bound=logging.Logger)
+
+
+class _LoggerClassWithExtend(Protocol):
+    """Protocol for logger classes that have extend_logging_module()."""
+
+    @classmethod
+    def extend_logging_module(cls) -> bool:
+        """Extend the logging module with custom levels."""
+        ...
 
 
 class ApatheticLogging_Priv_GetLogger:  # noqa: N801  # pyright: ignore[reportUnusedClass]
@@ -53,17 +62,25 @@ class ApatheticLogging_Priv_GetLogger:  # noqa: N801  # pyright: ignore[reportUn
 
     @staticmethod
     def get_logger_of_type(
-        logger_name: str | None, _logger_class: type[_T], *, skip_frames: int = 1
+        logger_name: str | None, logger_class: type[_T], *, skip_frames: int = 1
     ) -> _T:
-        registered_logger_name = ApatheticLogging_Priv_GetLogger._resolve_logger_name(
+        register_name = ApatheticLogging_Priv_GetLogger._resolve_logger_name(
             logger_name, skip_frames=skip_frames
         )
-        logger = logging.getLogger(registered_logger_name)
+        registered = register_name in logging.Logger.manager.loggerDict
+
+        logger = None
+        if registered:
+            logger = logging.getLogger(register_name)
+            if not isinstance(logger, logger_class):
+                logging.Logger.manager.loggerDict.pop(register_name, None)
+
+        logger = logging.getLogger(register_name)
 
         if not hasattr(logger, "level_name"):
-            if registered_logger_name in logging.Logger.manager.loggerDict:
-                logging.Logger.manager.loggerDict.pop(registered_logger_name, None)
-            logger = logging.getLogger(registered_logger_name)
+            if register_name in logging.Logger.manager.loggerDict:
+                logging.Logger.manager.loggerDict.pop(register_name, None)
+            logger = logging.getLogger(register_name)
 
         typed_logger = cast("_T", logger)
         return typed_logger
@@ -111,3 +128,32 @@ class ApatheticLogging_Priv_GetLogger:  # noqa: N801  # pyright: ignore[reportUn
             raise RuntimeError(_msg)
 
         return registered_logger_name
+
+    @staticmethod
+    def _ensure_logger_has_level_name(
+        logger_name: str,
+        logger_class: type[_LoggerClassWithExtend] | None = None,
+    ) -> logging.Logger:
+        extend_class = (
+            logger_class
+            if logger_class is not None
+            else ApatheticLogging_Priv_Logger.Logger
+        )
+
+        logger_exists = logger_name in logging.Logger.manager.loggerDict
+
+        if not logger_exists:
+            extend_class.extend_logging_module()
+            logging.setLoggerClass(cast("type[logging.Logger]", extend_class))
+            if logger_name in logging.Logger.manager.loggerDict:
+                logging.Logger.manager.loggerDict.pop(logger_name, None)
+            logger = logging.getLogger(logger_name)
+        else:
+            logger = logging.getLogger(logger_name)
+            if not hasattr(logger, "level_name"):
+                extend_class.extend_logging_module()
+                logging.setLoggerClass(cast("type[logging.Logger]", extend_class))
+                logging.Logger.manager.loggerDict.pop(logger_name, None)
+                logger = logging.getLogger(logger_name)
+
+        return logger
