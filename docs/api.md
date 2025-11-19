@@ -10,24 +10,31 @@ Complete API documentation for Apathetic Python Logger.
 
 ## Core Functions
 
-### `get_logger() -> Logger`
+### `get_logger(logger_name: str | None = None) -> Logger`
 
 Return the registered logger instance.
 
-Uses Python's built-in logging registry (`logging.getLogger()`) to retrieve the logger. If no logger name has been registered, attempts to auto-infer the logger name from the calling module's top-level package.
+Uses Python's built-in logging registry (`logging.getLogger()`) to retrieve the logger. If no logger name is provided, uses the registered logger name or attempts to auto-infer the logger name from the calling module's top-level package.
+
+**Parameters:**
+- `logger_name` (str | None): Optional logger name. If not provided, uses the registered logger name or auto-infers from the calling module.
 
 **Returns:**
 - The logger instance from `logging.getLogger()` (as `apathetic_logging` type)
 
 **Raises:**
-- `RuntimeError`: If called before a logger name has been registered and auto-inference fails.
+- `RuntimeError`: If no logger name is provided and no logger name has been registered and auto-inference fails.
 
 **Example:**
 ```python
 from apathetic_logging import get_logger, register_logger_name
 
+# Using registered logger name
 register_logger_name("my_app")
-logger = get_logger()
+logger = get_logger()  # Gets "my_app" logger
+
+# Or specify logger name directly
+logger = get_logger("my_app")  # Gets "my_app" logger
 ```
 
 ### `register_logger_name(logger_name: str | None = None) -> None`

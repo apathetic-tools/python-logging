@@ -30,8 +30,7 @@ import os
 from typing import cast
 
 from apathetic_logging import (
-    apathetic_logging,
-    get_logger,
+    Logger as ApatheticLogger,
     register_default_log_level,
     register_log_level_env_vars,
     register_logger_name,
@@ -88,7 +87,12 @@ class AppLogger(ApatheticLogger):
 # --- Logger Initialization ----------------------------------------------------
 
 # Extend the logging module to support TRACE and SILENT levels
-# This must happen before any loggers are created
+# NOTE: This is now optional! get_logger_of_type() will automatically call
+# extend_logging_module() on AppLogger if needed. However, calling it explicitly
+# here is still recommended for:
+# - Immediate availability of logging.TRACE, logging.DETAIL, etc. after import
+# - Better performance (one-time setup at import time)
+# - Clear documentation of when the module is extended
 AppLogger.extend_logging_module()
 
 # Register environment variables for log level detection
@@ -99,23 +103,24 @@ register_log_level_env_vars([LOG_LEVEL_ENV_VAR, "LOG_LEVEL"])
 register_default_log_level(DEFAULT_LOG_LEVEL)
 
 # Register the logger name
-# This allows get_logger() to find the logger instance
+# This allows get_logger() and get_logger_of_type() to find the logger instance
+# NOTE: This is also optional if you always pass the logger name explicitly
+# to get_app_logger(), but recommended for consistency
 register_logger_name(APP_NAME)
-
-# Get the logger instance from the logging registry
-# The logging module acts as the registry, so we use logging.getLogger()
-_APP_LOGGER = cast("AppLogger", logging.getLogger(APP_NAME))
 
 
 # --- Application Logger Getter ------------------------------------------------
 
 
-def get_app_logger() -> AppLogger:
+def get_app_logger(logger_name: str = APP_NAME) -> AppLogger:
     """Return the configured application logger.
     
     This is the application-specific logger getter that returns AppLogger type.
     Use this in application code instead of apathetic_logging.get_logger() for
     better type hints and to ensure you're using the custom logger.
+    
+    Args:
+        logger_name: The name of the logger to retrieve (defaults to APP_NAME)
     
     Returns:
         The AppLogger instance for this application
@@ -125,8 +130,8 @@ def get_app_logger() -> AppLogger:
         >>> logger = get_app_logger()
         >>> logger.info("Application started")
     """
-    logger = cast("AppLogger", get_logger())
-    return logger
+    from apathetic_logging import get_logger_of_type
+    return get_logger_of_type(logger_name, AppLogger)
 ```
 
 ## Using the Custom Logger
@@ -221,38 +226,32 @@ class AppLogger(ApatheticLogger):
 
 ## Key Points
 
-1. **Call `extend_logging_module()`** - This should be called before creating any loggers to register TRACE and SILENT levels. However, both `get_logger()` and `get_app_logger()` have defensive code that can fix logger instances created before `extend_logging_module()` was called.
+1. **Call `extend_logging_module()` (Optional but Recommended)** - This registers TRACE, DETAIL, MINIMAL, and SILENT levels with the logging module. While `get_logger_of_type()` will automatically call this on your logger class if needed, calling it explicitly is recommended for:
+   - Immediate availability of `logging.TRACE`, `logging.DETAIL`, etc. after import
+   - Better performance (one-time setup at import time)
+   - Clear documentation of when the module is extended
+   - If you override `extend_logging_module()` in your custom logger, calling it explicitly ensures your override runs
 
-2. **Register environment variables** - Use `register_log_level_env_vars()` to tell the logger which environment variables to check.
+2. **Register environment variables** - Use `register_log_level_env_vars()` to tell the logger which environment variables to check. This is optional if you handle environment variable checking in your `determine_log_level()` override.
 
-3. **Register default log level** - Use `register_default_log_level()` to set the fallback log level.
+3. **Register default log level** - Use `register_default_log_level()` to set the fallback log level. This is optional if you always provide a default in your `determine_log_level()` override.
 
-4. **Register logger name** - Use `register_logger_name()` so `get_logger()` can find your logger.
+4. **Register logger name (Optional)** - Use `register_logger_name()` so `get_logger()` and `get_logger_of_type()` can auto-infer the logger name. If you always pass the logger name explicitly to `get_app_logger()`, this is optional.
 
-5. **Use type casting** - When getting the logger from `logging.getLogger()`, cast it to your custom type for proper type hints.
-
-6. **Create a typed getter** - Provide a `get_app_logger()` function that returns your custom logger type for better IDE support. You can implement it in two ways:
-   - **Option A (Recommended)**: Call `get_logger()` internally - this is the simplest and safest approach:
+5. **Create a typed getter** - Provide a `get_app_logger()` function that returns your custom logger type for better IDE support. Use the `get_logger_of_type()` helper function for a simple implementation:
      ```python
-     def get_app_logger() -> AppLogger:
+     def get_app_logger(logger_name: str = APP_NAME) -> AppLogger:
          """Return the configured application logger."""
-         logger = cast("AppLogger", get_logger())
-         return logger
+         from apathetic_logging import get_logger_of_type
+         return get_logger_of_type(logger_name, AppLogger)
      ```
-   - **Option B**: Return a pre-created logger with defensive checks - use this if you want to cache the logger instance:
-     ```python
-     _APP_LOGGER = cast("AppLogger", logging.getLogger(APP_NAME))
      
-     def get_app_logger() -> AppLogger:
-         """Return the configured application logger."""
-         global _APP_LOGGER
-         # Defensive check: fix logger type if needed
-         if not hasattr(_APP_LOGGER, "level_name"):
-             if APP_NAME in logging.Logger.manager.loggerDict:
-                 logging.Logger.manager.loggerDict.pop(APP_NAME, None)
-             _APP_LOGGER = cast("AppLogger", logging.getLogger(APP_NAME))
-         return _APP_LOGGER
-     ```
+     The `get_logger_of_type()` helper handles all defensive checks automatically:
+     - Automatically calls `AppLogger.extend_logging_module()` if needed (allowing your override to run)
+     - Ensures the logger has the `level_name` attribute (base Logger check)
+     - Ensures the logger is an instance of `AppLogger` (subclass check)
+     - Fixes the logger type if it was created before `extend_logging_module()` was called
+     - Handles name resolution (from parameter, registry, or auto-inference)
 
 ## Integration with Existing Code
 
