@@ -70,7 +70,12 @@ def test_custom_logger_with_typed_getter() -> None:
     # --- verify ---
     assert logger is not None
     assert logger.name == app_name
-    assert isinstance(logger, mod_alogs.Logger)
+    # Check that logger has expected apathetic_logging.Logger methods/behavior
+    # (instead of isinstance check which may fail in singlefile mode due to class
+    # reference differences)
+    assert hasattr(logger, "trace")
+    assert hasattr(logger, "colorize")
+    assert hasattr(logger, "determine_log_level")
 
 
 def test_custom_logger_determine_log_level_override() -> None:

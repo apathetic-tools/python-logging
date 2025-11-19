@@ -8,7 +8,9 @@ Each pytest run now targets a single runtime mode:
 Switch mode with: RUNTIME_MODE=singlefile pytest
 """
 
+import logging
 import os
+from collections.abc import Generator
 
 import pytest
 
@@ -29,6 +31,36 @@ safe_trace = make_safe_trace("⚡️")
 
 # early jank hook
 runtime_swap()
+
+# Import after runtime_swap to ensure we get the right module
+import apathetic_logging as mod_alogs  # noqa: E402
+
+
+@pytest.fixture(autouse=True)
+def reset_logger_class() -> Generator[None, None, None]:
+    """Reset logger class before and after each test to prevent test pollution.
+
+    This ensures that tests that set a custom logger class don't affect
+    subsequent tests.
+    """
+    original_logger_class = logging.getLoggerClass()
+    # Clear any existing loggers from the registry
+    _logging_utils = mod_alogs.apathetic_logging
+    logger_names = list(logging.Logger.manager.loggerDict.keys())
+    for logger_name in logger_names:
+        _logging_utils.remove_logger(logger_name)
+    # Reset to default before test
+    logging.setLoggerClass(mod_alogs.Logger)
+    mod_alogs.Logger.extend_logging_module()
+    yield
+    # Clear loggers again after test
+    logger_names = list(logging.Logger.manager.loggerDict.keys())
+    for logger_name in logger_names:
+        _logging_utils.remove_logger(logger_name)
+    # Reset to original after test
+    logging.setLoggerClass(original_logger_class)
+    mod_alogs.Logger.extend_logging_module()
+
 
 # ----------------------------------------------------------------------
 # Helpers

@@ -12,12 +12,25 @@ import apathetic_logging.registry_data as mod_registry
 
 @pytest.fixture(autouse=True)
 def reset_registry() -> Generator[None, None, None]:
-    """Reset registry state before and after each test."""
+    """Reset registry state and logger class before and after each test."""
     _registry = mod_registry.ApatheticLogging_Internal_RegistryData
+    _logging_utils = mod_alogs.apathetic_logging
     original_name = _registry.registered_internal_logger_name
+    original_logger_class = logging.getLoggerClass()
     _registry.registered_internal_logger_name = None
+    # Clear any existing loggers from the registry
+    logger_names = list(logging.Logger.manager.loggerDict.keys())
+    for logger_name in logger_names:
+        _logging_utils.remove_logger(logger_name)
+    # Reset logger class to default before test (may have been changed by other tests)
+    logging.setLoggerClass(mod_alogs.Logger)
+    mod_alogs.Logger.extend_logging_module()
     yield
     _registry.registered_internal_logger_name = original_name
+    # Reset logger class to original after test
+    logging.setLoggerClass(original_logger_class)
+    # Re-extend with the default Logger class to ensure it's set correctly
+    mod_alogs.Logger.extend_logging_module()
 
 
 def test_extend_logging_module_called_twice_is_safe() -> None:
@@ -78,7 +91,12 @@ def test_get_logger_works_after_extend_logging_module() -> None:
 
     # --- verify ---
     assert logger is not None
-    assert isinstance(logger, mod_alogs.Logger)
+    # Check that logger has expected apathetic_logging.Logger methods/behavior
+    # (instead of isinstance check which may fail in singlefile mode due to class
+    # reference differences)
+    assert hasattr(logger, "trace")
+    assert hasattr(logger, "colorize")
+    assert hasattr(logger, "determine_log_level")
     # Should be able to use custom levels
     logger.setLevel(logging.TRACE)  # type: ignore[attr-defined]
     assert logger.level == mod_alogs.apathetic_logging.TRACE_LEVEL

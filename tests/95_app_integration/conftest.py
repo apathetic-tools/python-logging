@@ -26,7 +26,10 @@ else:
 
 @pytest.fixture(autouse=True)
 def reset_registry_and_env() -> Generator[None, None, None]:
-    """Reset registry state and environment variables before and after each test."""
+    """Reset registry state, environment variables, and logger class.
+
+    Runs before and after each test.
+    """
     # Save original state
     _registry = mod_registry.ApatheticLogging_Internal_RegistryData
     original_name = _registry.registered_internal_logger_name
@@ -34,6 +37,7 @@ def reset_registry_and_env() -> Generator[None, None, None]:
     original_env_vars = _registry.registered_internal_log_level_env_vars
     original_env = os.environ.get("TESTAPP_LOG_LEVEL")
     original_log_level = os.environ.get("LOG_LEVEL")
+    original_logger_class = logging.getLoggerClass()
 
     # Reset state
     _registry.registered_internal_logger_name = None
@@ -43,6 +47,14 @@ def reset_registry_and_env() -> Generator[None, None, None]:
         del os.environ["TESTAPP_LOG_LEVEL"]
     if "LOG_LEVEL" in os.environ:
         del os.environ["LOG_LEVEL"]
+    # Clear any existing loggers from the registry
+    _logging_utils = mod_alogs.apathetic_logging
+    logger_names = list(logging.Logger.manager.loggerDict.keys())
+    for logger_name in logger_names:
+        _logging_utils.remove_logger(logger_name)
+    # Reset logger class to default before test (may have been changed by other tests)
+    logging.setLoggerClass(mod_alogs.Logger)
+    mod_alogs.Logger.extend_logging_module()
 
     yield
 
@@ -54,6 +66,10 @@ def reset_registry_and_env() -> Generator[None, None, None]:
         os.environ["TESTAPP_LOG_LEVEL"] = original_env
     if original_log_level is not None:
         os.environ["LOG_LEVEL"] = original_log_level
+    # Reset logger class to original after test
+    logging.setLoggerClass(original_logger_class)
+    # Re-extend with the default Logger class to ensure it's set correctly
+    mod_alogs.Logger.extend_logging_module()
 
 
 # ----------------------------------------------------------------------
