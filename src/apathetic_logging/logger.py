@@ -12,23 +12,23 @@ from contextlib import contextmanager
 from typing import Any, TextIO, cast
 
 from .constants import (
-    ApatheticLogging_Priv_Constants,  # pyright: ignore[reportPrivateUsage]
+    ApatheticLogging_Internal_Constants,
 )
 from .dual_stream_handler import (
-    ApatheticLogging_Priv_DualStreamHandler,  # pyright: ignore[reportPrivateUsage]
+    ApatheticLogging_Internal_DualStreamHandler,
 )
 from .registry import (
-    ApatheticLogging_Priv_Registry,  # pyright: ignore[reportPrivateUsage]
+    ApatheticLogging_Internal_Registry,
 )
 from .safe_trace import (
-    ApatheticLogging_Priv_SafeTrace,  # pyright: ignore[reportPrivateUsage]
+    ApatheticLogging_Internal_SafeTrace,
 )
 from .tag_formatter import (
-    ApatheticLogging_Priv_TagFormatter,  # pyright: ignore[reportPrivateUsage]
+    ApatheticLogging_Internal_TagFormatter,
 )
 
 
-class ApatheticLogging_Priv_Logger:  # noqa: N801  # pyright: ignore[reportUnusedClass]
+class ApatheticLogging_Internal_Logger:  # noqa: N801  # pyright: ignore[reportUnusedClass]
     """Mixin class that provides the Logger nested class.
 
     This class contains the Logger implementation as a nested class.
@@ -73,6 +73,9 @@ class ApatheticLogging_Priv_Logger:  # noqa: N801  # pyright: ignore[reportUnuse
             # handler attachment will happen in _log() with ensure_handlers()
 
         def ensure_handlers(self) -> None:
+            _dual_stream_handler = ApatheticLogging_Internal_DualStreamHandler
+            _tag_formatter = ApatheticLogging_Internal_TagFormatter
+            _safe_trace = ApatheticLogging_Internal_SafeTrace
             if self._last_stream_ids is None or not self.handlers:
                 rebuild = True
             else:
@@ -81,21 +84,20 @@ class ApatheticLogging_Priv_Logger:  # noqa: N801  # pyright: ignore[reportUnuse
 
             if rebuild:
                 self.handlers.clear()
-                h = ApatheticLogging_Priv_DualStreamHandler.DualStreamHandler()
-                h.setFormatter(
-                    ApatheticLogging_Priv_TagFormatter.TagFormatter("%(message)s")
-                )
+                h = _dual_stream_handler.DualStreamHandler()
+                h.setFormatter(_tag_formatter.TagFormatter("%(message)s"))
                 h.enable_color = self.enable_color
                 self.addHandler(h)
                 self._last_stream_ids = (sys.stdout, sys.stderr)
-                ApatheticLogging_Priv_SafeTrace.safe_trace(
+                _safe_trace.safe_trace(
                     "ensure_handlers()", f"rebuilt_handlers={self.handlers}"
                 )
 
         def _log(  # type: ignore[override]
             self, level: int, msg: str, args: tuple[Any, ...], **kwargs: Any
         ) -> None:
-            ApatheticLogging_Priv_SafeTrace.safe_trace(
+            _safe_trace = ApatheticLogging_Internal_SafeTrace
+            _safe_trace.safe_trace(
                 "_log",
                 f"logger={self.name}",
                 f"id={id(self)}",
@@ -111,21 +113,22 @@ class ApatheticLogging_Priv_Logger:  # noqa: N801  # pyright: ignore[reportUnuse
             Validates that custom levels (TEST, TRACE, MINIMAL, DETAIL, SILENT) are
             not set to 0, which would cause NOTSET inheritance from root logger.
             """
+            _constants = ApatheticLogging_Internal_Constants
             # Resolve string to integer if needed
             if isinstance(level, str):
                 level_str = level.upper()
                 # Handle custom level names (TEST, TRACE, MINIMAL, DETAIL, SILENT)
                 # directly
                 if level_str == "TEST":
-                    level = ApatheticLogging_Priv_Constants.TEST_LEVEL
+                    level = _constants.TEST_LEVEL
                 elif level_str == "TRACE":
-                    level = ApatheticLogging_Priv_Constants.TRACE_LEVEL
+                    level = _constants.TRACE_LEVEL
                 elif level_str == "DETAIL":
-                    level = ApatheticLogging_Priv_Constants.DETAIL_LEVEL
+                    level = _constants.DETAIL_LEVEL
                 elif level_str == "MINIMAL":
-                    level = ApatheticLogging_Priv_Constants.MINIMAL_LEVEL
+                    level = _constants.MINIMAL_LEVEL
                 elif level_str == "SILENT":
-                    level = ApatheticLogging_Priv_Constants.SILENT_LEVEL
+                    level = _constants.SILENT_LEVEL
                 else:
                     # Try to resolve via logging module (for standard levels)
                     resolved = self.resolve_level_name(level_str)
@@ -134,10 +137,10 @@ class ApatheticLogging_Priv_Logger:  # noqa: N801  # pyright: ignore[reportUnuse
 
             # Validate any level <= 0 (prevents NOTSET inheritance)
             # Built-in levels (DEBUG=10, INFO=20, etc.) are all > 0, so they pass
-            # _validate_level_positive() will raise if level <= 0
+            # validate_level_positive() will raise if level <= 0
             if isinstance(level, int):
                 level_name = logging.getLevelName(level) or str(level)
-                self._validate_level_positive(level, level_name)
+                self.validate_level_positive(level, level_name)
 
             super().setLevel(level)
 
@@ -154,7 +157,7 @@ class ApatheticLogging_Priv_Logger:  # noqa: N801  # pyright: ignore[reportUnuse
             return sys.stdout.isatty()
 
         @staticmethod
-        def _validate_level_positive(level: int, level_name: str | None = None) -> None:
+        def validate_level_positive(level: int, level_name: str | None = None) -> None:
             """Validate that a level value is positive (> 0).
 
             Custom levels with values <= 0 will inherit from the root logger,
@@ -169,8 +172,8 @@ class ApatheticLogging_Priv_Logger:  # noqa: N801  # pyright: ignore[reportUnuse
                 ValueError: If level <= 0
 
             Example:
-                >>> Logger._validate_level_positive(5, "TRACE")
-                >>> Logger._validate_level_positive(0, "TEST")
+                >>> Logger.validate_level_positive(5, "TRACE")
+                >>> Logger.validate_level_positive(0, "TEST")
                 ValueError: Level 'TEST' has value 0...
             """
             if level <= 0:
@@ -209,7 +212,7 @@ class ApatheticLogging_Priv_Logger:  # noqa: N801  # pyright: ignore[reportUnuse
                 >>> # logging.addLevelName(5, "TRACE")  # Equivalent, but unsafe
             """
             # Validate level is positive
-            ApatheticLogging_Priv_Logger.Logger._validate_level_positive(  # noqa: SLF001
+            ApatheticLogging_Internal_Logger.Logger.validate_level_positive(
                 level, level_name
             )
 
@@ -225,7 +228,7 @@ class ApatheticLogging_Priv_Logger:  # noqa: N801  # pyright: ignore[reportUnuse
                     )
                     raise ValueError(msg)
                 # Validate existing value is positive
-                ApatheticLogging_Priv_Logger.Logger._validate_level_positive(  # noqa: SLF001
+                ApatheticLogging_Internal_Logger.Logger.validate_level_positive(
                     existing_value, level_name
                 )
                 if existing_value != level:
@@ -247,6 +250,7 @@ class ApatheticLogging_Priv_Logger:  # noqa: N801  # pyright: ignore[reportUnuse
             """The return value tells you if we ran or not.
             If it is False and you're calling it via super(),
             you can likely skip your code too."""
+            _constants = ApatheticLogging_Internal_Constants
             # Check if this specific class has already extended the module
             # (not inherited from base class)
             already_extended = getattr(cls, "_logging_module_extended", False)
@@ -262,21 +266,19 @@ class ApatheticLogging_Priv_Logger:  # noqa: N801  # pyright: ignore[reportUnuse
 
             # Sanity check: validate TAG_STYLES keys are in LEVEL_ORDER
             if __debug__:
-                _tag_levels = set(ApatheticLogging_Priv_Constants.TAG_STYLES.keys())
-                _known_levels = {
-                    lvl.upper() for lvl in ApatheticLogging_Priv_Constants.LEVEL_ORDER
-                }
+                _tag_levels = set(_constants.TAG_STYLES.keys())
+                _known_levels = {lvl.upper() for lvl in _constants.LEVEL_ORDER}
                 if not _tag_levels <= _known_levels:
                     _msg = "TAG_STYLES contains unknown levels"
                     raise AssertionError(_msg)
 
             # Register custom levels with validation
             # addLevelName() also sets logging.TEST, logging.TRACE, etc. attributes
-            cls.addLevelName(ApatheticLogging_Priv_Constants.TEST_LEVEL, "TEST")
-            cls.addLevelName(ApatheticLogging_Priv_Constants.TRACE_LEVEL, "TRACE")
-            cls.addLevelName(ApatheticLogging_Priv_Constants.DETAIL_LEVEL, "DETAIL")
-            cls.addLevelName(ApatheticLogging_Priv_Constants.MINIMAL_LEVEL, "MINIMAL")
-            cls.addLevelName(ApatheticLogging_Priv_Constants.SILENT_LEVEL, "SILENT")
+            cls.addLevelName(_constants.TEST_LEVEL, "TEST")
+            cls.addLevelName(_constants.TRACE_LEVEL, "TRACE")
+            cls.addLevelName(_constants.DETAIL_LEVEL, "DETAIL")
+            cls.addLevelName(_constants.MINIMAL_LEVEL, "MINIMAL")
+            cls.addLevelName(_constants.SILENT_LEVEL, "SILENT")
 
             return True
 
@@ -287,6 +289,8 @@ class ApatheticLogging_Priv_Logger:  # noqa: N801  # pyright: ignore[reportUnuse
             root_log_level: str | None = None,
         ) -> str:
             """Resolve log level from CLI → env → root config → default."""
+            _registry = ApatheticLogging_Internal_Registry
+            _constants = ApatheticLogging_Internal_Constants
             args_level = getattr(args, "log_level", None)
             if args_level is not None:
                 # cast_hint would cause circular dependency
@@ -313,23 +317,18 @@ class ApatheticLogging_Priv_Logger:  # noqa: N801  # pyright: ignore[reportUnuse
                     )
                 else:
                     # Fallback to direct registry access
-                    registry_cls = ApatheticLogging_Priv_Registry
+                    registry_cls = _registry
                     registered_env_vars = (
                         registry_cls.registered_priv_log_level_env_vars
                     )
                     registered_default = registry_cls.registered_priv_default_log_level
             else:
                 # Fallback to direct registry access
-                registered_env_vars = (
-                    ApatheticLogging_Priv_Registry.registered_priv_log_level_env_vars
-                )
-                registered_default = (
-                    ApatheticLogging_Priv_Registry.registered_priv_default_log_level
-                )
+                registered_env_vars = _registry.registered_priv_log_level_env_vars
+                registered_default = _registry.registered_priv_default_log_level
 
             env_vars_to_check = (
-                registered_env_vars
-                or ApatheticLogging_Priv_Constants.DEFAULT_APATHETIC_LOG_LEVEL_ENV_VARS
+                registered_env_vars or _constants.DEFAULT_APATHETIC_LOG_LEVEL_ENV_VARS
             )
             for env_var in env_vars_to_check:
                 env_log_level = os.getenv(env_var)
@@ -341,8 +340,7 @@ class ApatheticLogging_Priv_Logger:  # noqa: N801  # pyright: ignore[reportUnuse
 
             # Use registered default, or fall back to module default
             default_level: str = (
-                registered_default
-                or ApatheticLogging_Priv_Constants.DEFAULT_APATHETIC_LOG_LEVEL
+                registered_default or _constants.DEFAULT_APATHETIC_LOG_LEVEL
             )
             return default_level.upper()
 
@@ -375,40 +373,45 @@ class ApatheticLogging_Priv_Logger:  # noqa: N801  # pyright: ignore[reportUnuse
         def colorize(
             self, text: str, color: str, *, enable_color: bool | None = None
         ) -> str:
+            _constants = ApatheticLogging_Internal_Constants
             if enable_color is None:
                 enable_color = self.enable_color
             return (
-                f"{color}{text}{ApatheticLogging_Priv_Constants.ANSIColors.RESET}"
-                if enable_color
-                else text
+                f"{color}{text}{_constants.ANSIColors.RESET}" if enable_color else text
             )
 
         def trace(self, msg: str, *args: Any, **kwargs: Any) -> None:
-            if self.isEnabledFor(ApatheticLogging_Priv_Constants.TRACE_LEVEL):
-                self._log(
-                    ApatheticLogging_Priv_Constants.TRACE_LEVEL, msg, args, **kwargs
-                )
+            _constants = ApatheticLogging_Internal_Constants
+            if self.isEnabledFor(_constants.TRACE_LEVEL):
+                self._log(_constants.TRACE_LEVEL, msg, args, **kwargs)
 
         def detail(self, msg: str, *args: Any, **kwargs: Any) -> None:
             """Log a detail-level message (more detailed than INFO)."""
-            if self.isEnabledFor(ApatheticLogging_Priv_Constants.DETAIL_LEVEL):
+            _constants = ApatheticLogging_Internal_Constants
+            if self.isEnabledFor(_constants.DETAIL_LEVEL):
                 self._log(
-                    ApatheticLogging_Priv_Constants.DETAIL_LEVEL, msg, args, **kwargs
+                    _constants.DETAIL_LEVEL,
+                    msg,
+                    args,
+                    **kwargs,
                 )
 
         def minimal(self, msg: str, *args: Any, **kwargs: Any) -> None:
             """Log a minimal-level message (less detailed than INFO)."""
-            if self.isEnabledFor(ApatheticLogging_Priv_Constants.MINIMAL_LEVEL):
+            _constants = ApatheticLogging_Internal_Constants
+            if self.isEnabledFor(_constants.MINIMAL_LEVEL):
                 self._log(
-                    ApatheticLogging_Priv_Constants.MINIMAL_LEVEL, msg, args, **kwargs
+                    _constants.MINIMAL_LEVEL,
+                    msg,
+                    args,
+                    **kwargs,
                 )
 
         def test(self, msg: str, *args: Any, **kwargs: Any) -> None:
             """Log a test-level message (most verbose, bypasses capture)."""
-            if self.isEnabledFor(ApatheticLogging_Priv_Constants.TEST_LEVEL):
-                self._log(
-                    ApatheticLogging_Priv_Constants.TEST_LEVEL, msg, args, **kwargs
-                )
+            _constants = ApatheticLogging_Internal_Constants
+            if self.isEnabledFor(_constants.TEST_LEVEL):
+                self._log(_constants.TEST_LEVEL, msg, args, **kwargs)
 
         def resolve_level_name(self, level_name: str) -> int | None:
             """logging.getLevelNamesMapping() is only introduced in 3.11"""

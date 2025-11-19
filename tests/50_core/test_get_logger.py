@@ -15,22 +15,22 @@ import apathetic_logging.registry as mod_registry
 def reset_registry() -> Generator[None, None, None]:
     """Reset registry state before and after each test."""
     # Save original values
-    registry = mod_registry.ApatheticLogging_Priv_Registry  # pyright: ignore[reportPrivateUsage]
-    original_env_vars = registry.registered_priv_log_level_env_vars
-    original_default = registry.registered_priv_default_log_level
-    original_name = registry.registered_priv_logger_name
+    _registry = mod_registry.ApatheticLogging_Internal_Registry
+    original_env_vars = _registry.registered_priv_log_level_env_vars
+    original_default = _registry.registered_priv_default_log_level
+    original_name = _registry.registered_priv_logger_name
 
     # Reset to None
-    registry.registered_priv_log_level_env_vars = None
-    registry.registered_priv_default_log_level = None
-    registry.registered_priv_logger_name = None
+    _registry.registered_priv_log_level_env_vars = None
+    _registry.registered_priv_default_log_level = None
+    _registry.registered_priv_logger_name = None
 
     yield
 
     # Restore original values
-    registry.registered_priv_log_level_env_vars = original_env_vars
-    registry.registered_priv_default_log_level = original_default
-    registry.registered_priv_logger_name = original_name
+    _registry.registered_priv_log_level_env_vars = original_env_vars
+    _registry.registered_priv_default_log_level = original_default
+    _registry.registered_priv_logger_name = original_name
 
 
 def test_get_logger_with_registered_name() -> None:
@@ -59,7 +59,7 @@ def test_get_logger_auto_infers_from_caller_package() -> None:
     """get_logger() should auto-infer logger name from caller's __package__.
 
     Note: This test must carefully construct an identical callstack to mimic
-    the frames between get_logger() and calling _resolve_logger_name().
+    the frames between get_logger() and calling resolve_logger_name().
     """
     # --- setup ---
     # Create a fake module with __package__ attribute
@@ -70,7 +70,7 @@ def test_get_logger_auto_infers_from_caller_package() -> None:
     # --- execute ---
     with patch("inspect.currentframe") as mock_frame:
         # Mock the frame to return our fake caller
-        # Frame structure: _resolve_logger_name -> get_logger_of_type -> get_logger
+        # Frame structure: resolve_logger_name -> get_logger_of_type -> get_logger
         # -> actual caller
         frame = type(sys)("frame")
         frame.f_back = type(sys)("get_logger_of_type_frame")  # type: ignore[attr-defined]
@@ -83,8 +83,8 @@ def test_get_logger_auto_infers_from_caller_package() -> None:
             result = mod_alogs.get_logger()
             # --- verify ---
             assert result.name == "test_package"
-            registry = mod_registry.ApatheticLogging_Priv_Registry  # pyright: ignore[reportPrivateUsage]
-            assert registry.registered_priv_logger_name == "test_package"
+            _registry = mod_registry.ApatheticLogging_Internal_Registry
+            assert _registry.registered_priv_logger_name == "test_package"
         except RuntimeError:
             # If auto-inference fails, that's also acceptable behavior
             pass

@@ -4,7 +4,7 @@
 from __future__ import annotations
 
 
-class ApatheticLogging_Priv_Registry:  # noqa: N801  # pyright: ignore[reportUnusedClass]
+class ApatheticLogging_Internal_Registry:  # noqa: N801  # pyright: ignore[reportUnusedClass]
     """Mixin class that provides registry storage for configurable settings.
 
     This class contains class-level attributes for storing registered configuration
@@ -12,7 +12,7 @@ class ApatheticLogging_Priv_Registry:  # noqa: N801  # pyright: ignore[reportUnu
     log level environment variables, default log level, and logger name.
 
     Other mixins access these registries via direct class reference:
-    ``ApatheticLogging_Priv_Registry.registered_priv_*``
+    ``ApatheticLogging_Internal_Registry.registered_priv_*``
     """
 
     # Registry for configurable log level settings

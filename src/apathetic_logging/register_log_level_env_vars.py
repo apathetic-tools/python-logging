@@ -4,14 +4,14 @@
 from __future__ import annotations
 
 from .registry import (
-    ApatheticLogging_Priv_Registry,  # pyright: ignore[reportPrivateUsage]
+    ApatheticLogging_Internal_Registry,
 )
 from .safe_trace import (
-    ApatheticLogging_Priv_SafeTrace,  # pyright: ignore[reportPrivateUsage]
+    ApatheticLogging_Internal_SafeTrace,
 )
 
 
-class ApatheticLogging_Priv_RegisterLogLevelEnvVars:  # noqa: N801  # pyright: ignore[reportUnusedClass]
+class ApatheticLogging_Internal_RegisterLogLevelEnvVars:  # noqa: N801  # pyright: ignore[reportUnusedClass]
     """Mixin class that provides the register_log_level_env_vars static method.
 
     This class contains the register_log_level_env_vars implementation as a static
@@ -36,8 +36,10 @@ class ApatheticLogging_Priv_RegisterLogLevelEnvVars:  # noqa: N801  # pyright: i
             ...     ["MYAPP_LOG_LEVEL", "LOG_LEVEL"]
             ... )
         """
-        ApatheticLogging_Priv_Registry.registered_priv_log_level_env_vars = env_vars
-        ApatheticLogging_Priv_SafeTrace.safe_trace(
+        _registry = ApatheticLogging_Internal_Registry
+        _safe_trace = ApatheticLogging_Internal_SafeTrace
+        _registry.registered_priv_log_level_env_vars = env_vars
+        _safe_trace.safe_trace(
             "register_log_level_env_vars() called",
             f"env_vars={env_vars}",
         )

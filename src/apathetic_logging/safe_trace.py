@@ -10,7 +10,7 @@ from collections.abc import Callable
 from typing import Any
 
 from .constants import (
-    ApatheticLogging_Priv_Constants,  # pyright: ignore[reportPrivateUsage]
+    ApatheticLogging_Internal_Constants,
 )
 
 
@@ -19,7 +19,7 @@ from .constants import (
 _real_time = importlib.import_module("time")
 
 
-class ApatheticLogging_Priv_SafeTrace:  # noqa: N801  # pyright: ignore[reportUnusedClass]
+class ApatheticLogging_Internal_SafeTrace:  # noqa: N801  # pyright: ignore[reportUnusedClass]
     """Mixin class that provides the safe_trace and make_safe_trace static methods.
 
     This class contains the safe_trace implementation as static methods.
@@ -29,8 +29,10 @@ class ApatheticLogging_Priv_SafeTrace:  # noqa: N801  # pyright: ignore[reportUn
 
     @staticmethod
     def make_safe_trace(icon: str = "🧪") -> Callable[..., Any]:
+        _safe_trace = ApatheticLogging_Internal_SafeTrace
+
         def local_trace(label: str, *args: Any) -> Any:
-            return ApatheticLogging_Priv_SafeTrace.safe_trace(label, *args, icon=icon)
+            return _safe_trace.safe_trace(label, *args, icon=icon)
 
         return local_trace
 
@@ -44,7 +46,8 @@ class ApatheticLogging_Priv_SafeTrace:  # noqa: N801  # pyright: ignore[reportUn
             icon: Emoji prefix/suffix for easier visual scanning.
 
         """
-        if not ApatheticLogging_Priv_Constants.SAFE_TRACE_ENABLED:
+        _constants = ApatheticLogging_Internal_Constants
+        if not _constants.SAFE_TRACE_ENABLED:
             return
 
         ts = _real_time.monotonic()

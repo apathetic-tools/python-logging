@@ -13,11 +13,11 @@ import apathetic_logging.registry as mod_registry
 @pytest.fixture(autouse=True)
 def reset_registry() -> Generator[None, None, None]:
     """Reset registry state before and after each test."""
-    registry = mod_registry.ApatheticLogging_Priv_Registry  # pyright: ignore[reportPrivateUsage]
-    original_name = registry.registered_priv_logger_name
-    registry.registered_priv_logger_name = None
+    _registry = mod_registry.ApatheticLogging_Internal_Registry
+    original_name = _registry.registered_priv_logger_name
+    _registry.registered_priv_logger_name = None
     yield
-    registry.registered_priv_logger_name = original_name
+    _registry.registered_priv_logger_name = original_name
 
 
 def test_extend_logging_module_called_twice_is_safe() -> None:

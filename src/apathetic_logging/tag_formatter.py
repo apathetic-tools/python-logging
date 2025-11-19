@@ -6,11 +6,11 @@ from __future__ import annotations
 import logging
 
 from .constants import (
-    ApatheticLogging_Priv_Constants,  # pyright: ignore[reportPrivateUsage]
+    ApatheticLogging_Internal_Constants,
 )
 
 
-class ApatheticLogging_Priv_TagFormatter:  # noqa: N801  # pyright: ignore[reportUnusedClass]
+class ApatheticLogging_Internal_TagFormatter:  # noqa: N801  # pyright: ignore[reportUnusedClass]
     """Mixin class that provides the TagFormatter nested class.
 
     This class contains the TagFormatter implementation as a nested class.
@@ -22,16 +22,12 @@ class ApatheticLogging_Priv_TagFormatter:  # noqa: N801  # pyright: ignore[repor
             self,
             record: logging.LogRecord,
         ) -> str:
-            tag_color, tag_text = ApatheticLogging_Priv_Constants.TAG_STYLES.get(
-                record.levelname, ("", "")
-            )
+            _constants = ApatheticLogging_Internal_Constants
+            tag_color, tag_text = _constants.TAG_STYLES.get(record.levelname, ("", ""))
             msg = super().format(record)
             if tag_text:
                 if getattr(record, "enable_color", False) and tag_color:
-                    prefix = (
-                        f"{tag_color}{tag_text}"
-                        f"{ApatheticLogging_Priv_Constants.ANSIColors.RESET}"
-                    )
+                    prefix = f"{tag_color}{tag_text}{_constants.ANSIColors.RESET}"
                 else:
                     prefix = tag_text
                 return f"{prefix} {msg}"

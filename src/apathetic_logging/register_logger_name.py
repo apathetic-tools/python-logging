@@ -6,14 +6,14 @@ from __future__ import annotations
 import sys
 
 from .registry import (
-    ApatheticLogging_Priv_Registry,  # pyright: ignore[reportPrivateUsage]
+    ApatheticLogging_Internal_Registry,
 )
 from .safe_trace import (
-    ApatheticLogging_Priv_SafeTrace,  # pyright: ignore[reportPrivateUsage]
+    ApatheticLogging_Internal_SafeTrace,
 )
 
 
-class ApatheticLogging_Priv_RegisterLoggerName:  # noqa: N801  # pyright: ignore[reportUnusedClass]
+class ApatheticLogging_Internal_RegisterLoggerName:  # noqa: N801  # pyright: ignore[reportUnusedClass]
     """Mixin class that provides the register_logger_name static method.
 
     This class contains the register_logger_name implementation as a static
@@ -22,7 +22,7 @@ class ApatheticLogging_Priv_RegisterLoggerName:  # noqa: N801  # pyright: ignore
     """
 
     @staticmethod
-    def _extract_top_level_package(package_name: str | None) -> str | None:
+    def extract_top_level_package(package_name: str | None) -> str | None:
         """Extract the top-level package name from a full package path.
 
         Args:
@@ -62,6 +62,9 @@ class ApatheticLogging_Priv_RegisterLoggerName:  # noqa: N801  # pyright: ignore
             >>> apathetic_logging.register_logger_name()
             ...     # Uses top-level package from __package__
         """
+        _register_logger_name = ApatheticLogging_Internal_RegisterLoggerName
+        _registry = ApatheticLogging_Internal_Registry
+        _safe_trace = ApatheticLogging_Internal_SafeTrace
         auto_inferred = False
         if logger_name is None:
             # Extract top-level package from the namespace module's __package__
@@ -70,11 +73,7 @@ class ApatheticLogging_Priv_RegisterLoggerName:  # noqa: N801  # pyright: ignore
                 namespace_module = sys.modules["apathetic_logging.namespace"]
             package = getattr(namespace_module, "__package__", None)
             if package:
-                logger_name = (
-                    ApatheticLogging_Priv_RegisterLoggerName._extract_top_level_package(
-                        package
-                    )
-                )
+                logger_name = _register_logger_name.extract_top_level_package(package)
                 auto_inferred = True
             if logger_name is None:
                 _msg = (
@@ -83,8 +82,8 @@ class ApatheticLogging_Priv_RegisterLoggerName:  # noqa: N801  # pyright: ignore
                 )
                 raise RuntimeError(_msg)
 
-        ApatheticLogging_Priv_Registry.registered_priv_logger_name = logger_name
-        ApatheticLogging_Priv_SafeTrace.safe_trace(
+        _registry.registered_priv_logger_name = logger_name
+        _safe_trace.safe_trace(
             "register_logger_name() called",
             f"name={logger_name}",
             f"auto_inferred={auto_inferred}",

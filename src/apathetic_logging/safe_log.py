@@ -8,7 +8,7 @@ from contextlib import suppress
 from typing import TextIO, cast
 
 
-class ApatheticLogging_Priv_SafeLog:  # noqa: N801  # pyright: ignore[reportUnusedClass]
+class ApatheticLogging_Internal_SafeLog:  # noqa: N801  # pyright: ignore[reportUnusedClass]
     """Mixin class that provides the safe_log static method.
 
     This class contains the safe_log implementation as a static method.

@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING, TypeAlias, cast
 
 
 if TYPE_CHECKING:
-    from .logger import ApatheticLogging_Priv_Logger
+    from .logger import ApatheticLogging_Internal_Logger
     from .namespace import apathetic_logging as _apathetic_logging_class
 
 # Get reference to the namespace class
@@ -59,11 +59,11 @@ ANSIColors = apathetic_logging.ANSIColors
 # Classes
 DualStreamHandler = apathetic_logging.DualStreamHandler
 TagFormatter = apathetic_logging.TagFormatter
-# Logger is a nested class in ApatheticLogging_Priv_Logger that
+# Logger is a nested class in ApatheticLogging_Internal_Logger that
 # inherits from logging.Logger.
 # Use TypeAlias to help mypy understand this is a class type.
 if TYPE_CHECKING:
-    Logger: TypeAlias = ApatheticLogging_Priv_Logger.Logger
+    Logger: TypeAlias = ApatheticLogging_Internal_Logger.Logger
 else:
     Logger = apathetic_logging.Logger
 

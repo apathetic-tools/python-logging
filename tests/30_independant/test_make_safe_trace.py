@@ -14,10 +14,10 @@ import apathetic_logging.constants as mod_constants
 @pytest.fixture(autouse=True)
 def reset_safe_trace_enabled() -> Generator[None, None, None]:
     """Reset SAFE_TRACE_ENABLED before and after each test."""
-    constants = mod_constants.ApatheticLogging_Priv_Constants  # pyright: ignore[reportPrivateUsage]
-    original = constants.SAFE_TRACE_ENABLED
+    _constants = mod_constants.ApatheticLogging_Internal_Constants
+    original = _constants.SAFE_TRACE_ENABLED
     yield
-    constants.SAFE_TRACE_ENABLED = original
+    _constants.SAFE_TRACE_ENABLED = original
 
 
 def test_make_safe_trace_returns_callable() -> None:
@@ -36,8 +36,8 @@ def test_make_safe_trace_custom_icon(
     # --- setup ---
     custom_icon = "🔍"
     trace_func = mod_alogs.make_safe_trace(icon=custom_icon)
-    constants = mod_constants.ApatheticLogging_Priv_Constants  # pyright: ignore[reportPrivateUsage]
-    constants.SAFE_TRACE_ENABLED = True
+    _constants = mod_constants.ApatheticLogging_Internal_Constants
+    _constants.SAFE_TRACE_ENABLED = True
     buf = StringIO()
 
     # --- execute ---
@@ -55,8 +55,8 @@ def test_make_safe_trace_default_icon(
     """make_safe_trace() should use default icon when not provided."""
     # --- setup ---
     trace_func = mod_alogs.make_safe_trace()
-    constants = mod_constants.ApatheticLogging_Priv_Constants  # pyright: ignore[reportPrivateUsage]
-    constants.SAFE_TRACE_ENABLED = True
+    _constants = mod_constants.ApatheticLogging_Internal_Constants
+    _constants.SAFE_TRACE_ENABLED = True
     buf = StringIO()
 
     # --- execute ---
@@ -74,8 +74,8 @@ def test_make_safe_trace_respects_safe_trace_disabled(
     """make_safe_trace() should not output when safe_trace is disabled."""
     # --- setup ---
     trace_func = mod_alogs.make_safe_trace()
-    constants = mod_constants.ApatheticLogging_Priv_Constants  # pyright: ignore[reportPrivateUsage]
-    constants.SAFE_TRACE_ENABLED = False
+    _constants = mod_constants.ApatheticLogging_Internal_Constants
+    _constants.SAFE_TRACE_ENABLED = False
     buf = StringIO()
 
     # --- execute ---
@@ -93,8 +93,8 @@ def test_make_safe_trace_outputs_to_stderr(
     """make_safe_trace() should write to sys.__stderr__."""
     # --- setup ---
     trace_func = mod_alogs.make_safe_trace()
-    constants = mod_constants.ApatheticLogging_Priv_Constants  # pyright: ignore[reportPrivateUsage]
-    constants.SAFE_TRACE_ENABLED = True
+    _constants = mod_constants.ApatheticLogging_Internal_Constants
+    _constants.SAFE_TRACE_ENABLED = True
     buf = StringIO()
 
     # --- execute ---

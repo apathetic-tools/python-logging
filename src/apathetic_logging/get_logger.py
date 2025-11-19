@@ -8,13 +8,13 @@ import logging
 from typing import Protocol, TypeVar, cast
 
 from .logger import (
-    ApatheticLogging_Priv_Logger,  # pyright: ignore[reportPrivateUsage]
+    ApatheticLogging_Internal_Logger,
 )
 from .register_logger_name import (
-    ApatheticLogging_Priv_RegisterLoggerName,  # pyright: ignore[reportPrivateUsage]
+    ApatheticLogging_Internal_RegisterLoggerName,
 )
 from .registry import (
-    ApatheticLogging_Priv_Registry,  # pyright: ignore[reportPrivateUsage]
+    ApatheticLogging_Internal_Registry,
 )
 
 
@@ -30,7 +30,7 @@ class _LoggerClassWithExtend(Protocol):
         ...
 
 
-class ApatheticLogging_Priv_GetLogger:  # noqa: N801  # pyright: ignore[reportUnusedClass]
+class ApatheticLogging_Internal_GetLogger:  # noqa: N801  # pyright: ignore[reportUnusedClass]
     """Mixin class that provides the get_logger static method.
 
     This class contains the get_logger implementation as a static method.
@@ -40,31 +40,34 @@ class ApatheticLogging_Priv_GetLogger:  # noqa: N801  # pyright: ignore[reportUn
     @staticmethod
     def get_logger(
         logger_name: str | None = None,
-    ) -> ApatheticLogging_Priv_Logger.Logger:
-        """Get a logger of type ApatheticLogging_Priv_Logger.Logger.
+    ) -> ApatheticLogging_Internal_Logger.Logger:
+        """Get a logger of type ApatheticLogging_Internal_Logger.Logger.
 
         Args:
             logger_name: The name of the logger to get. If None, the logger name
                 will be auto-inferred from the calling module's __package__.
 
         Returns:
-            A logger of type ApatheticLogging_Priv_Logger.Logger.
+            A logger of type ApatheticLogging_Internal_Logger.Logger.
 
         Raises:
         Note: you must carefully pass skip_frames based on the height of your callstack
-        between this function and _resolve_logger_name. The test
+        between this function and resolve_logger_name. The test
         test_get_logger_auto_infers_from_caller_package must also carefully construct
         an identical callstack to mimic the frames here.
         """
-        return ApatheticLogging_Priv_GetLogger.get_logger_of_type(
-            logger_name, ApatheticLogging_Priv_Logger.Logger, skip_frames=2
+        _get_logger = ApatheticLogging_Internal_GetLogger
+        _logger = ApatheticLogging_Internal_Logger
+        return _get_logger.get_logger_of_type(
+            logger_name, _logger.Logger, skip_frames=2
         )
 
     @staticmethod
     def get_logger_of_type(
         logger_name: str | None, logger_class: type[_T], *, skip_frames: int = 1
     ) -> _T:
-        register_name = ApatheticLogging_Priv_GetLogger._resolve_logger_name(
+        _get_logger = ApatheticLogging_Internal_GetLogger
+        register_name = _get_logger.resolve_logger_name(
             logger_name, skip_frames=skip_frames
         )
         registered = register_name in logging.Logger.manager.loggerDict
@@ -86,13 +89,13 @@ class ApatheticLogging_Priv_GetLogger:  # noqa: N801  # pyright: ignore[reportUn
         return typed_logger
 
     @staticmethod
-    def _resolve_logger_name(logger_name: str | None, *, skip_frames: int = 2) -> str:
+    def resolve_logger_name(logger_name: str | None, *, skip_frames: int = 2) -> str:
+        _registry = ApatheticLogging_Internal_Registry
+        _register_logger_name = ApatheticLogging_Internal_RegisterLoggerName
         if logger_name is not None:
             return logger_name
 
-        registered_logger_name = (
-            ApatheticLogging_Priv_Registry.registered_priv_logger_name
-        )
+        registered_logger_name = _registry.registered_priv_logger_name
 
         if registered_logger_name is None:
             # Try to auto-infer from the calling module's package
@@ -108,12 +111,10 @@ class ApatheticLogging_Priv_GetLogger:  # noqa: N801  # pyright: ignore[reportUn
                     if caller_frame is not None:
                         caller_module = caller_frame.f_globals.get("__package__")
                         if caller_module:
-                            _extract = (
-                                ApatheticLogging_Priv_RegisterLoggerName._extract_top_level_package  # noqa: SLF001  # pyright: ignore[reportPrivateUsage]
-                            )
+                            _extract = _register_logger_name.extract_top_level_package
                             inferred_name = _extract(caller_module)
                             if inferred_name:
-                                registry = ApatheticLogging_Priv_Registry
+                                registry = _registry
                                 registry.registered_priv_logger_name = inferred_name
                                 registered_logger_name = inferred_name
                 finally:
@@ -134,11 +135,8 @@ class ApatheticLogging_Priv_GetLogger:  # noqa: N801  # pyright: ignore[reportUn
         logger_name: str,
         logger_class: type[_LoggerClassWithExtend] | None = None,
     ) -> logging.Logger:
-        extend_class = (
-            logger_class
-            if logger_class is not None
-            else ApatheticLogging_Priv_Logger.Logger
-        )
+        _logger = ApatheticLogging_Internal_Logger
+        extend_class = logger_class if logger_class is not None else _logger.Logger
 
         logger_exists = logger_name in logging.Logger.manager.loggerDict
 

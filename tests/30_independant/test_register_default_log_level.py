@@ -13,22 +13,22 @@ import apathetic_logging.registry as mod_registry
 def reset_registry() -> Generator[None, None, None]:
     """Reset registry state before and after each test."""
     # Save original values
-    registry = mod_registry.ApatheticLogging_Priv_Registry  # pyright: ignore[reportPrivateUsage]
-    original_env_vars = registry.registered_priv_log_level_env_vars
-    original_default = registry.registered_priv_default_log_level
-    original_name = registry.registered_priv_logger_name
+    _registry = mod_registry.ApatheticLogging_Internal_Registry
+    original_env_vars = _registry.registered_priv_log_level_env_vars
+    original_default = _registry.registered_priv_default_log_level
+    original_name = _registry.registered_priv_logger_name
 
     # Reset to None
-    registry.registered_priv_log_level_env_vars = None
-    registry.registered_priv_default_log_level = None
-    registry.registered_priv_logger_name = None
+    _registry.registered_priv_log_level_env_vars = None
+    _registry.registered_priv_default_log_level = None
+    _registry.registered_priv_logger_name = None
 
     yield
 
     # Restore original values
-    registry.registered_priv_log_level_env_vars = original_env_vars
-    registry.registered_priv_default_log_level = original_default
-    registry.registered_priv_logger_name = original_name
+    _registry.registered_priv_log_level_env_vars = original_env_vars
+    _registry.registered_priv_default_log_level = original_default
+    _registry.registered_priv_logger_name = original_name
 
 
 def test_register_default_log_level_stores_value() -> None:
@@ -40,8 +40,8 @@ def test_register_default_log_level_stores_value() -> None:
     mod_alogs.register_default_log_level(default_level)
 
     # --- verify ---
-    registry = mod_registry.ApatheticLogging_Priv_Registry  # pyright: ignore[reportPrivateUsage]
-    assert registry.registered_priv_default_log_level == default_level
+    _registry = mod_registry.ApatheticLogging_Internal_Registry
+    assert _registry.registered_priv_default_log_level == default_level
 
 
 def test_register_default_log_level_overwrites_previous() -> None:
@@ -53,8 +53,8 @@ def test_register_default_log_level_overwrites_previous() -> None:
     mod_alogs.register_default_log_level("debug")
 
     # --- verify ---
-    registry = mod_registry.ApatheticLogging_Priv_Registry  # pyright: ignore[reportPrivateUsage]
-    assert registry.registered_priv_default_log_level == "debug"
+    _registry = mod_registry.ApatheticLogging_Internal_Registry
+    assert _registry.registered_priv_default_log_level == "debug"
 
 
 @pytest.mark.parametrize("level", ["trace", "debug", "info", "warning", "error"])
@@ -64,5 +64,5 @@ def test_register_default_log_level_accepts_valid_levels(level: str) -> None:
     mod_alogs.register_default_log_level(level)
 
     # --- verify ---
-    registry = mod_registry.ApatheticLogging_Priv_Registry  # pyright: ignore[reportPrivateUsage]
-    assert registry.registered_priv_default_log_level == level
+    _registry = mod_registry.ApatheticLogging_Internal_Registry
+    assert _registry.registered_priv_default_log_level == level

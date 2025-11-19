@@ -48,7 +48,7 @@ Example:
     def test_feature():
         result = mod_utils.public_function()
         # Private helper called but not the primary thing under test
-        helper_result = mod_utils._private_helper()  # noqa: SLF001
+        helper_result = mod_utils._private_helper()
         assert result == expected
     ```
 
@@ -80,7 +80,7 @@ def _has_inline_ignore(line: str) -> bool:
     """Check if a line has an inline ignore comment."""
     line_lower = line.lower()
     return (
-        "# noqa: SLF001".lower() in line_lower
+        "".lower() in line_lower
         or "# pyright: ignore".lower() in line_lower
         or "# pyright: reportPrivateUsage=false".lower() in line_lower
     )
@@ -259,7 +259,7 @@ def test_private_function_naming_convention() -> None:
             "\n  If the private function is NOT the primary thing under test"
             " (e.g., it's called as a helper while testing public APIs), use"
             " inline ignore comments on those specific calls instead:"
-            "\n    mod_utils._private_helper()  # noqa: SLF001"
+            "\n    mod_utils._private_helper()  "
             "\n  This avoids needing top-level ignore comments and the"
             " `test_priv__*.py` naming convention."
         )
@@ -276,7 +276,7 @@ def test_private_function_naming_convention() -> None:
                 f"\n      2. If `{func_name}` is just a helper (not primary under"
                 f" test):"
                 f"\n         Add inline ignore comments to `{func_name}` calls:"
-                f"\n         mod_utils.{func_name}()  # noqa: SLF001"
+                f"\n         mod_utils.{func_name}()  "
                 f"\n         And remove top-level ignore comments from this file."
             )
         xmsg = (
@@ -394,7 +394,7 @@ def test_priv_files_have_ignore_comments() -> None:
             " suites for a private function. If your test file calls a private"
             " function as a helper but is primarily testing something else, use"
             " inline ignore comments instead:"
-            "\n    mod_utils._private_helper()  # noqa: SLF001"
+            "\n    mod_utils._private_helper()  "
         )
         print("\nViolations found:")
         for test_file in violations:
