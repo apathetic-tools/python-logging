@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import inspect
 import logging
-from typing import Protocol, TypeVar, cast
+from typing import TypeVar, cast
 
 from .logger import (
     ApatheticLogging_Internal_Logger,
@@ -22,15 +22,6 @@ from .registry_data import (
 
 
 _T = TypeVar("_T", bound=logging.Logger)
-
-
-class _LoggerClassWithExtend(Protocol):
-    """Protocol for logger classes that have extend_logging_module()."""
-
-    @classmethod
-    def extend_logging_module(cls) -> bool:
-        """Extend the logging module with custom levels."""
-        ...
 
 
 class ApatheticLogging_Internal_GetLogger:  # noqa: N801  # pyright: ignore[reportUnusedClass]
@@ -71,23 +62,28 @@ class ApatheticLogging_Internal_GetLogger:  # noqa: N801  # pyright: ignore[repo
     ) -> _T:
         _get_logger = ApatheticLogging_Internal_GetLogger
         _logging_utils = ApatheticLogging_Internal_LoggingUtils
+
+        # infer logger name is missing
         register_name = _get_logger.resolve_logger_name(
             logger_name, skip_frames=skip_frames
         )
-        registered = _logging_utils.has_logger(register_name)
 
+        # extend logging module
+        if hasattr(logger_class, "extend_logging_module"):
+            logger_class.extend_logging_module()  # type: ignore[attr-defined]
+
+        # recreate if wrong type
         logger = None
+        registered = _logging_utils.has_logger(register_name)
         if registered:
             logger = logging.getLogger(register_name)
             if not isinstance(logger, logger_class):
                 _logging_utils.remove_logger(register_name)
-
-        logger = logging.getLogger(register_name)
-
-        if not hasattr(logger, "level_name"):
-            if _logging_utils.has_logger(register_name):
-                _logging_utils.remove_logger(register_name)
-            logger = logging.getLogger(register_name)
+                registered = False
+        if not registered:
+            logger = _logging_utils.set_logger_class_temporarily(
+                register_name, logger_class
+            )
 
         typed_logger = cast("_T", logger)
         return typed_logger
@@ -134,30 +130,3 @@ class ApatheticLogging_Internal_GetLogger:  # noqa: N801  # pyright: ignore[repo
             raise RuntimeError(_msg)
 
         return registered_logger_name
-
-    @staticmethod
-    def _ensure_logger_has_level_name(
-        logger_name: str,
-        logger_class: type[_LoggerClassWithExtend] | None = None,
-    ) -> logging.Logger:
-        _logger = ApatheticLogging_Internal_Logger
-        _logging_utils = ApatheticLogging_Internal_LoggingUtils
-        extend_class = logger_class if logger_class is not None else _logger.Logger
-
-        logger_exists = _logging_utils.has_logger(logger_name)
-
-        if not logger_exists:
-            extend_class.extend_logging_module()
-            logging.setLoggerClass(cast("type[logging.Logger]", extend_class))
-            if _logging_utils.has_logger(logger_name):
-                _logging_utils.remove_logger(logger_name)
-            logger = logging.getLogger(logger_name)
-        else:
-            logger = logging.getLogger(logger_name)
-            if not hasattr(logger, "level_name"):
-                extend_class.extend_logging_module()
-                logging.setLoggerClass(cast("type[logging.Logger]", extend_class))
-                _logging_utils.remove_logger(logger_name)
-                logger = logging.getLogger(logger_name)
-
-        return logger
