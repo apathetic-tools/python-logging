@@ -1,7 +1,7 @@
 # Apathetic Python Logger 📝
 
 [![CI](https://github.com/apathetic-tools/python-logs/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/goldilocks/python-logs/actions/workflows/ci.yml)
-[![License: MIT-a-NOAI](https://img.shields.io/badge/License-MIT--a-NOAI-blueviolet.svg)](LICENSE)
+[![License: MIT-a-NOAI](https://img.shields.io/badge/License-MIT--a--NOAI-blueviolet.svg)](LICENSE)
 [![Discord](https://img.shields.io/badge/Discord-%235865F2.svg?logo=discord&logoColor=white)](https://discord.gg/PW6GahZ7)
 
 📘 **[Roadmap](./ROADMAP.md)** · 📝 **[Release Notes](https://github.com/apathetic-tools/python-logs/releases)**
@@ -12,7 +12,9 @@
 Apathetic Python Logger provides a lightweight, dependency-free logging solution designed for CLI tools. It extends Python's standard library `logging` module with colorized output, dual-stream handling (stdout/stderr), extra logging levels, and seamless integration with Apathetic Tools projects.
 
 > [!CAUTION]
-> Heads up: the AI cooked dinner. It’s edible, but watch your step. Detailed bug reports welcome.
+> Heads up: the AI cooked dinner. It’s edible, but watch your step. 
+> Detailed bug reports welcome.
+
 ## Quick Start
 
 ```python
@@ -51,14 +53,8 @@ For installation guides, API reference, examples, and more, visit our documentat
 
 ## ⚖️ License
 
-- [MIT-aNOAI License](LICENSE)
+- [MIT-a-NOAI License](LICENSE)
 
 You're free to use, copy, and modify the library under the standard MIT terms.  
 The additional rider simply requests that this project not be used to train or fine-tune AI/ML systems until the author deems fair compensation frameworks exist.  
 Normal use, packaging, and redistribution for human developers are unaffected.
-
----
-
-<p align="center">
-  <sub>😐 <a href="https://apathetic-tools.github.io/">Apathetic Tools</a> © <a href="./LICENSE">MIT-a-NOAI</a></sub>
-</p>
