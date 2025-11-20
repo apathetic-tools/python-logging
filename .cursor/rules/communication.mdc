@@ -14,3 +14,14 @@ alwaysApply: true
 - **Exception**: If the user's query is a direct instruction (e.g., "add a function that...", "fix the bug in..."), you should proceed with the implementation without asking for confirmation, as the instruction itself is the confirmation.
 
 - **Clarifying questions**: When you need clarification to understand the user's request, ask the question and wait for the response before continuing.
+
+### Handling Developer Questions
+
+- **When the developer asks a question**: If the developer asks a question (even if the rest of the prompt implies doing work), you **must**:
+  1. Provide a complete answer with recommendations
+  2. Ask what to do and **stop** - do not implement changes
+  3. Wait for their response before proceeding with any implementation
+
+- **Exploratory work allowed**: You may perform exploratory findings (reading code, searching the codebase, analyzing patterns) to answer the question, but **do not modify core project code** to implement changes.
+
+- **After answering**: Once you've provided the answer and recommendations, ask if you should proceed with implementation. Only proceed after explicit confirmation.
