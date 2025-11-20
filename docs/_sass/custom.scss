@@ -1,5 +1,6 @@
 // Custom dark mode styles for Apathetic Python Logger documentation
 // Auto-detects user preference and defaults to dark mode
+// Only overrides color properties to preserve theme layout and spacing
 
 // Default to dark mode
 :root {
@@ -25,7 +26,8 @@
   }
 }
 
-// Apply dark mode styles with higher specificity to override minima theme
+// Apply dark mode colors - use !important only for color properties to override theme
+// Never override layout properties (padding, margin, width, height, etc.)
 body {
   background-color: var(--bg-color) !important;
   color: var(--text-color) !important;
@@ -37,7 +39,7 @@ body {
 
 .site-header {
   background-color: var(--header-bg) !important;
-  border-bottom: 1px solid var(--border-color) !important;
+  border-bottom-color: var(--border-color) !important;
 }
 
 .site-title,
@@ -62,7 +64,7 @@ a:hover {
   opacity: 0.7;
 }
 
-// Code blocks
+// Code blocks - only override colors
 .highlight {
   background-color: var(--code-bg) !important;
   color: var(--code-text) !important;
@@ -81,25 +83,24 @@ code {
 pre {
   background-color: var(--code-bg) !important;
   color: var(--code-text) !important;
-  border: 1px solid var(--border-color) !important;
+  border-color: var(--border-color) !important;
 }
 
-// Blockquotes
+// Blockquotes - only override colors
 blockquote {
-  border-left: 4px solid var(--border-color) !important;
+  border-left-color: var(--border-color) !important;
   color: var(--text-color) !important;
   opacity: 0.9;
 }
 
-// Tables
+// Tables - only override colors, preserve all layout properties
 table {
-  border-collapse: collapse;
-  border: 1px solid var(--border-color) !important;
+  border-color: var(--border-color) !important;
 }
 
 th,
 td {
-  border: 1px solid var(--border-color) !important;
+  border-color: var(--border-color) !important;
 }
 
 th {
@@ -111,9 +112,9 @@ td {
   color: var(--text-color) !important;
 }
 
-// Footer
+// Footer - only override colors
 .site-footer {
-  border-top: 1px solid var(--border-color) !important;
+  border-top-color: var(--border-color) !important;
   color: var(--text-color) !important;
   opacity: 0.7;
 }
@@ -122,18 +123,18 @@ td {
   color: var(--link-color) !important;
 }
 
-// Horizontal rules
+// Horizontal rules - only override border color
 hr {
   border-color: var(--border-color) !important;
 }
 
-// Page content
+// Page content - only override colors
 .page-content {
   background-color: var(--bg-color);
   color: var(--text-color);
 }
 
-// Headings
+// Headings - only override colors
 h1,
 h2,
 h3,
@@ -143,12 +144,12 @@ h6 {
   color: var(--text-color) !important;
 }
 
-// Lists
+// Lists - only override text color
 li {
   color: var(--text-color);
 }
 
-// Paragraphs
+// Paragraphs - only override text color
 p {
   color: var(--text-color);
 }
