@@ -1,0 +1,14 @@
+# NOTICE
+
+## Python Standard Library Code and Docs
+
+This project incorporates function signatures, docstrings and documentation 
+adapted from Python's standard library (specifically the logging module) for 
+use in wrapper functions and methods, which are licensed under the 
+Python Software Foundation License Version 2.
+
+Copyright © 2001-2025 Python Software Foundation; All Rights Reserved
+
+The full text of the Python Software Foundation License Version 2 is available
+at: https://docs.python.org/3/license.html
+

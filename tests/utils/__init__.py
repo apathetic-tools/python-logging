@@ -8,6 +8,8 @@ from .constants import (
     PROGRAM_SCRIPT,
     PROJ_ROOT,
 )
+from .level_validation import validate_test_level
+from .mock_superclass import create_mock_superclass_test
 from .patch_everywhere import patch_everywhere
 from .runtime_swap import runtime_swap
 from .safe_trace import make_safe_trace, safe_trace
@@ -24,6 +26,10 @@ __all__ = [  # noqa: RUF022
     "PROGRAM_CONFIG",
     "PROGRAM_PACKAGE",
     "PROGRAM_SCRIPT",
+    # level_validation
+    "validate_test_level",
+    # mock_superclass
+    "create_mock_superclass_test",
     # patch_everywhere
     "patch_everywhere",
     # runtime_swap

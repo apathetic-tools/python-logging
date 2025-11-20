@@ -160,6 +160,7 @@ ignore = [
   #   specifically uses CamelCase to match the stdlib we extend, 
   #   don't complain:
   "N802", # invalid-function-name (function names should be lowercase)
+  "N806", # Variable `MockBaseClass` in function should be lowercase
   "N815", # mixed-case-variable-in-class-scope (class variables should be lowercase)
   "N816", # mixed-case-variable-in-global-scope (global variables should be lowercase)
 ]

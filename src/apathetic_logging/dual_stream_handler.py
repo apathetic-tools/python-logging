@@ -1,10 +1,15 @@
 # src/apathetic_logging/dual_stream_handler.py
-"""DualStreamHandler class for Apathetic Logging."""
+"""DualStreamHandler class for Apathetic Logging.
+
+Docstrings are adapted from the standard library logging.Handler documentation
+licensed under the Python Software Foundation License Version 2.
+"""
 
 from __future__ import annotations
 
 import logging
 import sys
+from typing import Any
 
 
 class ApatheticLogging_Internal_DualStreamHandler:  # noqa: N801  # pyright: ignore[reportUnusedClass]
@@ -29,11 +34,11 @@ class ApatheticLogging_Internal_DualStreamHandler:  # noqa: N801  # pyright: ign
 
         enable_color: bool = False
 
-        def __init__(self) -> None:
+        def __init__(self, *args: Any, **kwargs: Any) -> None:
             # default to stdout, overridden per record in emit()
-            super().__init__()  # pyright: ignore[reportUnknownMemberType]
+            super().__init__(*args, **kwargs)  # pyright: ignore[reportUnknownMemberType]
 
-        def emit(self, record: logging.LogRecord) -> None:
+        def emit(self, record: logging.LogRecord, *args: Any, **kwargs: Any) -> None:
             # Import here to avoid circular dependency
             from .constants import (  # noqa: PLC0415
                 ApatheticLogging_Internal_Constants,
@@ -81,4 +86,4 @@ class ApatheticLogging_Internal_DualStreamHandler:  # noqa: N801  # pyright: ign
             # used by TagFormatter
             record.enable_color = getattr(self, "enable_color", False)
 
-            super().emit(record)
+            super().emit(record, *args, **kwargs)

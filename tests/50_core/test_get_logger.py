@@ -1,6 +1,7 @@
 # tests/50_core/test_get_logger.py
 """Tests for get_logger function."""
 
+import logging
 import sys
 from typing import Any
 from unittest.mock import patch
@@ -119,3 +120,32 @@ def test_get_logger_uses_existing_logger_instance() -> None:
     # Should return the same logger instance from logging registry
     assert result1 is result2
     assert result1.name == logger_name
+
+
+def test_get_logger_with_empty_string_returns_root_logger() -> None:
+    """getLogger("") should return the root logger, matching stdlib behavior."""
+    # --- execute ---
+    result = mod_alogs.getLogger("")
+
+    # --- verify ---
+    # Should return the root logger (name is "root", not empty string)
+    assert result.name == "root"
+    # Should be the same instance as logging.getLogger("")
+    stdlib_root = logging.getLogger("")
+    assert result is stdlib_root
+
+
+def test_get_logger_empty_string_matches_stdlib_root_logger() -> None:
+    """getLogger("") should return the same logger as logging.getLogger("")."""
+    # --- execute ---
+    apathetic_root = mod_alogs.getLogger("")
+    stdlib_root = logging.getLogger("")
+
+    # --- verify ---
+    # Should be the exact same logger instance
+    assert apathetic_root is stdlib_root
+    assert apathetic_root.name == "root"
+    assert stdlib_root.name == "root"
+    # Multiple calls should return the same instance
+    assert mod_alogs.getLogger("") is apathetic_root
+    assert logging.getLogger("") is stdlib_root

@@ -1,12 +1,16 @@
 # src/apathetic_logging/logging_utils.py
-"""Logging utilities for Apathetic Logging."""
+"""Logging utilities for Apathetic Logging.
+
+Docstrings are adapted from the standard library logging module documentation
+licensed under the Python Software Foundation License Version 2.
+"""
 
 from __future__ import annotations
 
 import inspect
 import logging
 from types import FrameType
-from typing import TypeVar, cast
+from typing import TypeVar
 
 
 class ApatheticLogging_Internal_LoggingUtils:  # noqa: N801  # pyright: ignore[reportUnusedClass]
@@ -43,32 +47,6 @@ class ApatheticLogging_Internal_LoggingUtils:  # noqa: N801  # pyright: ignore[r
             logger_name: The name of the logger to remove.
         """
         logging.Logger.manager.loggerDict.pop(logger_name, None)
-
-    @staticmethod
-    def setLoggerClassTemporarily(
-        logger_name: str,
-        logger_class: type[ApatheticLogging_Internal_LoggingUtils._LoggerType],
-    ) -> ApatheticLogging_Internal_LoggingUtils._LoggerType:
-        """Temporarily set the logger class, get/create a logger, then restore.
-
-        This function temporarily sets the logger class to the desired type,
-        gets or creates the logger, then restores the original logger class.
-
-        Args:
-            logger_name: The name of the logger to get.
-            logger_class: The desired logger class type.
-
-        Returns:
-            A logger instance of the specified type.
-        """
-        original_class = logging.getLoggerClass()
-        logging.setLoggerClass(logger_class)
-        logger = logging.getLogger(logger_name)
-        logging.setLoggerClass(original_class)
-        typed_logger = cast(
-            "ApatheticLogging_Internal_LoggingUtils._LoggerType", logger
-        )
-        return typed_logger
 
     @staticmethod
     def _extract_top_level_package(package: str | None) -> str | None:
@@ -156,6 +134,8 @@ class ApatheticLogging_Internal_LoggingUtils:  # noqa: N801  # pyright: ignore[r
         _registry_data = ApatheticLogging_Internal_RegistryData
 
         # If explicit name provided, return it (never store explicit names)
+        # Note: Empty string ("") is a special case - it represents the root logger
+        # and is returned as-is to match standard library behavior.
         if logger_name is not None:
             return logger_name
 

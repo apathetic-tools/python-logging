@@ -1,5 +1,12 @@
 # src/apathetic_logging/namespace.py
-"""Shared Apathetic CLI logger implementation."""
+"""Shared Apathetic CLI logger implementation.
+
+See https://docs.python.org/3/library/logging.html for the complete list of
+standard library logging functions that are wrapped by this namespace.
+
+Docstrings are adapted from the standard library logging module documentation
+licensed under the Python Software Foundation License Version 2.
+"""
 
 from __future__ import annotations
 
@@ -12,11 +19,17 @@ from .dual_stream_handler import (
 from .get_logger import (
     ApatheticLogging_Internal_GetLogger,
 )
-from .logger import (
+from .logger_namespace import (
     ApatheticLogging_Internal_Logger,
 )
-from .logging_snake import (
-    ApatheticLogging_Internal_LoggingSnakeCase,
+from .logging_lib_snake import (
+    ApatheticLogging_Internal_LibSnakeCase,
+)
+from .logging_std_camel import (
+    ApatheticLogging_Internal_StdCamelCase,
+)
+from .logging_std_snake import (
+    ApatheticLogging_Internal_StdSnakeCase,
 )
 from .logging_utils import (
     ApatheticLogging_Internal_LoggingUtils,
@@ -43,12 +56,14 @@ class apathetic_logging(  # noqa: N801
     ApatheticLogging_Internal_DualStreamHandler,
     ApatheticLogging_Internal_GetLogger,
     ApatheticLogging_Internal_Logger,
-    ApatheticLogging_Internal_LoggingSnakeCase,
     ApatheticLogging_Internal_LoggingUtils,
     ApatheticLogging_Internal_Registry,
     ApatheticLogging_Internal_RegistryData,
     ApatheticLogging_Internal_SafeLogging,
     ApatheticLogging_Internal_TagFormatter,
+    ApatheticLogging_Internal_StdCamelCase,  # keep third last
+    ApatheticLogging_Internal_LibSnakeCase,  # keep second last
+    ApatheticLogging_Internal_StdSnakeCase,  # keep last
 ):
     """Namespace for apathetic logging functionality.
 

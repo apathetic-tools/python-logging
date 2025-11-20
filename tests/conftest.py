@@ -61,6 +61,14 @@ def reset_logger_class_and_registry() -> Generator[None, None, None]:
     # Reset to defaults before test
     logging.setLoggerClass(mod_alogs.Logger)
     mod_alogs.Logger.extend_logging_module()
+    # Explicitly restore standard level names to ensure they're registered
+    # even if a previous test added conflicting custom level names
+    _constants = mod_alogs.apathetic_logging
+    mod_alogs.Logger.addLevelName(_constants.TEST_LEVEL, "TEST")
+    mod_alogs.Logger.addLevelName(_constants.TRACE_LEVEL, "TRACE")
+    mod_alogs.Logger.addLevelName(_constants.DETAIL_LEVEL, "DETAIL")
+    mod_alogs.Logger.addLevelName(_constants.MINIMAL_LEVEL, "MINIMAL")
+    mod_alogs.Logger.addLevelName(_constants.SILENT_LEVEL, "SILENT")
     _registry.registered_internal_logger_name = None
     _registry.registered_internal_default_log_level = None
     _registry.registered_internal_log_level_env_vars = None
@@ -75,6 +83,13 @@ def reset_logger_class_and_registry() -> Generator[None, None, None]:
     # Restore original state after test
     logging.setLoggerClass(original_logger_class)
     mod_alogs.Logger.extend_logging_module()
+    # Explicitly restore standard level names to ensure they're registered
+    # even if the test added conflicting custom level names
+    mod_alogs.Logger.addLevelName(_constants.TEST_LEVEL, "TEST")
+    mod_alogs.Logger.addLevelName(_constants.TRACE_LEVEL, "TRACE")
+    mod_alogs.Logger.addLevelName(_constants.DETAIL_LEVEL, "DETAIL")
+    mod_alogs.Logger.addLevelName(_constants.MINIMAL_LEVEL, "MINIMAL")
+    mod_alogs.Logger.addLevelName(_constants.SILENT_LEVEL, "SILENT")
     _registry.registered_internal_logger_name = original_name
     _registry.registered_internal_default_log_level = original_default
     _registry.registered_internal_log_level_env_vars = original_env_vars

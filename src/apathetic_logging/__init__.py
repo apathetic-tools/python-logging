@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING, TypeAlias, cast
 
 
 if TYPE_CHECKING:
-    from .logger import ApatheticLogging_Internal_Logger
+    from .logger_namespace import ApatheticLogging_Internal_Logger
     from .namespace import apathetic_logging as _apathetic_logging_class
 
 # Get reference to the namespace class
@@ -67,13 +67,67 @@ if TYPE_CHECKING:
 else:
     Logger = apathetic_logging.Logger
 
-# Functions
+# Functions (camelCase - stdlib wrappers)
+addLevelName = apathetic_logging.addLevelName
+basicConfig = apathetic_logging.basicConfig
+captureWarnings = apathetic_logging.captureWarnings
+currentframe = apathetic_logging.currentframe
+getHandlerByName = apathetic_logging.getHandlerByName
+getHandlerNames = apathetic_logging.getHandlerNames
+getLevelName = apathetic_logging.getLevelName
+getLevelNamesMapping = apathetic_logging.getLevelNamesMapping
+getLogRecordFactory = apathetic_logging.getLogRecordFactory
 getLogger = apathetic_logging.getLogger
+getLoggerClass = apathetic_logging.getLoggerClass
+makeLogRecord = apathetic_logging.makeLogRecord
+setLogRecordFactory = apathetic_logging.setLogRecordFactory
+setLoggerClass = apathetic_logging.setLoggerClass
+
+# Functions (camelCase - library functions)
 makeSafeTrace = apathetic_logging.makeSafeTrace
 registerDefaultLogLevel = apathetic_logging.registerDefaultLogLevel
 registerLogLevelEnvVars = apathetic_logging.registerLogLevelEnvVars
 registerLogger = apathetic_logging.registerLogger
 safeLog = apathetic_logging.safeLog
+
+# Functions (snake_case - stdlib wrappers)
+add_level_name = apathetic_logging.add_level_name
+basic_config = apathetic_logging.basic_config
+capture_warnings = apathetic_logging.capture_warnings
+critical = apathetic_logging.critical
+currentframe = apathetic_logging.currentframe
+debug = apathetic_logging.debug
+disable = apathetic_logging.disable
+error = apathetic_logging.error
+exception = apathetic_logging.exception
+fatal = apathetic_logging.fatal
+get_handler_by_name = apathetic_logging.get_handler_by_name
+get_handler_names = apathetic_logging.get_handler_names
+get_level_name = apathetic_logging.get_level_name
+get_level_names_mapping = apathetic_logging.get_level_names_mapping
+get_logger = apathetic_logging.get_logger
+get_logger_class = apathetic_logging.get_logger_class
+get_log_record_factory = apathetic_logging.get_log_record_factory
+info = apathetic_logging.info
+log = apathetic_logging.log
+make_log_record = apathetic_logging.make_log_record
+set_logger_class = apathetic_logging.set_logger_class
+set_log_record_factory = apathetic_logging.set_log_record_factory
+shutdown = apathetic_logging.shutdown
+warn = apathetic_logging.warn
+warning = apathetic_logging.warning
+
+# Functions (snake_case - library wrappers)
+get_logger_of_type = apathetic_logging.get_logger_of_type
+has_logger = apathetic_logging.has_logger
+make_safe_trace = apathetic_logging.make_safe_trace
+register_default_log_level = apathetic_logging.register_default_log_level
+register_log_level_env_vars = apathetic_logging.register_log_level_env_vars
+register_logger = apathetic_logging.register_logger
+remove_logger = apathetic_logging.remove_logger
+resolve_logger_name = apathetic_logging.resolve_logger_name
+safe_log = apathetic_logging.safe_log
+safe_trace = apathetic_logging.safe_trace
 
 
 __all__ = [
@@ -91,12 +145,59 @@ __all__ = [
     "DualStreamHandler",
     "Logger",
     "TagFormatter",
+    "addLevelName",
+    "add_level_name",
     "apathetic_logging",
+    "basicConfig",
+    "basic_config",
+    "captureWarnings",
+    "capture_warnings",
+    "critical",
+    "currentframe",
+    "debug",
+    "disable",
+    "error",
+    "exception",
+    "fatal",
+    "getHandlerByName",
+    "getHandlerNames",
+    "getLevelName",
+    "getLevelNamesMapping",
+    "getLogRecordFactory",
     "getLogger",
+    "getLoggerClass",
+    "get_handler_by_name",
+    "get_handler_names",
+    "get_level_name",
+    "get_level_names_mapping",
+    "get_log_record_factory",
+    "get_logger",
+    "get_logger_class",
+    "get_logger_of_type",
+    "has_logger",
+    "info",
+    "log",
+    "makeLogRecord",
     "makeSafeTrace",
+    "make_log_record",
+    "make_safe_trace",
     "registerDefaultLogLevel",
     "registerLogLevelEnvVars",
     "registerLogger",
+    "register_default_log_level",
+    "register_log_level_env_vars",
+    "register_logger",
+    "remove_logger",
+    "resolve_logger_name",
     "safeLog",
     "safeTrace",
+    "safe_log",
+    "safe_trace",
+    "setLogRecordFactory",
+    "setLoggerClass",
+    "set_log_record_factory",
+    "set_logger_class",
+    "shutdown",
+    "warn",
+    "warning",
 ]
