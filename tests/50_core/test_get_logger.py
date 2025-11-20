@@ -2,6 +2,7 @@
 """Tests for get_logger function."""
 
 import sys
+from typing import Any
 from unittest.mock import patch
 
 import pytest
@@ -27,9 +28,34 @@ def test_get_logger_with_registered_name() -> None:
 
 def test_get_logger_raises_when_not_registered() -> None:
     """get_logger() should raise RuntimeError when name not registered."""
-    # --- execute and verify ---
-    with pytest.raises(RuntimeError, match="Logger name not registered"):
-        mod_alogs.get_logger()
+    # --- setup ---
+    # Mock frame to not have __package__ so inference fails
+    # Frame chain from resolve_logger_name: resolve_logger_name -> get_logger_of_type
+    # -> get_logger -> actual caller
+    # skip_frames=3: initial frame.f_back, then 3 iterations
+    # So we need: frame -> f_back (get_logger_of_type) -> f_back (get_logger)
+    # -> f_back (caller) -> f_back (one more level)
+    with patch("inspect.currentframe") as mock_frame:
+        frame: Any = type(sys)("frame")
+        get_logger_of_type_frame: Any = type(sys)("get_logger_of_type_frame")
+        get_logger_frame: Any = type(sys)("get_logger_frame")
+        caller_frame: Any = type(sys)("caller_frame")
+        final_frame: Any = type(sys)("final_frame")
+
+        frame.f_back = get_logger_of_type_frame
+        get_logger_of_type_frame.f_back = get_logger_frame
+        get_logger_frame.f_back = caller_frame
+        caller_frame.f_back = final_frame
+        final_frame.f_globals = {}  # No __package__
+        mock_frame.return_value = frame
+
+        try:
+            # --- execute and verify ---
+            with pytest.raises(RuntimeError, match="Cannot auto-infer logger name"):
+                mod_alogs.get_logger()
+        finally:
+            # Clean up frame reference
+            del frame
 
 
 def test_get_logger_auto_infers_from_caller_package() -> None:
@@ -47,13 +73,22 @@ def test_get_logger_auto_infers_from_caller_package() -> None:
     # --- execute ---
     with patch("inspect.currentframe") as mock_frame:
         # Mock the frame to return our fake caller
-        # Frame structure: resolve_logger_name -> get_logger_of_type -> get_logger
-        # -> actual caller
-        frame = type(sys)("frame")
-        frame.f_back = type(sys)("get_logger_of_type_frame")  # type: ignore[attr-defined]
-        frame.f_back.f_back = type(sys)("get_logger_frame")
-        frame.f_back.f_back.f_back = type(sys)("caller_frame")
-        frame.f_back.f_back.f_back.f_globals = fake_globals
+        # Frame chain from resolve_logger_name:
+        # resolve_logger_name -> get_logger_of_type -> get_logger -> actual caller
+        # skip_frames=3: initial frame.f_back, then 3 iterations
+        # So we need: frame -> f_back (get_logger_of_type) -> f_back (get_logger)
+        # -> f_back (caller) -> f_back (one more level)
+        frame: Any = type(sys)("frame")
+        get_logger_of_type_frame: Any = type(sys)("get_logger_of_type_frame")
+        get_logger_frame: Any = type(sys)("get_logger_frame")
+        caller_frame: Any = type(sys)("caller_frame")
+        final_frame: Any = type(sys)("final_frame")
+
+        frame.f_back = get_logger_of_type_frame
+        get_logger_of_type_frame.f_back = get_logger_frame
+        get_logger_frame.f_back = caller_frame
+        caller_frame.f_back = final_frame
+        final_frame.f_globals = fake_globals
         mock_frame.return_value = frame
 
         try:

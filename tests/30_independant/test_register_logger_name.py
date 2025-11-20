@@ -2,6 +2,8 @@
 """Tests for register_logger_name function."""
 
 import sys
+from typing import Any
+from unittest.mock import patch
 
 import pytest
 
@@ -38,73 +40,74 @@ def test_register_logger_name_overwrites_previous() -> None:
 def test_register_logger_name_auto_infer_from_package() -> None:
     """register_logger_name() should auto-infer from __package__ when None."""
     # --- setup ---
-    # Mock the namespace module to have a __package__ attribute
-    namespace_module = sys.modules.get("apathetic_logging.namespace")
-    if namespace_module is None:
-        pytest.skip("Cannot test auto-inference without namespace module")
+    # Mock frame to have __package__ in caller's globals
+    # Frame chain: register_logger_name -> resolve_logger_name -> _infer_from_frame
+    # skip_frames=1 means we skip 1 frame from frame.f_back, so we need:
+    # frame -> frame.f_back (register_logger_name) -> frame.f_back.f_back (caller)
+    with patch("inspect.currentframe") as mock_frame:
+        frame: Any = type(sys)("frame")
+        frame.f_back = type(sys)("register_logger_name_frame")
+        frame.f_back.f_back = type(sys)("caller_frame")
+        frame.f_back.f_back.f_globals = {"__package__": "test_package.submodule"}
+        mock_frame.return_value = frame
 
-    original_package = getattr(namespace_module, "__package__", None)
+        try:
+            # --- execute ---
+            mod_alogs.register_logger_name()
 
-    # --- execute ---
-    try:
-        # Set a test package name
-        namespace_module.__package__ = "test_package.submodule"
-        mod_alogs.register_logger_name()
-
-        # --- verify ---
-        _registry = mod_registry.ApatheticLogging_Internal_RegistryData
-        assert _registry.registered_internal_logger_name == "test_package"
-    finally:
-        # Restore original package
-        if original_package is not None:
-            namespace_module.__package__ = original_package
-        else:
-            delattr(namespace_module, "__package__")
+            # --- verify ---
+            _registry = mod_registry.ApatheticLogging_Internal_RegistryData
+            assert _registry.registered_internal_logger_name == "test_package"
+        finally:
+            # Clean up frame reference
+            del frame
 
 
 def test_register_logger_name_auto_infer_single_package() -> None:
     """register_logger_name() should handle single-level package."""
     # --- setup ---
-    namespace_module = sys.modules.get("apathetic_logging.namespace")
-    if namespace_module is None:
-        pytest.skip("Cannot test auto-inference without namespace module")
+    # Mock frame to have __package__ in caller's globals
+    # Frame chain: register_logger_name -> resolve_logger_name -> _infer_from_frame
+    # skip_frames=1 means we skip 1 frame from frame.f_back, so we need:
+    # frame -> frame.f_back (register_logger_name) -> frame.f_back.f_back (caller)
+    with patch("inspect.currentframe") as mock_frame:
+        frame: Any = type(sys)("frame")
+        frame.f_back = type(sys)("register_logger_name_frame")
+        frame.f_back.f_back = type(sys)("caller_frame")
+        frame.f_back.f_back.f_globals = {"__package__": "singlepackage"}
+        mock_frame.return_value = frame
 
-    original_package = getattr(namespace_module, "__package__", None)
+        try:
+            # --- execute ---
+            mod_alogs.register_logger_name()
 
-    # --- execute ---
-    try:
-        namespace_module.__package__ = "singlepackage"
-        mod_alogs.register_logger_name()
-
-        # --- verify ---
-        _registry = mod_registry.ApatheticLogging_Internal_RegistryData
-        assert _registry.registered_internal_logger_name == "singlepackage"
-    finally:
-        # Restore original package
-        if original_package is not None:
-            namespace_module.__package__ = original_package
-        else:
-            delattr(namespace_module, "__package__")
+            # --- verify ---
+            _registry = mod_registry.ApatheticLogging_Internal_RegistryData
+            assert _registry.registered_internal_logger_name == "singlepackage"
+        finally:
+            # Clean up frame reference
+            del frame
 
 
 def test_register_logger_name_auto_infer_fails_without_package() -> None:
     """register_logger_name() should raise RuntimeError if __package__ missing."""
     # --- setup ---
-    namespace_module = sys.modules.get("apathetic_logging.namespace")
-    if namespace_module is None:
-        pytest.skip("Cannot test auto-inference without namespace module")
+    # Mock frame to not have __package__ in caller's globals
+    # Frame chain: register_logger_name -> resolve_logger_name -> _infer_from_frame
+    # skip_frames=1 means we skip 1 frame from frame.f_back, so we need:
+    # frame -> frame.f_back (register_logger_name) -> frame.f_back.f_back (caller)
+    with patch("inspect.currentframe") as mock_frame:
+        frame: Any = type(sys)("frame")
+        frame.f_back = type(sys)("register_logger_name_frame")
+        frame.f_back.f_back = type(sys)("caller_frame")
+        # No __package__ in caller's globals
+        frame.f_back.f_back.f_globals = {}
+        mock_frame.return_value = frame
 
-    original_package = getattr(namespace_module, "__package__", None)
-
-    # --- execute and verify ---
-    try:
-        # Remove __package__ attribute
-        if hasattr(namespace_module, "__package__"):
-            delattr(namespace_module, "__package__")
-
-        with pytest.raises(RuntimeError, match="Cannot auto-infer logger name"):
-            mod_alogs.register_logger_name()
-    finally:
-        # Restore original package
-        if original_package is not None:
-            namespace_module.__package__ = original_package
+        try:
+            # --- execute and verify ---
+            with pytest.raises(RuntimeError, match="Cannot auto-infer logger name"):
+                mod_alogs.register_logger_name()
+        finally:
+            # Clean up frame reference
+            del frame

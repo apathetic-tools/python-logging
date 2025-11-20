@@ -3,8 +3,9 @@
 
 from __future__ import annotations
 
-import sys
-
+from .logging_utils import (
+    ApatheticLogging_Internal_LoggingUtils,
+)
 from .registry_data import (
     ApatheticLogging_Internal_RegistryData,
 )
@@ -26,24 +27,7 @@ class ApatheticLogging_Internal_Registry:  # noqa: N801  # pyright: ignore[repor
     - ``register_default_log_level()``: Register the default log level
     - ``register_log_level_env_vars()``: Register environment variable names
     - ``register_logger_name()``: Register a logger name
-    - ``extract_top_level_package()``: Extract top-level package from full path
     """
-
-    @staticmethod
-    def extract_top_level_package(package_name: str | None) -> str | None:
-        """Extract the top-level package name from a full package path.
-
-        Args:
-            package_name: Full package name (e.g., "serger.logs")
-
-        Returns:
-            Top-level package name (e.g., "serger") or None if package_name is None
-        """
-        if package_name is None:
-            return None
-        if "." in package_name:
-            return package_name.split(".", 1)[0]
-        return package_name
 
     @staticmethod
     def register_default_log_level(default_level: str) -> None:
@@ -114,29 +98,29 @@ class ApatheticLogging_Internal_Registry:  # noqa: N801  # pyright: ignore[repor
             >>> apathetic_logging.register_logger_name()
             ...     # Uses top-level package from __package__
         """
-        _registry = ApatheticLogging_Internal_Registry
         _registry_data = ApatheticLogging_Internal_RegistryData
+        _logging_utils = ApatheticLogging_Internal_LoggingUtils
         _safe_logging = ApatheticLogging_Internal_SafeLogging
-        auto_inferred = False
-        if logger_name is None:
-            # Extract top-level package from the namespace module's __package__
-            namespace_module = sys.modules.get("apathetic_logging.namespace")
-            if namespace_module is None:
-                namespace_module = sys.modules["apathetic_logging.namespace"]
-            package = getattr(namespace_module, "__package__", None)
-            if package:
-                logger_name = _registry.extract_top_level_package(package)
-                auto_inferred = True
-            if logger_name is None:
-                _msg = (
-                    "Cannot auto-infer logger name: __package__ is not set. "
-                    "Please call register_logger_name() with an explicit logger name."
-                )
-                raise RuntimeError(_msg)
 
-        _registry_data.registered_internal_logger_name = logger_name
+        # Track if name was auto-inferred
+        was_explicit = logger_name is not None
+
+        # Resolve logger name (with inference if needed)
+        # skip_frames=1 because: register_logger_name -> resolve_logger_name -> caller
+        # check_registry=False because register_logger_name() should actively determine
+        # the name from the current context, not return an old registered name. This
+        # allows re-inferring from __package__ if the package context has changed.
+        resolved_name = _logging_utils.resolve_logger_name(
+            logger_name,
+            check_registry=False,
+            skip_frames=1,
+        )
+
+        # register_logger_name always stores the result (explicit or inferred)
+        _registry_data.registered_internal_logger_name = resolved_name
+
         _safe_logging.safe_trace(
             "register_logger_name() called",
-            f"name={logger_name}",
-            f"auto_inferred={auto_inferred}",
+            f"name={resolved_name}",
+            f"auto_inferred={not was_explicit}",
         )
