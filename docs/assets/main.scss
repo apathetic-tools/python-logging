@@ -1,0 +1,8 @@
+---
+---
+
+// Import custom dark mode styles
+// The minima theme CSS is already loaded via theme: minima in _config.yml
+// This file loads after the theme CSS, allowing us to override it
+@import "custom";
+

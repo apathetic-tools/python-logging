@@ -33,8 +33,9 @@ logger = get_logger()
 
 # Use it!
 logger.info("Hello, world!")
-logger.error("Something went wrong")
-logger.debug("Debug information")
+logger.detail("Extra verbosity above INFO")
+logger.minimal("Lower verbosity than INFO")
+logger.trace("Trace information")
 ```
 
 ## Requirements
