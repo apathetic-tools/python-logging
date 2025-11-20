@@ -155,7 +155,7 @@ def test_log_dynamic_unknown_level(
 ) -> None:
     """Unknown string levels are handled gracefully."""
     # --- execute ---
-    direct_logger.log_dynamic("nonsense", "This should not crash")
+    direct_logger.logDynamic("nonsense", "This should not crash")
 
     # --- verify ---
     out = capsys.readouterr().err.lower()
@@ -170,8 +170,8 @@ def test_use_level_context_manager_changes_temporarily(
     orig_level = direct_logger.level
 
     # --- execute and verify ---
-    with direct_logger.use_level("error"):
-        assert direct_logger.level_name == "ERROR"
+    with direct_logger.useLevel("error"):
+        assert direct_logger.levelName == "ERROR"
     assert direct_logger.level == orig_level
 
 
@@ -182,12 +182,12 @@ def test_use_level_minimum_prevents_downgrade(
     # --- setup ---
     direct_logger.setLevel("TRACE")
     orig_level = direct_logger.level
-    assert direct_logger.level_name == "TRACE"
+    assert direct_logger.levelName == "TRACE"
 
     # --- execute and verify: TRACE should not downgrade to DEBUG ---
-    with direct_logger.use_level("DEBUG", minimum=True):
+    with direct_logger.useLevel("DEBUG", minimum=True):
         # Should stay at TRACE (more verbose than DEBUG)
-        assert direct_logger.level_name == "TRACE"
+        assert direct_logger.levelName == "TRACE"
         assert direct_logger.level == orig_level
     # Should restore to original TRACE
     assert direct_logger.level == orig_level
@@ -195,16 +195,16 @@ def test_use_level_minimum_prevents_downgrade(
     # --- setup: now test that it does upgrade when current is less verbose ---
     direct_logger.setLevel("INFO")
     orig_level = direct_logger.level
-    assert direct_logger.level_name == "INFO"
+    assert direct_logger.levelName == "INFO"
 
     # --- execute and verify: INFO should upgrade to DEBUG (more verbose) ---
-    with direct_logger.use_level("DEBUG", minimum=True):
+    with direct_logger.useLevel("DEBUG", minimum=True):
         # Should change to DEBUG (more verbose than INFO)
-        assert direct_logger.level_name == "DEBUG"
+        assert direct_logger.levelName == "DEBUG"
         assert direct_logger.level != orig_level
     # Should restore to original INFO
     assert direct_logger.level == orig_level
-    assert direct_logger.level_name == "INFO"
+    assert direct_logger.levelName == "INFO"
 
 
 def test_log_dynamic_accepts_numeric_level(
@@ -213,7 +213,7 @@ def test_log_dynamic_accepts_numeric_level(
 ) -> None:
     """log_dynamic() should work with int levels too."""
     # --- execute ---
-    direct_logger.log_dynamic(
+    direct_logger.logDynamic(
         mod_alogs.apathetic_logging.TRACE_LEVEL, "Numeric trace log works"
     )
 

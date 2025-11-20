@@ -18,7 +18,7 @@ def test_register_logger_explicit_name() -> None:
     logger_name = "my_app"
 
     # --- execute ---
-    mod_alogs.register_logger(logger_name)
+    mod_alogs.registerLogger(logger_name)
 
     # --- verify ---
     _registry = mod_registry.ApatheticLogging_Internal_RegistryData
@@ -28,10 +28,10 @@ def test_register_logger_explicit_name() -> None:
 def test_register_logger_overwrites_previous() -> None:
     """register_logger() should overwrite previous value."""
     # --- setup ---
-    mod_alogs.register_logger("old_name")
+    mod_alogs.registerLogger("old_name")
 
     # --- execute ---
-    mod_alogs.register_logger("new_name")
+    mod_alogs.registerLogger("new_name")
 
     # --- verify ---
     _registry = mod_registry.ApatheticLogging_Internal_RegistryData
@@ -54,7 +54,7 @@ def test_register_logger_auto_infer_from_package() -> None:
 
         try:
             # --- execute ---
-            mod_alogs.register_logger()
+            mod_alogs.registerLogger()
 
             # --- verify ---
             _registry = mod_registry.ApatheticLogging_Internal_RegistryData
@@ -80,7 +80,7 @@ def test_register_logger_auto_infer_single_package() -> None:
 
         try:
             # --- execute ---
-            mod_alogs.register_logger()
+            mod_alogs.registerLogger()
 
             # --- verify ---
             _registry = mod_registry.ApatheticLogging_Internal_RegistryData
@@ -108,7 +108,7 @@ def test_register_logger_auto_infer_fails_without_package() -> None:
         try:
             # --- execute and verify ---
             with pytest.raises(RuntimeError, match="Cannot auto-infer logger name"):
-                mod_alogs.register_logger()
+                mod_alogs.registerLogger()
         finally:
             # Clean up frame reference
             del frame
@@ -123,7 +123,7 @@ def test_register_logger_extends_logging_module() -> None:
 
     # --- execute ---
     # register_logger should extend the logging module
-    mod_alogs.register_logger("test_extend")
+    mod_alogs.registerLogger("test_extend")
 
     # --- verify ---
     # Should have extended logging module with custom levels
@@ -154,7 +154,7 @@ def test_register_logger_with_custom_class() -> None:
             return super().extend_logging_module()
 
     # --- execute ---
-    mod_alogs.register_logger("test_custom", CustomLogger)
+    mod_alogs.registerLogger("test_custom", CustomLogger)
 
     # --- verify ---
     # Should have called extend on custom class

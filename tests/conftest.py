@@ -56,7 +56,7 @@ def reset_logger_class_and_registry() -> Generator[None, None, None]:
     _logging_utils = mod_alogs.apathetic_logging
     logger_names = list(logging.Logger.manager.loggerDict.keys())
     for logger_name in logger_names:
-        _logging_utils.remove_logger(logger_name)
+        _logging_utils.removeLogger(logger_name)
 
     # Reset to defaults before test
     logging.setLoggerClass(mod_alogs.Logger)
@@ -70,7 +70,7 @@ def reset_logger_class_and_registry() -> Generator[None, None, None]:
     # Clear loggers again after test
     logger_names = list(logging.Logger.manager.loggerDict.keys())
     for logger_name in logger_names:
-        _logging_utils.remove_logger(logger_name)
+        _logging_utils.removeLogger(logger_name)
 
     # Restore original state after test
     logging.setLoggerClass(original_logger_class)

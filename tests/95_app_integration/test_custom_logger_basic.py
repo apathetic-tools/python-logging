@@ -29,13 +29,13 @@ def test_custom_logger_correct_usage_pattern() -> None:
     AppLoggerForTest.extend_logging_module()
 
     # Step 2: Register environment variables
-    mod_alogs.register_log_level_env_vars([log_level_env_var, "LOG_LEVEL"])
+    mod_alogs.registerLogLevelEnvVars([log_level_env_var, "LOG_LEVEL"])
 
     # Step 3: Register default log level
-    mod_alogs.register_default_log_level(default_log_level)
+    mod_alogs.registerDefaultLogLevel(default_log_level)
 
     # Step 4: Register logger name
-    mod_alogs.register_logger(app_name)
+    mod_alogs.registerLogger(app_name)
 
     # Step 5: Get logger instance
     # Since extend_logging_module() was called, this will be AppLoggerForTest
@@ -59,9 +59,9 @@ def test_custom_logger_correct_usage_pattern() -> None:
     assert isinstance(logger, mod_alogs.Logger)
     # Should be able to use custom levels
     logger.setLevel("TRACE")
-    assert logger.level_name == "TRACE"
+    assert logger.levelName == "TRACE"
     logger.setLevel("SILENT")
-    assert logger.level_name == "SILENT"
+    assert logger.levelName == "SILENT"
 
 
 def test_custom_logger_with_typed_getter() -> None:
@@ -69,11 +69,11 @@ def test_custom_logger_with_typed_getter() -> None:
     # --- setup ---
     app_name = "testapp_typed"
     AppLoggerForTest.extend_logging_module()
-    mod_alogs.register_logger(app_name)
+    mod_alogs.registerLogger(app_name)
 
     def get_app_logger() -> AppLoggerForTest:
         """Return the configured application logger."""
-        logger = cast("AppLoggerForTest", mod_alogs.get_logger())
+        logger = cast("AppLoggerForTest", mod_alogs.getLogger())
         return logger
 
     # --- execute ---
@@ -100,7 +100,7 @@ def test_custom_logger_with_typed_getter() -> None:
     # Also check that logger has expected apathetic_logging.Logger methods/behavior
     assert hasattr(logger, "trace")
     assert hasattr(logger, "colorize")
-    assert hasattr(logger, "determine_log_level")
+    assert hasattr(logger, "determineLogLevel")
 
 
 def test_custom_logger_determine_log_level_with_cli_args(
@@ -110,7 +110,7 @@ def test_custom_logger_determine_log_level_with_cli_args(
     # --- setup ---
     app_name = "testapp_determine_cli"
     AppLoggerForTest.extend_logging_module()
-    mod_alogs.register_logger(app_name)
+    mod_alogs.registerLogger(app_name)
     logger = AppLoggerForTest(app_name)
 
     # Set up conflicting values that CLI args should override
@@ -119,7 +119,7 @@ def test_custom_logger_determine_log_level_with_cli_args(
 
     # --- execute ---
     args = argparse.Namespace(log_level="debug")
-    level = logger.determine_log_level(args=args, root_log_level=root_log_level)
+    level = logger.determineLogLevel(args=args, root_log_level=root_log_level)
 
     # --- verify ---
     # CLI args should override both env var and root log level
@@ -133,15 +133,16 @@ def test_custom_logger_determine_log_level_with_env_var(
     # --- setup ---
     app_name = "testapp_determine_env"
     AppLoggerForTest.extend_logging_module()
-    mod_alogs.register_logger(app_name)
+    mod_alogs.registerLogger(app_name)
     logger = AppLoggerForTest(app_name)
 
     # Set up conflicting root log level that env var should override
     root_log_level = "info"
 
     # --- execute ---
+    # AppLoggerForTest checks TESTAPP_LOG_LEVEL directly (hardcoded in its method)
     monkeypatch.setenv("TESTAPP_LOG_LEVEL", "warning")
-    level = logger.determine_log_level(root_log_level=root_log_level)
+    level = logger.determineLogLevel(root_log_level=root_log_level)
 
     # --- verify ---
     # Env var should override root log level
@@ -155,7 +156,7 @@ def test_custom_logger_determine_log_level_with_root_log_level(
     # --- setup ---
     app_name = "testapp_determine_root"
     AppLoggerForTest.extend_logging_module()
-    mod_alogs.register_logger(app_name)
+    mod_alogs.registerLogger(app_name)
     logger = AppLoggerForTest(app_name)
 
     # Ensure no env vars are set
@@ -163,7 +164,7 @@ def test_custom_logger_determine_log_level_with_root_log_level(
     monkeypatch.delenv("LOG_LEVEL", raising=False)
 
     # --- execute ---
-    level = logger.determine_log_level(root_log_level="error")
+    level = logger.determineLogLevel(root_log_level="error")
 
     # --- verify ---
     # Root log level should be used when nothing else is set
@@ -177,7 +178,7 @@ def test_custom_logger_determine_log_level_default_fallback(
     # --- setup ---
     app_name = "testapp_determine_default"
     AppLoggerForTest.extend_logging_module()
-    mod_alogs.register_logger(app_name)
+    mod_alogs.registerLogger(app_name)
     logger = AppLoggerForTest(app_name)
 
     # Ensure no env vars or other settings are set
@@ -186,10 +187,10 @@ def test_custom_logger_determine_log_level_default_fallback(
 
     # --- execute ---
     # No CLI args, no env vars, no root log level - should use default
-    level = logger.determine_log_level()
+    level = logger.determineLogLevel()
 
     # --- verify ---
-    # Should fall back to default (INFO)
+    # Should fall back to AppLoggerForTest's default (INFO)
     assert level == "INFO"
 
 
@@ -199,7 +200,7 @@ def test_custom_logger_with_custom_methods() -> None:
     app_name = "testapp_custom_methods"
     # Need to set logger class to our custom class
     AppLoggerWithCustomMethodForTest.extend_logging_module()
-    mod_alogs.register_logger(app_name)
+    mod_alogs.registerLogger(app_name)
     # Create logger directly to ensure we get the right type
     logger = AppLoggerWithCustomMethodForTest(app_name)
 

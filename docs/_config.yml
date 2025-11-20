@@ -2,7 +2,7 @@
 # general config reference: https://jekyllrb.com/docs/configuration/
 
 title: Apathetic Python Logger&nbsp;📝
-description: Minimal wrapper for the Python standard library logger
+description: Because consistent logging shouldn’t require large dependencies
 url: https://apathetic-tools.github.io
 baseurl: /python-logging
 
@@ -22,6 +22,7 @@ plugins:
   - jekyll-seo-tag
   - jekyll-sitemap
   - jekyll-remote-theme
+  - jemoji
 
 # Theme (using remote theme to get latest minima with dark mode support)
 remote_theme: jekyll/minima

@@ -47,7 +47,7 @@ LEVEL_ORDER = apathetic_logging.LEVEL_ORDER
 SILENT_LEVEL = apathetic_logging.SILENT_LEVEL
 TAG_STYLES = apathetic_logging.TAG_STYLES
 TEST_LEVEL = apathetic_logging.TEST_LEVEL
-safe_trace = apathetic_logging.safe_trace
+safeTrace = apathetic_logging.safeTrace
 SAFE_TRACE_ENABLED = apathetic_logging.SAFE_TRACE_ENABLED
 TRACE_LEVEL = apathetic_logging.TRACE_LEVEL
 MINIMAL_LEVEL = apathetic_logging.MINIMAL_LEVEL
@@ -68,12 +68,12 @@ else:
     Logger = apathetic_logging.Logger
 
 # Functions
-get_logger = apathetic_logging.get_logger
-make_safe_trace = apathetic_logging.make_safe_trace
-register_default_log_level = apathetic_logging.register_default_log_level
-register_log_level_env_vars = apathetic_logging.register_log_level_env_vars
-register_logger = apathetic_logging.register_logger
-safe_log = apathetic_logging.safe_log
+getLogger = apathetic_logging.getLogger
+makeSafeTrace = apathetic_logging.makeSafeTrace
+registerDefaultLogLevel = apathetic_logging.registerDefaultLogLevel
+registerLogLevelEnvVars = apathetic_logging.registerLogLevelEnvVars
+registerLogger = apathetic_logging.registerLogger
+safeLog = apathetic_logging.safeLog
 
 
 __all__ = [
@@ -92,11 +92,11 @@ __all__ = [
     "Logger",
     "TagFormatter",
     "apathetic_logging",
-    "get_logger",
-    "make_safe_trace",
-    "register_default_log_level",
-    "register_log_level_env_vars",
-    "register_logger",
-    "safe_log",
-    "safe_trace",
+    "getLogger",
+    "makeSafeTrace",
+    "registerDefaultLogLevel",
+    "registerLogLevelEnvVars",
+    "registerLogger",
+    "safeLog",
+    "safeTrace",
 ]

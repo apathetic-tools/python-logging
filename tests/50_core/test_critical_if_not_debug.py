@@ -1,5 +1,5 @@
 # tests/50_core/test_critical_if_not_debug.py
-"""Tests for Logger.critical_if_not_debug() method."""
+"""Tests for Logger.criticalIfNotDebug() method."""
 
 import io
 import sys
@@ -29,7 +29,7 @@ def test_critical_if_not_debug_logs_critical_when_not_debug(
     monkeypatch.setattr(sys, "stderr", err_buf)
 
     # --- execute ---
-    direct_logger.critical_if_not_debug("test critical message")
+    direct_logger.criticalIfNotDebug("test critical message")
 
     # --- verify ---
     output = err_buf.getvalue()
@@ -58,7 +58,7 @@ def test_critical_if_not_debug_logs_exception_when_debug_enabled(
     try:
         _raise_runtime_error()
     except RuntimeError:
-        direct_logger.critical_if_not_debug("test critical with exception")
+        direct_logger.criticalIfNotDebug("test critical with exception")
 
     # --- verify ---
     output = err_buf.getvalue()
@@ -81,7 +81,7 @@ def test_critical_if_not_debug_with_custom_exc_info(
     monkeypatch.setattr(sys, "stderr", err_buf)
 
     # --- execute ---
-    direct_logger.critical_if_not_debug("test critical", exc_info=False)
+    direct_logger.criticalIfNotDebug("test critical", exc_info=False)
 
     # --- verify ---
     output = err_buf.getvalue()
@@ -103,7 +103,7 @@ def test_critical_if_not_debug_with_args(
     monkeypatch.setattr(sys, "stderr", err_buf)
 
     # --- execute ---
-    direct_logger.critical_if_not_debug("test %s %d", "critical", 99)
+    direct_logger.criticalIfNotDebug("test %s %d", "critical", 99)
 
     # --- verify ---
     output = err_buf.getvalue()

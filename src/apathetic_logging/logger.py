@@ -65,7 +65,7 @@ class ApatheticLogging_Internal_Logger:  # noqa: N801  # pyright: ignore[reportU
 
             # default level resolution
             if self.level == logging.NOTSET:
-                self.setLevel(self.determine_log_level())
+                self.setLevel(self.determineLogLevel())
 
             # detect color support once per instance
             self.enable_color = (
@@ -76,9 +76,9 @@ class ApatheticLogging_Internal_Logger:  # noqa: N801  # pyright: ignore[reportU
 
             self.propagate = False  # avoid duplicate root logs
 
-            # handler attachment will happen in _log() with ensure_handlers()
+            # handler attachment will happen in _log() with ensureHandlers()
 
-        def ensure_handlers(self) -> None:
+        def ensureHandlers(self) -> None:
             _dual_stream_handler = ApatheticLogging_Internal_DualStreamHandler
             _tag_formatter = ApatheticLogging_Internal_TagFormatter
             _safe_logging = ApatheticLogging_Internal_SafeLogging
@@ -95,25 +95,25 @@ class ApatheticLogging_Internal_Logger:  # noqa: N801  # pyright: ignore[reportU
                 h.enable_color = self.enable_color
                 self.addHandler(h)
                 self._last_stream_ids = (sys.stdout, sys.stderr)
-                _safe_logging.safe_trace(
-                    "ensure_handlers()", f"rebuilt_handlers={self.handlers}"
+                _safe_logging.safeTrace(
+                    "ensureHandlers()", f"rebuilt_handlers={self.handlers}"
                 )
 
         def _log(  # type: ignore[override]
             self, level: int, msg: str, args: tuple[Any, ...], **kwargs: Any
         ) -> None:
             _safe_logging = ApatheticLogging_Internal_SafeLogging
-            _safe_logging.safe_trace(
+            _safe_logging.safeTrace(
                 "_log",
                 f"logger={self.name}",
                 f"id={id(self)}",
-                f"level={self.level_name}",
+                f"level={self.levelName}",
                 f"msg={msg!r}",
             )
-            self.ensure_handlers()
+            self.ensureHandlers()
             super()._log(level, msg, args, **kwargs)
 
-        def setLevel(self, level: int | str) -> None:  # noqa: N802
+        def setLevel(self, level: int | str) -> None:
             """Case insensitive version that resolves string level names.
 
             Validates that custom levels (TEST, TRACE, MINIMAL, DETAIL, SILENT) are
@@ -137,7 +137,7 @@ class ApatheticLogging_Internal_Logger:  # noqa: N801  # pyright: ignore[reportU
                     level = _constants.SILENT_LEVEL
                 else:
                     # Try to resolve via logging module (for standard levels)
-                    resolved = self.resolve_level_name(level_str)
+                    resolved = self.resolveLevelName(level_str)
                     # Fall back to standard logging level names if not resolved
                     level = resolved if resolved is not None else level_str
 
@@ -193,7 +193,7 @@ class ApatheticLogging_Internal_Logger:  # noqa: N801  # pyright: ignore[reportU
                 raise ValueError(msg)
 
         @staticmethod
-        def addLevelName(level: int, level_name: str) -> None:  # noqa: N802
+        def addLevelName(level: int, level_name: str) -> None:
             """Safely add a custom logging level name with validation.
 
             This is a wrapper around logging.addLevelName() that validates the level
@@ -305,7 +305,7 @@ class ApatheticLogging_Internal_Logger:  # noqa: N801  # pyright: ignore[reportU
 
             return True
 
-        def determine_log_level(
+        def determineLogLevel(
             self,
             *,
             args: argparse.Namespace | None = None,
@@ -370,12 +370,12 @@ class ApatheticLogging_Internal_Logger:  # noqa: N801  # pyright: ignore[reportU
             return default_level.upper()
 
         @property
-        def level_name(self) -> str:
+        def levelName(self) -> str:
             """Return the current effective level name
             (see also: logging.getLevelName)."""
             return logging.getLevelName(self.getEffectiveLevel())
 
-        def error_if_not_debug(self, msg: str, *args: Any, **kwargs: Any) -> None:
+        def errorIfNotDebug(self, msg: str, *args: Any, **kwargs: Any) -> None:
             """Logs an exception with the real traceback starting from the caller.
             Only shows full traceback if debug/trace is enabled."""
             exc_info = kwargs.pop("exc_info", True)
@@ -385,7 +385,7 @@ class ApatheticLogging_Internal_Logger:  # noqa: N801  # pyright: ignore[reportU
             else:
                 self.error(msg, *args)
 
-        def critical_if_not_debug(self, msg: str, *args: Any, **kwargs: Any) -> None:
+        def criticalIfNotDebug(self, msg: str, *args: Any, **kwargs: Any) -> None:
             """Logs an exception with the real traceback starting from the caller.
             Only shows full traceback if debug/trace is enabled."""
             exc_info = kwargs.pop("exc_info", True)
@@ -438,16 +438,16 @@ class ApatheticLogging_Internal_Logger:  # noqa: N801  # pyright: ignore[reportU
             if self.isEnabledFor(_constants.TEST_LEVEL):
                 self._log(_constants.TEST_LEVEL, msg, args, **kwargs)
 
-        def resolve_level_name(self, level_name: str) -> int | None:
+        def resolveLevelName(self, level_name: str) -> int | None:
             """logging.getLevelNamesMapping() is only introduced in 3.11"""
             return getattr(logging, level_name.upper(), None)
 
-        def log_dynamic(
+        def logDynamic(
             self, level: str | int, msg: str, *args: Any, **kwargs: Any
         ) -> None:
             # Resolve level
             if isinstance(level, str):
-                level_no = self.resolve_level_name(level)
+                level_no = self.resolveLevelName(level)
                 if not isinstance(level_no, int):
                     self.error("Unknown log level: %r", level)
                     return
@@ -460,7 +460,7 @@ class ApatheticLogging_Internal_Logger:  # noqa: N801  # pyright: ignore[reportU
             self._log(level_no, msg, args, **kwargs)
 
         @contextmanager
-        def use_level(
+        def useLevel(
             self, level: str | int, *, minimum: bool = False
         ) -> Generator[None, None, None]:
             """Use a context to temporarily log with a different log-level.
@@ -479,7 +479,7 @@ class ApatheticLogging_Internal_Logger:  # noqa: N801  # pyright: ignore[reportU
 
             # Resolve level
             if isinstance(level, str):
-                level_no = self.resolve_level_name(level)
+                level_no = self.resolveLevelName(level)
                 if not isinstance(level_no, int):
                     self.error("Unknown log level: %r", level)
                     # Yield control anyway so the 'with' block doesn't explode

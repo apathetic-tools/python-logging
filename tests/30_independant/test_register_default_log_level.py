@@ -13,7 +13,7 @@ def test_register_default_log_level_stores_value() -> None:
     default_level = "warning"
 
     # --- execute ---
-    mod_alogs.register_default_log_level(default_level)
+    mod_alogs.registerDefaultLogLevel(default_level)
 
     # --- verify ---
     _registry = mod_registry.ApatheticLogging_Internal_RegistryData
@@ -23,10 +23,10 @@ def test_register_default_log_level_stores_value() -> None:
 def test_register_default_log_level_overwrites_previous() -> None:
     """register_default_log_level() should overwrite previous value."""
     # --- setup ---
-    mod_alogs.register_default_log_level("info")
+    mod_alogs.registerDefaultLogLevel("info")
 
     # --- execute ---
-    mod_alogs.register_default_log_level("debug")
+    mod_alogs.registerDefaultLogLevel("debug")
 
     # --- verify ---
     _registry = mod_registry.ApatheticLogging_Internal_RegistryData
@@ -37,7 +37,7 @@ def test_register_default_log_level_overwrites_previous() -> None:
 def test_register_default_log_level_accepts_valid_levels(level: str) -> None:
     """register_default_log_level() should accept various log levels."""
     # --- execute ---
-    mod_alogs.register_default_log_level(level)
+    mod_alogs.registerDefaultLogLevel(level)
 
     # --- verify ---
     _registry = mod_registry.ApatheticLogging_Internal_RegistryData

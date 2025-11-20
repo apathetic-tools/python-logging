@@ -15,10 +15,10 @@ def test_get_logger_with_registered_name() -> None:
     """get_logger() should return logger when name is registered."""
     # --- setup ---
     logger_name = "test_get_logger_registered"
-    mod_alogs.register_logger(logger_name)
+    mod_alogs.registerLogger(logger_name)
 
     # --- execute ---
-    result = mod_alogs.get_logger()
+    result = mod_alogs.getLogger()
 
     # --- verify ---
     assert result.name == logger_name
@@ -52,7 +52,7 @@ def test_get_logger_raises_when_not_registered() -> None:
         try:
             # --- execute and verify ---
             with pytest.raises(RuntimeError, match="Cannot auto-infer logger name"):
-                mod_alogs.get_logger()
+                mod_alogs.getLogger()
         finally:
             # Clean up frame reference
             del frame
@@ -92,7 +92,7 @@ def test_get_logger_auto_infers_from_caller_package() -> None:
         mock_frame.return_value = frame
 
         try:
-            result = mod_alogs.get_logger()
+            result = mod_alogs.getLogger()
             # --- verify ---
             assert result.name == "test_package"
             _registry = mod_registry.ApatheticLogging_Internal_RegistryData
@@ -109,11 +109,11 @@ def test_get_logger_uses_existing_logger_instance() -> None:
     """get_logger() should return existing logger from logging registry."""
     # --- setup ---
     logger_name = "test_get_logger_existing"
-    mod_alogs.register_logger(logger_name)
+    mod_alogs.registerLogger(logger_name)
 
     # --- execute ---
-    result1 = mod_alogs.get_logger()
-    result2 = mod_alogs.get_logger()
+    result1 = mod_alogs.getLogger()
+    result2 = mod_alogs.getLogger()
 
     # --- verify ---
     # Should return the same logger instance from logging registry

@@ -11,7 +11,7 @@ def test_register_log_level_env_vars_stores_list() -> None:
     env_vars = ["MYAPP_LOG_LEVEL", "LOG_LEVEL"]
 
     # --- execute ---
-    mod_alogs.register_log_level_env_vars(env_vars)
+    mod_alogs.registerLogLevelEnvVars(env_vars)
 
     # --- verify ---
     _registry = mod_registry.ApatheticLogging_Internal_RegistryData
@@ -21,11 +21,11 @@ def test_register_log_level_env_vars_stores_list() -> None:
 def test_register_log_level_env_vars_overwrites_previous() -> None:
     """register_log_level_env_vars() should overwrite previous value."""
     # --- setup ---
-    mod_alogs.register_log_level_env_vars(["OLD_VAR"])
+    mod_alogs.registerLogLevelEnvVars(["OLD_VAR"])
 
     # --- execute ---
     new_vars = ["NEW_VAR1", "NEW_VAR2"]
-    mod_alogs.register_log_level_env_vars(new_vars)
+    mod_alogs.registerLogLevelEnvVars(new_vars)
 
     # --- verify ---
     _registry = mod_registry.ApatheticLogging_Internal_RegistryData
@@ -35,7 +35,7 @@ def test_register_log_level_env_vars_overwrites_previous() -> None:
 def test_register_log_level_env_vars_empty_list() -> None:
     """register_log_level_env_vars() should accept empty list."""
     # --- execute ---
-    mod_alogs.register_log_level_env_vars([])
+    mod_alogs.registerLogLevelEnvVars([])
 
     # --- verify ---
     _registry = mod_registry.ApatheticLogging_Internal_RegistryData
@@ -48,7 +48,7 @@ def test_register_log_level_env_vars_single_var() -> None:
     env_vars = ["SINGLE_VAR"]
 
     # --- execute ---
-    mod_alogs.register_log_level_env_vars(env_vars)
+    mod_alogs.registerLogLevelEnvVars(env_vars)
 
     # --- verify ---
     _registry = mod_registry.ApatheticLogging_Internal_RegistryData

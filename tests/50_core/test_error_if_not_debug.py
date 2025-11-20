@@ -1,5 +1,5 @@
 # tests/50_core/test_error_if_not_debug.py
-"""Tests for Logger.error_if_not_debug() method."""
+"""Tests for Logger.errorIfNotDebug() method."""
 
 import io
 import sys
@@ -29,7 +29,7 @@ def test_error_if_not_debug_logs_error_when_not_debug(
     monkeypatch.setattr(sys, "stderr", err_buf)
 
     # --- execute ---
-    direct_logger.error_if_not_debug("test error message")
+    direct_logger.errorIfNotDebug("test error message")
 
     # --- verify ---
     output = err_buf.getvalue()
@@ -58,7 +58,7 @@ def test_error_if_not_debug_logs_exception_when_debug_enabled(
     try:
         _raise_value_error()
     except ValueError:
-        direct_logger.error_if_not_debug("test error with exception")
+        direct_logger.errorIfNotDebug("test error with exception")
 
     # --- verify ---
     output = err_buf.getvalue()
@@ -81,7 +81,7 @@ def test_error_if_not_debug_with_custom_exc_info(
     monkeypatch.setattr(sys, "stderr", err_buf)
 
     # --- execute ---
-    direct_logger.error_if_not_debug("test error", exc_info=False)
+    direct_logger.errorIfNotDebug("test error", exc_info=False)
 
     # --- verify ---
     output = err_buf.getvalue()
@@ -103,7 +103,7 @@ def test_error_if_not_debug_with_args(
     monkeypatch.setattr(sys, "stderr", err_buf)
 
     # --- execute ---
-    direct_logger.error_if_not_debug("test %s %d", "message", 42)
+    direct_logger.errorIfNotDebug("test %s %d", "message", 42)
 
     # --- verify ---
     output = err_buf.getvalue()

@@ -23,15 +23,15 @@ _real_time = importlib.import_module("time")
 class ApatheticLogging_Internal_SafeLogging:  # noqa: N801  # pyright: ignore[reportUnusedClass]
     """Mixin class that provides safe logging utilities.
 
-    This class contains both safe_log and safe_trace implementations as static
+    This class contains both safeLog and safeTrace implementations as static
     methods. When mixed into apathetic_logging, it provides:
-    - apathetic_logging.safe_log
-    - apathetic_logging.safe_trace
-    - apathetic_logging.make_safe_trace
+    - apathetic_logging.safeLog
+    - apathetic_logging.safeTrace
+    - apathetic_logging.makeSafeTrace
     """
 
     @staticmethod
-    def safe_log(msg: str) -> None:
+    def safeLog(msg: str) -> None:
         """Emergency logger that never fails."""
         stream = cast("TextIO", sys.__stderr__)
         try:
@@ -42,16 +42,16 @@ class ApatheticLogging_Internal_SafeLogging:  # noqa: N801  # pyright: ignore[re
                 stream.write(f"[INTERNAL] {msg}\n")
 
     @staticmethod
-    def make_safe_trace(icon: str = "🧪") -> Callable[..., Any]:
+    def makeSafeTrace(icon: str = "🧪") -> Callable[..., Any]:
         _safe_logging = ApatheticLogging_Internal_SafeLogging
 
         def local_trace(label: str, *args: Any) -> Any:
-            return _safe_logging.safe_trace(label, *args, icon=icon)
+            return _safe_logging.safeTrace(label, *args, icon=icon)
 
         return local_trace
 
     @staticmethod
-    def safe_trace(label: str, *args: Any, icon: str = "🧪") -> None:
+    def safeTrace(label: str, *args: Any, icon: str = "🧪") -> None:
         """Emit a synchronized, flush-safe diagnostic line.
 
         Args:

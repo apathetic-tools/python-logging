@@ -33,34 +33,34 @@ def test_extend_logging_module_called_twice_is_safe() -> None:
 def test_extend_logging_module_before_get_logger_works() -> None:
     """extend_logging_module() should work when called before get_logger()."""
     # --- setup ---
-    mod_alogs.register_logger("test_integration")
+    mod_alogs.registerLogger("test_integration")
 
     # --- execute ---
     # extend_logging_module() is already called at import, but we can verify
     # that get_logger() works correctly
-    logger = mod_alogs.get_logger()
+    logger = mod_alogs.getLogger()
 
     # --- verify ---
     assert logger is not None
     assert logger.name == "test_integration"
     # Logger should be able to use TRACE, DETAIL, MINIMAL, and SILENT levels
     logger.setLevel("TRACE")
-    assert logger.level_name == "TRACE"
+    assert logger.levelName == "TRACE"
     logger.setLevel("DETAIL")
-    assert logger.level_name == "DETAIL"
+    assert logger.levelName == "DETAIL"
     logger.setLevel("MINIMAL")
-    assert logger.level_name == "MINIMAL"
+    assert logger.levelName == "MINIMAL"
     logger.setLevel("SILENT")
-    assert logger.level_name == "SILENT"
+    assert logger.levelName == "SILENT"
 
 
 def test_get_logger_works_after_extend_logging_module() -> None:
     """get_logger() should work correctly after extend_logging_module() is called."""
     # --- setup ---
-    mod_alogs.register_logger("test_get_logger_after_extend")
+    mod_alogs.registerLogger("test_get_logger_after_extend")
 
     # --- execute ---
-    logger = mod_alogs.get_logger()
+    logger = mod_alogs.getLogger()
 
     # --- verify ---
     assert logger is not None
@@ -79,7 +79,7 @@ def test_get_logger_works_after_extend_logging_module() -> None:
     # Also check that logger has expected apathetic_logging.Logger methods/behavior
     assert hasattr(logger, "trace")
     assert hasattr(logger, "colorize")
-    assert hasattr(logger, "determine_log_level")
+    assert hasattr(logger, "determineLogLevel")
     # Should be able to use custom levels
     logger.setLevel(logging.TRACE)  # type: ignore[attr-defined]
     assert logger.level == mod_alogs.apathetic_logging.TRACE_LEVEL
@@ -113,7 +113,7 @@ def test_logger_can_use_detail_level_after_extend() -> None:
     # Should be able to call detail() method
     assert hasattr(logger, "detail")
     assert callable(logger.detail)
-    assert logger.level_name == "DETAIL"
+    assert logger.levelName == "DETAIL"
 
 
 def test_logger_can_use_minimal_level_after_extend() -> None:
@@ -126,7 +126,7 @@ def test_logger_can_use_minimal_level_after_extend() -> None:
     # Should be able to call minimal() method
     assert hasattr(logger, "minimal")
     assert callable(logger.minimal)
-    assert logger.level_name == "MINIMAL"
+    assert logger.levelName == "MINIMAL"
 
 
 def test_logger_can_use_silent_level_after_extend() -> None:
@@ -139,17 +139,17 @@ def test_logger_can_use_silent_level_after_extend() -> None:
 
     # --- verify ---
     assert logger.level == mod_alogs.apathetic_logging.SILENT_LEVEL
-    assert logger.level_name == "SILENT"
+    assert logger.levelName == "SILENT"
 
 
 def test_extend_logging_module_sets_logger_class() -> None:
     """extend_logging_module() should set the logger class for logging.getLogger()."""
     # --- setup ---
-    mod_alogs.register_logger("test_logger_class")
+    mod_alogs.registerLogger("test_logger_class")
 
     # --- execute ---
     # get_logger() uses logging.getLogger() internally
-    logger = mod_alogs.get_logger()
+    logger = mod_alogs.getLogger()
 
     # --- verify ---
     # The logger should be an instance of apathetic_logging.Logger
@@ -158,7 +158,7 @@ def test_extend_logging_module_sets_logger_class() -> None:
     # Should have apathetic logging methods
     assert hasattr(logger, "trace")
     assert hasattr(logger, "colorize")
-    assert hasattr(logger, "determine_log_level")
+    assert hasattr(logger, "determineLogLevel")
 
 
 def test_multiple_calls_to_extend_logging_module() -> None:
@@ -193,12 +193,12 @@ def test_extend_logging_module_preserves_existing_loggers() -> None:
 
     # --- verify ---
     # Existing logger should still work
-    assert existing_logger.level_name == "INFO"
+    assert existing_logger.levelName == "INFO"
     # Should be able to change to custom levels
     existing_logger.setLevel("TRACE")
-    assert existing_logger.level_name == "TRACE"
+    assert existing_logger.levelName == "TRACE"
     existing_logger.setLevel("SILENT")
-    assert existing_logger.level_name == "SILENT"
+    assert existing_logger.levelName == "SILENT"
 
 
 def test_full_integration_flow() -> None:
@@ -209,10 +209,10 @@ def test_full_integration_flow() -> None:
     # --- execute ---
     # 1. extend_logging_module() is called at import (already done)
     # 2. Register logger name
-    mod_alogs.register_logger("integration_test")
+    mod_alogs.registerLogger("integration_test")
 
     # 3. Get logger
-    logger = mod_alogs.get_logger()
+    logger = mod_alogs.getLogger()
 
     # 4. Use logger with custom levels
     logger.setLevel("TRACE")
@@ -223,13 +223,13 @@ def test_full_integration_flow() -> None:
 
     # --- verify ---
     assert logger.name == "integration_test"
-    assert logger.level_name == "SILENT"
+    assert logger.levelName == "SILENT"
     # Logger should have all expected methods
     assert hasattr(logger, "trace")
-    assert hasattr(logger, "error_if_not_debug")
-    assert hasattr(logger, "critical_if_not_debug")
+    assert hasattr(logger, "errorIfNotDebug")
+    assert hasattr(logger, "criticalIfNotDebug")
     assert hasattr(logger, "colorize")
-    assert hasattr(logger, "determine_log_level")
+    assert hasattr(logger, "determineLogLevel")
 
 
 def test_get_logger_requires_extend_logging_module() -> None:
@@ -241,19 +241,19 @@ def test_get_logger_requires_extend_logging_module() -> None:
     # --- setup ---
     # extend_logging_module() is already called at import time
     # Verify that get_logger() works correctly
-    mod_alogs.register_logger("test_requires_extend")
+    mod_alogs.registerLogger("test_requires_extend")
 
     # --- execute ---
-    logger = mod_alogs.get_logger()
+    logger = mod_alogs.getLogger()
 
     # --- verify ---
     # Logger should work correctly with custom levels
     assert logger is not None
     # Should be able to use TRACE and SILENT
     logger.setLevel("TRACE")
-    assert logger.level_name == "TRACE"
+    assert logger.levelName == "TRACE"
     logger.setLevel("SILENT")
-    assert logger.level_name == "SILENT"
+    assert logger.levelName == "SILENT"
     # Should have custom methods
     assert hasattr(logger, "trace")
 
@@ -298,20 +298,20 @@ def test_get_logger_returns_apathetic_logger_after_extend() -> None:
     # --- setup ---
     # extend_logging_module() is called at import time, which sets
     # logging.setLoggerClass(apathetic_logging.Logger)
-    mod_alogs.register_logger("test_logger_type")
+    mod_alogs.registerLogger("test_logger_type")
 
     # --- execute ---
-    logger = mod_alogs.get_logger()
+    logger = mod_alogs.getLogger()
 
     # --- verify ---
     # Logger should have apathetic_logging.Logger methods
     assert hasattr(logger, "trace")
     assert hasattr(logger, "colorize")
-    assert hasattr(logger, "determine_log_level")
-    assert hasattr(logger, "error_if_not_debug")
-    assert hasattr(logger, "critical_if_not_debug")
+    assert hasattr(logger, "determineLogLevel")
+    assert hasattr(logger, "errorIfNotDebug")
+    assert hasattr(logger, "criticalIfNotDebug")
     # Should be able to use custom levels
     logger.setLevel("TRACE")
-    assert logger.level_name == "TRACE"
+    assert logger.levelName == "TRACE"
     logger.setLevel("SILENT")
-    assert logger.level_name == "SILENT"
+    assert logger.levelName == "SILENT"

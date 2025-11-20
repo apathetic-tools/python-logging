@@ -28,7 +28,7 @@ else:
 class AppLoggerForTest(Logger):
     """Test application logger with custom log level resolution."""
 
-    def determine_log_level(
+    def determineLogLevel(
         self,
         *,
         args: argparse.Namespace | None = None,

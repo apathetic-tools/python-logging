@@ -24,7 +24,7 @@ class ApatheticLogging_Internal_LoggingUtils:  # noqa: N801  # pyright: ignore[r
     _LoggerType = TypeVar("_LoggerType", bound=logging.Logger)
 
     @staticmethod
-    def has_logger(logger_name: str) -> bool:
+    def hasLogger(logger_name: str) -> bool:
         """Check if a logger exists in the logging manager's registry.
 
         Args:
@@ -36,7 +36,7 @@ class ApatheticLogging_Internal_LoggingUtils:  # noqa: N801  # pyright: ignore[r
         return logger_name in logging.Logger.manager.loggerDict
 
     @staticmethod
-    def remove_logger(logger_name: str) -> None:
+    def removeLogger(logger_name: str) -> None:
         """Remove a logger from the logging manager's registry.
 
         Args:
@@ -45,7 +45,7 @@ class ApatheticLogging_Internal_LoggingUtils:  # noqa: N801  # pyright: ignore[r
         logging.Logger.manager.loggerDict.pop(logger_name, None)
 
     @staticmethod
-    def set_logger_class_temporarily(
+    def setLoggerClassTemporarily(
         logger_name: str,
         logger_class: type[ApatheticLogging_Internal_LoggingUtils._LoggerType],
     ) -> ApatheticLogging_Internal_LoggingUtils._LoggerType:
@@ -116,7 +116,7 @@ class ApatheticLogging_Internal_LoggingUtils:  # noqa: N801  # pyright: ignore[r
             del frame
 
     @staticmethod
-    def resolve_logger_name(
+    def resolveLoggerName(
         logger_name: str | None,
         *,
         check_registry: bool = True,
@@ -135,9 +135,9 @@ class ApatheticLogging_Internal_LoggingUtils:  # noqa: N801  # pyright: ignore[r
             logger_name: Explicit logger name, or None to infer.
             check_registry: If True, check registry before inferring. Use False
                 when the caller should actively determine the name from current
-                context (e.g., register_logger() which should re-infer even
+                context (e.g., registerLogger() which should re-infer even
                 if a name is already registered). Use True when the caller should
-                use a previously registered name if available (e.g., get_logger()
+                use a previously registered name if available (e.g., getLogger()
                 which should use the registered name).
             skip_frames: Number of frames to skip from this function to get to
                 the actual caller. Default is 1 (skips this function's frame).
@@ -183,7 +183,7 @@ class ApatheticLogging_Internal_LoggingUtils:  # noqa: N801  # pyright: ignore[r
         # Raise error with clear message
         error_msg = (
             "Cannot auto-infer logger name: __package__ is not set in the "
-            "calling module. Please call register_logger() with an "
+            "calling module. Please call registerLogger() with an "
             "explicit logger name."
         )
         raise RuntimeError(error_msg)

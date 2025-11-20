@@ -51,7 +51,7 @@ def test_determine_log_level_from_args(
     args = argparse.Namespace(log_level="debug")
 
     # --- execute ---
-    result = direct_logger.determine_log_level(args=args)
+    result = direct_logger.determineLogLevel(args=args)
 
     # --- verify ---
     assert result == "DEBUG"
@@ -63,11 +63,11 @@ def test_determine_log_level_from_registered_env_var(
 ) -> None:
     """determine_log_level() should use registered env vars."""
     # --- setup ---
-    mod_alogs.register_log_level_env_vars(["MYAPP_LOG_LEVEL"])
+    mod_alogs.registerLogLevelEnvVars(["MYAPP_LOG_LEVEL"])
     monkeypatch.setenv("MYAPP_LOG_LEVEL", "warning")
 
     # --- execute ---
-    result = direct_logger.determine_log_level()
+    result = direct_logger.determineLogLevel()
 
     # --- verify ---
     assert result == "WARNING"
@@ -82,7 +82,7 @@ def test_determine_log_level_from_default_env_var(
     monkeypatch.setenv("LOG_LEVEL", "error")
 
     # --- execute ---
-    result = direct_logger.determine_log_level()
+    result = direct_logger.determineLogLevel()
 
     # --- verify ---
     assert result == "ERROR"
@@ -94,12 +94,12 @@ def test_determine_log_level_from_registered_env_vars_order(
 ) -> None:
     """determine_log_level() should check env vars in order."""
     # --- setup ---
-    mod_alogs.register_log_level_env_vars(["MYAPP_LOG_LEVEL", "LOG_LEVEL"])
+    mod_alogs.registerLogLevelEnvVars(["MYAPP_LOG_LEVEL", "LOG_LEVEL"])
     monkeypatch.setenv("MYAPP_LOG_LEVEL", "debug")
     monkeypatch.setenv("LOG_LEVEL", "error")
 
     # --- execute ---
-    result = direct_logger.determine_log_level()
+    result = direct_logger.determineLogLevel()
 
     # --- verify ---
     # Should use first env var found (MYAPP_LOG_LEVEL)
@@ -111,7 +111,7 @@ def test_determine_log_level_from_root_log_level(
 ) -> None:
     """determine_log_level() should use root_log_level when provided."""
     # --- execute ---
-    result = direct_logger.determine_log_level(root_log_level="info")
+    result = direct_logger.determineLogLevel(root_log_level="info")
 
     # --- verify ---
     assert result == "INFO"
@@ -122,10 +122,10 @@ def test_determine_log_level_from_registered_default(
 ) -> None:
     """determine_log_level() should use registered default."""
     # --- setup ---
-    mod_alogs.register_default_log_level("warning")
+    mod_alogs.registerDefaultLogLevel("warning")
 
     # --- execute ---
-    result = direct_logger.determine_log_level()
+    result = direct_logger.determineLogLevel()
 
     # --- verify ---
     assert result == "WARNING"
@@ -136,7 +136,7 @@ def test_determine_log_level_falls_back_to_module_default(
 ) -> None:
     """determine_log_level() should fall back to module default."""
     # --- execute ---
-    result = direct_logger.determine_log_level()
+    result = direct_logger.determineLogLevel()
 
     # --- verify ---
     # Should use DEFAULT_APATHETIC_LOG_LEVEL which is "detail"
@@ -149,12 +149,12 @@ def test_determine_log_level_priority_order(
 ) -> None:
     """determine_log_level() should respect priority: args > env > root > default."""
     # --- setup ---
-    mod_alogs.register_default_log_level("error")
+    mod_alogs.registerDefaultLogLevel("error")
     monkeypatch.setenv("LOG_LEVEL", "warning")
     args = argparse.Namespace(log_level="debug")
 
     # --- execute ---
-    result = direct_logger.determine_log_level(args=args, root_log_level="info")
+    result = direct_logger.determineLogLevel(args=args, root_log_level="info")
 
     # --- verify ---
     # Args should win
@@ -162,7 +162,7 @@ def test_determine_log_level_priority_order(
 
     # --- setup: test env over root ---
     # --- execute ---
-    result = direct_logger.determine_log_level(root_log_level="info")
+    result = direct_logger.determineLogLevel(root_log_level="info")
 
     # --- verify ---
     # Env should win over root
@@ -172,7 +172,7 @@ def test_determine_log_level_priority_order(
     monkeypatch.delenv("LOG_LEVEL", raising=False)
 
     # --- execute ---
-    result = direct_logger.determine_log_level(root_log_level="info")
+    result = direct_logger.determineLogLevel(root_log_level="info")
 
     # --- verify ---
     # Root should win over default

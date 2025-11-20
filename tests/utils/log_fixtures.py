@@ -56,11 +56,11 @@ def module_logger(monkeypatch: pytest.MonkeyPatch) -> Logger:
     """
     new_logger = mod_alogs.Logger(f"isolated_logger{_suffix()}")
     new_logger.setLevel("test")
-    patch_everywhere(monkeypatch, mod_alogs, "get_logger", lambda: new_logger)
+    patch_everywhere(monkeypatch, mod_alogs, "getLogger", lambda: new_logger)
     safe_trace(
         "module_logger fixture",
         f"id={id(new_logger)}",
-        f"level={new_logger.level_name}",
+        f"level={new_logger.levelName}",
         f"handlers={[type(h).__name__ for h in new_logger.handlers]}",
     )
     return new_logger

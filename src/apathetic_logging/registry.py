@@ -27,15 +27,15 @@ class ApatheticLogging_Internal_Registry:  # noqa: N801  # pyright: ignore[repor
     Registry storage is provided by ``ApatheticLogging_Internal_RegistryData``.
 
     **Static Methods:**
-    - ``register_default_log_level()``: Register the default log level
-    - ``register_log_level_env_vars()``: Register environment variable names
-    - ``register_logger()``: Register a logger (public API)
+    - ``registerDefaultLogLevel()``: Register the default log level
+    - ``registerLogLevelEnvVars()``: Register environment variable names
+    - ``registerLogger()``: Register a logger (public API)
     """
 
     _LoggerType = TypeVar("_LoggerType", bound=logging.Logger)
 
     @staticmethod
-    def register_default_log_level(default_level: str) -> None:
+    def registerDefaultLogLevel(default_level: str) -> None:
         """Register the default log level to use when no other source is found.
 
         Args:
@@ -43,18 +43,18 @@ class ApatheticLogging_Internal_Registry:  # noqa: N801  # pyright: ignore[repor
 
         Example:
             >>> from apathetic_logging import ApatheticLogging
-            >>> apathetic_logging.register_default_log_level("warning")
+            >>> apathetic_logging.registerDefaultLogLevel("warning")
         """
         _registry_data = ApatheticLogging_Internal_RegistryData
         _safe_logging = ApatheticLogging_Internal_SafeLogging
         _registry_data.registered_internal_default_log_level = default_level
-        _safe_logging.safe_trace(
-            "register_default_log_level() called",
+        _safe_logging.safeTrace(
+            "registerDefaultLogLevel() called",
             f"default_level={default_level}",
         )
 
     @staticmethod
-    def register_log_level_env_vars(env_vars: list[str]) -> None:
+    def registerLogLevelEnvVars(env_vars: list[str]) -> None:
         """Register environment variable names to check for log level.
 
         The environment variables will be checked in order, and the first
@@ -66,25 +66,25 @@ class ApatheticLogging_Internal_Registry:  # noqa: N801  # pyright: ignore[repor
 
         Example:
             >>> from apathetic_logging import ApatheticLogging
-            >>> apathetic_logging.register_log_level_env_vars(
+            >>> apathetic_logging.registerLogLevelEnvVars(
             ...     ["MYAPP_LOG_LEVEL", "LOG_LEVEL"]
             ... )
         """
         _registry_data = ApatheticLogging_Internal_RegistryData
         _safe_logging = ApatheticLogging_Internal_SafeLogging
         _registry_data.registered_internal_log_level_env_vars = env_vars
-        _safe_logging.safe_trace(
-            "register_log_level_env_vars() called",
+        _safe_logging.safeTrace(
+            "registerLogLevelEnvVars() called",
             f"env_vars={env_vars}",
         )
 
     @staticmethod
-    def register_logger(
+    def registerLogger(
         logger_name: str | None = None,
         logger_class: type[ApatheticLogging_Internal_Registry._LoggerType]
         | None = None,
     ) -> None:
-        """Register a logger for use by get_logger().
+        """Register a logger for use by getLogger().
 
         This is the public API for registering a logger. It registers the logger
         name and extends the logging module with custom levels if needed.
@@ -102,7 +102,7 @@ class ApatheticLogging_Internal_Registry:  # noqa: N801  # pyright: ignore[repor
 
         **Important**: If you're using a custom logger class that has
         ``extend_logging_module()``, do not call ``logging.setLoggerClass()``
-        directly. Instead, pass the class to ``register_logger()`` and let
+        directly. Instead, pass the class to ``registerLogger()`` and let
         ``extend_logging_module()`` handle setting the logger class. This
         ensures consistent behavior and avoids class identity issues in
         singlefile mode.
@@ -118,11 +118,11 @@ class ApatheticLogging_Internal_Registry:  # noqa: N801  # pyright: ignore[repor
 
         Example:
             >>> # Explicit registration with default Logger (already extended)
-            >>> from apathetic_logging import register_logger
-            >>> register_logger("myapp")
+            >>> from apathetic_logging import registerLogger
+            >>> registerLogger("myapp")
 
             >>> # Auto-infer from __package__
-            >>> register_logger()
+            >>> registerLogger()
             ...     # Uses top-level package from __package__
 
             >>> # Register with custom logger class (has extend_logging_module)
@@ -130,14 +130,14 @@ class ApatheticLogging_Internal_Registry:  # noqa: N801  # pyright: ignore[repor
             >>> class AppLogger(Logger):
             ...     pass
             >>> # Don't call AppLogger.extend_logging_module() or
-            >>> # logging.setLoggerClass() directly - register_logger() handles it
-            >>> register_logger("myapp", AppLogger)
+            >>> # logging.setLoggerClass() directly - registerLogger() handles it
+            >>> registerLogger("myapp", AppLogger)
 
             >>> # Register with any logger class (no extend_logging_module)
             >>> import logging
             >>> class SimpleLogger(logging.Logger):
             ...     pass
-            >>> register_logger("myapp", SimpleLogger)  # Sets logger class directly
+            >>> registerLogger("myapp", SimpleLogger)  # Sets logger class directly
         """
         _registry_data = ApatheticLogging_Internal_RegistryData
         _logging_utils = ApatheticLogging_Internal_LoggingUtils
@@ -149,11 +149,11 @@ class ApatheticLogging_Internal_Registry:  # noqa: N801  # pyright: ignore[repor
         was_explicit = logger_name is not None
 
         # Resolve logger name (with inference if needed)
-        # skip_frames=1 because: register_logger -> resolve_logger_name -> caller
-        # check_registry=False because register_logger() should actively determine
+        # skip_frames=1 because: registerLogger -> resolveLoggerName -> caller
+        # check_registry=False because registerLogger() should actively determine
         # the name from the current context, not return an old registered name. This
         # allows re-inferring from __package__ if the package context has changed.
-        resolved_name = _logging_utils.resolve_logger_name(
+        resolved_name = _logging_utils.resolveLoggerName(
             logger_name,
             check_registry=False,
             skip_frames=1,
@@ -166,11 +166,11 @@ class ApatheticLogging_Internal_Registry:  # noqa: N801  # pyright: ignore[repor
             else:
                 logging.setLoggerClass(logger_class)
 
-        # register_logger always stores the result (explicit or inferred)
+        # registerLogger always stores the result (explicit or inferred)
         _registry_data.registered_internal_logger_name = resolved_name
 
-        _safe_logging.safe_trace(
-            "register_logger() called",
+        _safe_logging.safeTrace(
+            "registerLogger() called",
             f"name={resolved_name}",
             f"auto_inferred={not was_explicit}",
             f"logger_class={logger_class.__name__ if logger_class else None}",

@@ -164,7 +164,7 @@ def make_test_trace(icon: str = "🧵") -> Callable[..., Any]:
     return local_trace
 
 
-def TEST_TRACE(label: str, *args: Any, icon: str = "🧵") -> None:  # noqa: N802
+def TEST_TRACE(label: str, *args: Any, icon: str = "🧵") -> None:
     """Emit a synchronized, flush-safe diagnostic line.
 
     Args:
@@ -255,7 +255,7 @@ class ApatheticCLILogger(logging.Logger):
         self.ensure_handlers()
         super()._log(level, msg, args, **kwargs)
 
-    def setLevel(self, level: int | str) -> None:  # noqa: N802
+    def setLevel(self, level: int | str) -> None:
         """Case insensitive version that resolves string level names.
 
         Validates that custom levels (TEST, TRACE, SILENT) are not set to 0,
@@ -325,7 +325,7 @@ class ApatheticCLILogger(logging.Logger):
             raise ValueError(msg)
 
     @staticmethod
-    def addLevelName(level: int, level_name: str) -> None:  # noqa: N802
+    def addLevelName(level: int, level_name: str) -> None:
         """Safely add a custom logging level name with validation.
 
         This is a wrapper around logging.addLevelName() that validates the level
@@ -2761,7 +2761,7 @@ def get_app_logger() -> AppLogger:
     """Return the configured app logger.
 
     This is the app-specific logger getter that returns AppLogger type.
-    Use this in application code instead of utils_logs.get_logger() for
+    Use this in application code instead of utils_logs.getLogger() for
     better type hints.
     """
     TEST_TRACE(

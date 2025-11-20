@@ -26,19 +26,19 @@ def test_use_level_context_manager_with_child_class() -> None:
     # --- setup ---
     app_name = "testapp_use_level"
     AppLoggerForTest.extend_logging_module()
-    mod_alogs.register_logger(app_name)
+    mod_alogs.registerLogger(app_name)
     logger = cast("AppLoggerForTest", logging.getLogger(app_name))
     logger.setLevel("INFO")
 
     # --- execute ---
     # Use context manager to temporarily change level
-    with logger.use_level("DEBUG"):
-        assert logger.level_name == "DEBUG"
+    with logger.useLevel("DEBUG"):
+        assert logger.levelName == "DEBUG"
         logger.debug("This should appear")
 
     # --- verify ---
     # Level should be restored
-    assert logger.level_name == "INFO"
+    assert logger.levelName == "INFO"
 
 
 def test_use_level_minimum_with_child_class() -> None:
@@ -46,25 +46,25 @@ def test_use_level_minimum_with_child_class() -> None:
     # --- setup ---
     app_name = "testapp_use_level_min"
     AppLoggerForTest.extend_logging_module()
-    mod_alogs.register_logger(app_name)
+    mod_alogs.registerLogger(app_name)
     logger = cast("AppLoggerForTest", logging.getLogger(app_name))
     logger.setLevel("TRACE")  # More verbose
 
     # --- execute ---
     # Try to downgrade with minimum=True (should not downgrade)
-    with logger.use_level("INFO", minimum=True):
+    with logger.useLevel("INFO", minimum=True):
         # Should stay at TRACE (more verbose)
-        assert logger.level_name == "TRACE"
+        assert logger.levelName == "TRACE"
 
     # Try to upgrade with minimum=True (should upgrade)
     logger.setLevel("WARNING")
-    with logger.use_level("DEBUG", minimum=True):
+    with logger.useLevel("DEBUG", minimum=True):
         # Should upgrade to DEBUG (more verbose)
-        assert logger.level_name == "DEBUG"
+        assert logger.levelName == "DEBUG"
 
     # --- verify ---
     # Should restore to WARNING
-    assert logger.level_name == "WARNING"
+    assert logger.levelName == "WARNING"
 
 
 def test_log_dynamic_with_child_class() -> None:
@@ -72,15 +72,15 @@ def test_log_dynamic_with_child_class() -> None:
     # --- setup ---
     app_name = "testapp_log_dynamic"
     AppLoggerForTest.extend_logging_module()
-    mod_alogs.register_logger(app_name)
+    mod_alogs.registerLogger(app_name)
     logger = cast("AppLoggerForTest", logging.getLogger(app_name))
     logger.setLevel("DEBUG")
 
     # --- execute ---
     # Should be able to log with dynamic level
-    logger.log_dynamic("debug", "Dynamic debug message")
-    logger.log_dynamic(logging.INFO, "Dynamic info message")
-    logger.log_dynamic("TRACE", "Dynamic trace message")
+    logger.logDynamic("debug", "Dynamic debug message")
+    logger.logDynamic(logging.INFO, "Dynamic info message")
+    logger.logDynamic("TRACE", "Dynamic trace message")
 
     # --- verify ---
     # Should not raise errors
@@ -92,13 +92,13 @@ def test_error_if_not_debug_with_child_class() -> None:
     # --- setup ---
     app_name = "testapp_error_if_not_debug"
     AppLoggerForTest.extend_logging_module()
-    mod_alogs.register_logger(app_name)
+    mod_alogs.registerLogger(app_name)
     logger = cast("AppLoggerForTest", logging.getLogger(app_name))
 
     # Test at INFO level (not debug)
     logger.setLevel("INFO")
     # Should log as error (not exception)
-    logger.error_if_not_debug("Error message at INFO level")
+    logger.errorIfNotDebug("Error message at INFO level")
 
     # Test at DEBUG level
     logger.setLevel("DEBUG")
@@ -111,7 +111,7 @@ def test_error_if_not_debug_with_child_class() -> None:
     try:
         _raise_test_exception()
     except ValueError:
-        logger.error_if_not_debug("Error message at DEBUG level")
+        logger.errorIfNotDebug("Error message at DEBUG level")
 
     # --- verify ---
     # Should not raise errors
@@ -123,12 +123,12 @@ def test_critical_if_not_debug_with_child_class() -> None:
     # --- setup ---
     app_name = "testapp_critical_if_not_debug"
     AppLoggerForTest.extend_logging_module()
-    mod_alogs.register_logger(app_name)
+    mod_alogs.registerLogger(app_name)
     logger = cast("AppLoggerForTest", logging.getLogger(app_name))
 
     # Test at INFO level (not debug)
     logger.setLevel("INFO")
-    logger.critical_if_not_debug("Critical message at INFO level")
+    logger.criticalIfNotDebug("Critical message at INFO level")
 
     # Test at DEBUG level
     logger.setLevel("DEBUG")
@@ -140,7 +140,7 @@ def test_critical_if_not_debug_with_child_class() -> None:
     try:
         _raise_test_exception()
     except ValueError:
-        logger.critical_if_not_debug("Critical message at DEBUG level")
+        logger.criticalIfNotDebug("Critical message at DEBUG level")
 
     # --- verify ---
     # Should not raise errors
@@ -152,7 +152,7 @@ def test_trace_method_with_child_class() -> None:
     # --- setup ---
     app_name = "testapp_trace"
     AppLoggerForTest.extend_logging_module()
-    mod_alogs.register_logger(app_name)
+    mod_alogs.registerLogger(app_name)
     logger = cast("AppLoggerForTest", logging.getLogger(app_name))
 
     # Test at TRACE level
@@ -173,7 +173,7 @@ def test_colorize_with_child_class() -> None:
     # --- setup ---
     app_name = "testapp_colorize"
     AppLoggerForTest.extend_logging_module()
-    mod_alogs.register_logger(app_name)
+    mod_alogs.registerLogger(app_name)
     logger = cast("AppLoggerForTest", logging.getLogger(app_name))
 
     # --- execute ---
@@ -191,7 +191,7 @@ def test_custom_methods_inherit_base_features() -> None:
     # --- setup ---
     app_name = "testapp_inherit"
     AppLoggerWithCustomMethodForTest.extend_logging_module()
-    mod_alogs.register_logger(app_name)
+    mod_alogs.registerLogger(app_name)
     # Create logger directly to ensure we get the right type
     logger = AppLoggerWithCustomMethodForTest(app_name)
 
@@ -202,13 +202,13 @@ def test_custom_methods_inherit_base_features() -> None:
 
     # Should also have access to all base methods
     logger.trace("trace from custom logger")
-    logger.use_level("TRACE")
-    logger.log_dynamic("info", "dynamic log")
+    logger.useLevel("TRACE")
+    logger.logDynamic("info", "dynamic log")
 
     # --- verify ---
     assert hasattr(logger, "trace")
-    assert hasattr(logger, "use_level")
-    assert hasattr(logger, "log_dynamic")
+    assert hasattr(logger, "useLevel")
+    assert hasattr(logger, "logDynamic")
     assert hasattr(logger, "log_operation")
     assert hasattr(logger, "log_performance")
 
@@ -220,9 +220,9 @@ def test_child_class_determine_log_level_env_var_override(
     # --- setup ---
     app_name = "testapp_registered_env"
     AppLoggerForTest.extend_logging_module()
-    mod_alogs.register_logger(app_name)
-    mod_alogs.register_default_log_level("warning")
-    mod_alogs.register_log_level_env_vars(["TESTAPP_LOG_LEVEL", "LOG_LEVEL"])
+    mod_alogs.registerLogger(app_name)
+    mod_alogs.registerDefaultLogLevel("warning")
+    mod_alogs.registerLogLevelEnvVars(["TESTAPP_LOG_LEVEL", "LOG_LEVEL"])
 
     # Create logger directly to ensure we get the child class instance
     logger = AppLoggerForTest(app_name)
@@ -233,7 +233,7 @@ def test_child_class_determine_log_level_env_var_override(
 
     # --- execute ---
     monkeypatch.setenv("TESTAPP_LOG_LEVEL", "error")
-    level = logger.determine_log_level()
+    level = logger.determineLogLevel()
 
     # --- verify ---
     # Env var should override child class default
@@ -247,10 +247,10 @@ def test_child_class_determine_log_level_default_precedence(
     # --- setup ---
     app_name = "testapp_registered_default"
     AppLoggerForTest.extend_logging_module()
-    mod_alogs.register_logger(app_name)
+    mod_alogs.registerLogger(app_name)
     # Register a default that child class should override
-    mod_alogs.register_default_log_level("warning")
-    mod_alogs.register_log_level_env_vars(["TESTAPP_LOG_LEVEL", "LOG_LEVEL"])
+    mod_alogs.registerDefaultLogLevel("warning")
+    mod_alogs.registerLogLevelEnvVars(["TESTAPP_LOG_LEVEL", "LOG_LEVEL"])
 
     # Create logger directly to ensure we get the child class instance
     logger = AppLoggerForTest(app_name)
@@ -260,7 +260,7 @@ def test_child_class_determine_log_level_default_precedence(
     monkeypatch.delenv("LOG_LEVEL", raising=False)
 
     # --- execute ---
-    level = logger.determine_log_level()
+    level = logger.determineLogLevel()
 
     # --- verify ---
     # Child class override returns "INFO" as hardcoded default
@@ -273,11 +273,11 @@ def test_multiple_child_classes_independent() -> None:
 
     # --- setup ---
     class LoggerA(Logger):
-        def determine_log_level(self, **_kwargs: object) -> str:
+        def determineLogLevel(self, **_kwargs: object) -> str:
             return "DEBUG"
 
     class LoggerB(Logger):
-        def determine_log_level(self, **_kwargs: object) -> str:
+        def determineLogLevel(self, **_kwargs: object) -> str:
             return "WARNING"
 
     # Both should be able to extend (second call returns False)
@@ -292,5 +292,5 @@ def test_multiple_child_classes_independent() -> None:
     logger_b = LoggerB("app_b")
 
     # --- verify ---
-    assert logger_a.determine_log_level() == "DEBUG"
-    assert logger_b.determine_log_level() == "WARNING"
+    assert logger_a.determineLogLevel() == "DEBUG"
+    assert logger_b.determineLogLevel() == "WARNING"

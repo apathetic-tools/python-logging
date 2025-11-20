@@ -54,9 +54,9 @@ def test_registering_after_get_logger() -> None:
     logger = cast("AppLoggerForTest", logging.getLogger(app_name))
 
     # Then registers things after (wrong order)
-    mod_alogs.register_logger(app_name)
-    mod_alogs.register_default_log_level("debug")
-    mod_alogs.register_log_level_env_vars(["TESTAPP_LOG_LEVEL"])
+    mod_alogs.registerLogger(app_name)
+    mod_alogs.registerDefaultLogLevel("debug")
+    mod_alogs.registerLogLevelEnvVars(["TESTAPP_LOG_LEVEL"])
 
     # --- verify ---
     # Logger should still work
@@ -64,12 +64,12 @@ def test_registering_after_get_logger() -> None:
     assert logger.name == app_name
 
     # get_logger() should now work since we registered the name
-    logger2 = mod_alogs.get_logger()
+    logger2 = mod_alogs.getLogger()
     assert logger2.name == app_name
 
     # determine_log_level should use registered defaults
     # (though the logger instance was created before registration)
-    level = logger.determine_log_level()
+    level = logger.determineLogLevel()
     # Should use registered default if available, otherwise fallback
     assert level in ("DEBUG", "INFO")  # May depend on registration timing
 
@@ -87,16 +87,16 @@ def test_registering_after_get_logger_affects_new_instances(
     _logger1 = cast("AppLoggerForTest", logging.getLogger(f"{app_name}_1"))
 
     # Register configuration
-    mod_alogs.register_logger(app_name)
-    mod_alogs.register_default_log_level("warning")
+    mod_alogs.registerLogger(app_name)
+    mod_alogs.registerDefaultLogLevel("warning")
     monkeypatch.setenv("TESTAPP_LOG_LEVEL", "error")
-    mod_alogs.register_log_level_env_vars(["TESTAPP_LOG_LEVEL"])
+    mod_alogs.registerLogLevelEnvVars(["TESTAPP_LOG_LEVEL"])
 
     # Create new logger after registration
     logger2 = cast("AppLoggerForTest", logging.getLogger(f"{app_name}_2"))
 
     # --- verify ---
     # New logger should use registered configuration
-    level2 = logger2.determine_log_level()
+    level2 = logger2.determineLogLevel()
     # Should check env var first
     assert level2 == "ERROR"

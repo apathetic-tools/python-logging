@@ -22,7 +22,7 @@ def test_set_level_with_trace_string(
 
     # --- verify ---
     assert direct_logger.level == mod_alogs.apathetic_logging.TRACE_LEVEL
-    assert direct_logger.level_name == "TRACE"
+    assert direct_logger.levelName == "TRACE"
 
 
 def test_set_level_with_trace_lowercase(
@@ -34,7 +34,7 @@ def test_set_level_with_trace_lowercase(
 
     # --- verify ---
     assert direct_logger.level == mod_alogs.apathetic_logging.TRACE_LEVEL
-    assert direct_logger.level_name == "TRACE"
+    assert direct_logger.levelName == "TRACE"
 
 
 def test_set_level_with_silent_string(
@@ -46,7 +46,7 @@ def test_set_level_with_silent_string(
 
     # --- verify ---
     assert direct_logger.level == mod_alogs.apathetic_logging.SILENT_LEVEL
-    assert direct_logger.level_name == "SILENT"
+    assert direct_logger.levelName == "SILENT"
 
 
 def test_set_level_with_detail_string(
@@ -58,7 +58,7 @@ def test_set_level_with_detail_string(
 
     # --- verify ---
     assert direct_logger.level == mod_alogs.apathetic_logging.DETAIL_LEVEL
-    assert direct_logger.level_name == "DETAIL"
+    assert direct_logger.levelName == "DETAIL"
 
 
 def test_set_level_with_detail_lowercase(
@@ -70,7 +70,7 @@ def test_set_level_with_detail_lowercase(
 
     # --- verify ---
     assert direct_logger.level == mod_alogs.apathetic_logging.DETAIL_LEVEL
-    assert direct_logger.level_name == "DETAIL"
+    assert direct_logger.levelName == "DETAIL"
 
 
 def test_set_level_with_minimal_string(
@@ -82,7 +82,7 @@ def test_set_level_with_minimal_string(
 
     # --- verify ---
     assert direct_logger.level == mod_alogs.apathetic_logging.MINIMAL_LEVEL
-    assert direct_logger.level_name == "MINIMAL"
+    assert direct_logger.levelName == "MINIMAL"
 
 
 def test_set_level_with_minimal_lowercase(
@@ -94,7 +94,7 @@ def test_set_level_with_minimal_lowercase(
 
     # --- verify ---
     assert direct_logger.level == mod_alogs.apathetic_logging.MINIMAL_LEVEL
-    assert direct_logger.level_name == "MINIMAL"
+    assert direct_logger.levelName == "MINIMAL"
 
 
 def test_set_level_with_silent_lowercase(
@@ -106,7 +106,7 @@ def test_set_level_with_silent_lowercase(
 
     # --- verify ---
     assert direct_logger.level == mod_alogs.apathetic_logging.SILENT_LEVEL
-    assert direct_logger.level_name == "SILENT"
+    assert direct_logger.levelName == "SILENT"
 
 
 def test_set_level_with_standard_levels_string(

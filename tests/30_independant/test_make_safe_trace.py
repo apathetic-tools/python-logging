@@ -23,7 +23,7 @@ def reset_safe_trace_enabled() -> Generator[None, None, None]:
 def test_make_safe_trace_returns_callable() -> None:
     """make_safe_trace() should return a callable function."""
     # --- execute ---
-    trace_func = mod_alogs.make_safe_trace()
+    trace_func = mod_alogs.makeSafeTrace()
 
     # --- verify ---
     assert callable(trace_func)
@@ -35,7 +35,7 @@ def test_make_safe_trace_custom_icon(
     """make_safe_trace() should use custom icon when provided."""
     # --- setup ---
     custom_icon = "🔍"
-    trace_func = mod_alogs.make_safe_trace(icon=custom_icon)
+    trace_func = mod_alogs.makeSafeTrace(icon=custom_icon)
     _constants = mod_constants.ApatheticLogging_Internal_Constants
     _constants.SAFE_TRACE_ENABLED = True
     buf = StringIO()
@@ -54,7 +54,7 @@ def test_make_safe_trace_default_icon(
 ) -> None:
     """make_safe_trace() should use default icon when not provided."""
     # --- setup ---
-    trace_func = mod_alogs.make_safe_trace()
+    trace_func = mod_alogs.makeSafeTrace()
     _constants = mod_constants.ApatheticLogging_Internal_Constants
     _constants.SAFE_TRACE_ENABLED = True
     buf = StringIO()
@@ -73,7 +73,7 @@ def test_make_safe_trace_respects_safe_trace_disabled(
 ) -> None:
     """make_safe_trace() should not output when safe_trace is disabled."""
     # --- setup ---
-    trace_func = mod_alogs.make_safe_trace()
+    trace_func = mod_alogs.makeSafeTrace()
     _constants = mod_constants.ApatheticLogging_Internal_Constants
     _constants.SAFE_TRACE_ENABLED = False
     buf = StringIO()
@@ -92,7 +92,7 @@ def test_make_safe_trace_outputs_to_stderr(
 ) -> None:
     """make_safe_trace() should write to sys.__stderr__."""
     # --- setup ---
-    trace_func = mod_alogs.make_safe_trace()
+    trace_func = mod_alogs.makeSafeTrace()
     _constants = mod_constants.ApatheticLogging_Internal_Constants
     _constants.SAFE_TRACE_ENABLED = True
     buf = StringIO()

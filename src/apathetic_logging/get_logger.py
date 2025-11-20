@@ -15,16 +15,16 @@ from .logging_utils import (
 
 
 class ApatheticLogging_Internal_GetLogger:  # noqa: N801  # pyright: ignore[reportUnusedClass]
-    """Mixin class that provides the get_logger static method.
+    """Mixin class that provides the getLogger static method.
 
-    This class contains the get_logger implementation as a static method.
-    When mixed into apathetic_logging, it provides apathetic_logging.get_logger.
+    This class contains the getLogger implementation as a static method.
+    When mixed into apathetic_logging, it provides apathetic_logging.getLogger.
     """
 
     _LoggerType = TypeVar("_LoggerType", bound=logging.Logger)
 
     @staticmethod
-    def get_logger(
+    def getLogger(
         logger_name: str | None = None,
     ) -> ApatheticLogging_Internal_Logger.Logger:
         """Get a logger of type ApatheticLogging_Internal_Logger.Logger.
@@ -44,13 +44,11 @@ class ApatheticLogging_Internal_GetLogger:  # noqa: N801  # pyright: ignore[repo
         """
         _get_logger = ApatheticLogging_Internal_GetLogger
         _logger = ApatheticLogging_Internal_Logger
-        result = _get_logger.get_logger_of_type(
-            logger_name, _logger.Logger, skip_frames=2
-        )
+        result = _get_logger.getLoggerOfType(logger_name, _logger.Logger, skip_frames=2)
         return cast("ApatheticLogging_Internal_Logger.Logger", result)  # type: ignore[redundant-cast]
 
     @staticmethod
-    def get_logger_of_type(
+    def getLoggerOfType(
         logger_name: str | None,
         logger_class: type[ApatheticLogging_Internal_GetLogger._LoggerType],
         *,
@@ -59,10 +57,10 @@ class ApatheticLogging_Internal_GetLogger:  # noqa: N801  # pyright: ignore[repo
         _logging_utils = ApatheticLogging_Internal_LoggingUtils
 
         # Resolve logger name (with inference if needed)
-        # skip_frames+1 because: get_logger_of_type -> resolve_logger_name -> caller
-        # check_registry=True because get_logger() should use a previously registered
+        # skip_frames+1 because: getLoggerOfType -> resolveLoggerName -> caller
+        # check_registry=True because getLogger() should use a previously registered
         # name if available, which is the expected behavior for "get" operations.
-        register_name = _logging_utils.resolve_logger_name(
+        register_name = _logging_utils.resolveLoggerName(
             logger_name,
             check_registry=True,
             skip_frames=skip_frames + 1,
@@ -74,14 +72,14 @@ class ApatheticLogging_Internal_GetLogger:  # noqa: N801  # pyright: ignore[repo
 
         # recreate if wrong type
         logger = None
-        registered = _logging_utils.has_logger(register_name)
+        registered = _logging_utils.hasLogger(register_name)
         if registered:
             logger = logging.getLogger(register_name)
             if not isinstance(logger, logger_class):
-                _logging_utils.remove_logger(register_name)
+                _logging_utils.removeLogger(register_name)
                 registered = False
         if not registered:
-            logger = _logging_utils.set_logger_class_temporarily(
+            logger = _logging_utils.setLoggerClassTemporarily(
                 register_name, logger_class
             )
 
