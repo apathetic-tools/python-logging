@@ -1,5 +1,5 @@
 ---
-layout: default
+layout: base
 title: Custom Logger Example
 permalink: /custom-logger/
 ---
