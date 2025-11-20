@@ -27,32 +27,43 @@ Uses Python's built-in logging registry (`logging.getLogger()`) to retrieve the 
 
 **Example:**
 ```python
-from apathetic_logging import get_logger, register_logger_name
+from apathetic_logging import get_logger, register_logger
 
 # Using registered logger name
-register_logger_name("my_app")
+register_logger("my_app")
 logger = get_logger()  # Gets "my_app" logger
 
 # Or specify logger name directly
 logger = get_logger("my_app")  # Gets "my_app" logger
 ```
 
-### `register_logger_name(logger_name: str | None = None) -> None`
+### `register_logger(logger_name: str | None = None, logger_class: type[Logger] | None = None) -> None`
 
-Register a logger name for use by `get_logger()`.
+Register a logger for use by `get_logger()`. This registers the logger name and extends the logging module with custom levels if needed.
 
 If `logger_name` is not provided, the top-level package is automatically extracted from the calling module's `__package__` attribute.
 
+If `logger_class` is provided and has an `extend_logging_module()` method, it will be called to extend the logging module with custom levels and set the logger class. If `logger_class` is not provided, the default `Logger` class will be used.
+
 **Parameters:**
 - `logger_name` (str | None): The logger name to register. If None, auto-infers from the calling module.
+- `logger_class` (type[Logger] | None): Optional logger class to use. If provided and the class has an `extend_logging_module()` method, it will be called. If None, defaults to the standard `Logger` class.
 
 **Example:**
 ```python
-from apathetic_logging import register_logger_name
+from apathetic_logging import register_logger
 
-register_logger_name("my_app")
+register_logger("my_app")
 # Or let it auto-infer:
-register_logger_name()  # Uses top-level package name
+register_logger()  # Uses top-level package name
+
+# Or with a custom logger class:
+from apathetic_logging import Logger
+
+class AppLogger(Logger):
+    pass
+
+register_logger("my_app", AppLogger)
 ```
 
 ### `register_log_level_env_vars(env_vars: list[str]) -> None`

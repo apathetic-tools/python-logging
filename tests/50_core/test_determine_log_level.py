@@ -139,8 +139,8 @@ def test_determine_log_level_falls_back_to_module_default(
     result = direct_logger.determine_log_level()
 
     # --- verify ---
-    # Should use DEFAULT_APATHETIC_LOG_LEVEL which is "info"
-    assert result == "INFO"
+    # Should use DEFAULT_APATHETIC_LOG_LEVEL which is "detail"
+    assert result == "DETAIL"
 
 
 def test_determine_log_level_priority_order(

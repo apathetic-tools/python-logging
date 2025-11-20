@@ -14,15 +14,14 @@ from .logging_utils import (
 )
 
 
-_T = TypeVar("_T", bound=logging.Logger)
-
-
 class ApatheticLogging_Internal_GetLogger:  # noqa: N801  # pyright: ignore[reportUnusedClass]
     """Mixin class that provides the get_logger static method.
 
     This class contains the get_logger implementation as a static method.
     When mixed into apathetic_logging, it provides apathetic_logging.get_logger.
     """
+
+    _LoggerType = TypeVar("_LoggerType", bound=logging.Logger)
 
     @staticmethod
     def get_logger(
@@ -45,14 +44,18 @@ class ApatheticLogging_Internal_GetLogger:  # noqa: N801  # pyright: ignore[repo
         """
         _get_logger = ApatheticLogging_Internal_GetLogger
         _logger = ApatheticLogging_Internal_Logger
-        return _get_logger.get_logger_of_type(
+        result = _get_logger.get_logger_of_type(
             logger_name, _logger.Logger, skip_frames=2
         )
+        return cast("ApatheticLogging_Internal_Logger.Logger", result)  # type: ignore[redundant-cast]
 
     @staticmethod
     def get_logger_of_type(
-        logger_name: str | None, logger_class: type[_T], *, skip_frames: int = 1
-    ) -> _T:
+        logger_name: str | None,
+        logger_class: type[ApatheticLogging_Internal_GetLogger._LoggerType],
+        *,
+        skip_frames: int = 1,
+    ) -> ApatheticLogging_Internal_GetLogger._LoggerType:
         _logging_utils = ApatheticLogging_Internal_LoggingUtils
 
         # Resolve logger name (with inference if needed)
@@ -82,5 +85,5 @@ class ApatheticLogging_Internal_GetLogger:  # noqa: N801  # pyright: ignore[repo
                 register_name, logger_class
             )
 
-        typed_logger = cast("_T", logger)
+        typed_logger = cast("ApatheticLogging_Internal_GetLogger._LoggerType", logger)
         return typed_logger

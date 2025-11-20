@@ -72,7 +72,7 @@ get_logger = apathetic_logging.get_logger
 make_safe_trace = apathetic_logging.make_safe_trace
 register_default_log_level = apathetic_logging.register_default_log_level
 register_log_level_env_vars = apathetic_logging.register_log_level_env_vars
-register_logger_name = apathetic_logging.register_logger_name
+register_logger = apathetic_logging.register_logger
 safe_log = apathetic_logging.safe_log
 
 
@@ -96,7 +96,7 @@ __all__ = [
     "make_safe_trace",
     "register_default_log_level",
     "register_log_level_env_vars",
-    "register_logger_name",
+    "register_logger",
     "safe_log",
     "safe_trace",
 ]

@@ -13,10 +13,10 @@ Get up and running with Apathetic Python Logger in minutes.
 The simplest way to use Apathetic Python Logger is to register a logger name and get a logger instance:
 
 ```python
-from apathetic_logging import get_logger, register_logger_name
+from apathetic_logging import get_logger, register_logger
 
-# Register your logger name
-register_logger_name("my_app")
+# Register your logger
+register_logger("my_app")
 
 # Get the logger instance
 logger = get_logger()
@@ -149,14 +149,14 @@ For command-line applications, you can integrate with `argparse`:
 
 ```python
 import argparse
-from apathetic_logging import get_logger, register_logger_name
+from apathetic_logging import get_logger, register_logger
 
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--log-level", default="info")
     args = parser.parse_args()
     
-    register_logger_name("my_cli")
+    register_logger("my_cli")
     logger = get_logger()
     
     # Logger will automatically use args.log_level

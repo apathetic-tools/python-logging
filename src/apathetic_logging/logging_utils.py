@@ -9,9 +9,6 @@ from types import FrameType
 from typing import TypeVar, cast
 
 
-_LoggerType = TypeVar("_LoggerType", bound=logging.Logger)
-
-
 class ApatheticLogging_Internal_LoggingUtils:  # noqa: N801  # pyright: ignore[reportUnusedClass]
     """Mixin class that provides helper functions for the standard logging module.
 
@@ -23,6 +20,8 @@ class ApatheticLogging_Internal_LoggingUtils:  # noqa: N801  # pyright: ignore[r
     When mixed into apathetic_logging, it provides utility functions that
     interact with Python's standard logging module.
     """
+
+    _LoggerType = TypeVar("_LoggerType", bound=logging.Logger)
 
     @staticmethod
     def has_logger(logger_name: str) -> bool:
@@ -47,8 +46,9 @@ class ApatheticLogging_Internal_LoggingUtils:  # noqa: N801  # pyright: ignore[r
 
     @staticmethod
     def set_logger_class_temporarily(
-        logger_name: str, logger_class: type[_LoggerType]
-    ) -> _LoggerType:
+        logger_name: str,
+        logger_class: type[ApatheticLogging_Internal_LoggingUtils._LoggerType],
+    ) -> ApatheticLogging_Internal_LoggingUtils._LoggerType:
         """Temporarily set the logger class, get/create a logger, then restore.
 
         This function temporarily sets the logger class to the desired type,
@@ -65,7 +65,9 @@ class ApatheticLogging_Internal_LoggingUtils:  # noqa: N801  # pyright: ignore[r
         logging.setLoggerClass(logger_class)
         logger = logging.getLogger(logger_name)
         logging.setLoggerClass(original_class)
-        typed_logger = cast("_LoggerType", logger)
+        typed_logger = cast(
+            "ApatheticLogging_Internal_LoggingUtils._LoggerType", logger
+        )
         return typed_logger
 
     @staticmethod
@@ -133,7 +135,7 @@ class ApatheticLogging_Internal_LoggingUtils:  # noqa: N801  # pyright: ignore[r
             logger_name: Explicit logger name, or None to infer.
             check_registry: If True, check registry before inferring. Use False
                 when the caller should actively determine the name from current
-                context (e.g., register_logger_name() which should re-infer even
+                context (e.g., register_logger() which should re-infer even
                 if a name is already registered). Use True when the caller should
                 use a previously registered name if available (e.g., get_logger()
                 which should use the registered name).
@@ -181,7 +183,7 @@ class ApatheticLogging_Internal_LoggingUtils:  # noqa: N801  # pyright: ignore[r
         # Raise error with clear message
         error_msg = (
             "Cannot auto-infer logger name: __package__ is not set in the "
-            "calling module. Please call register_logger_name() with an "
+            "calling module. Please call register_logger() with an "
             "explicit logger name."
         )
         raise RuntimeError(error_msg)

@@ -15,7 +15,7 @@ class ApatheticLogging_Internal_Constants:  # noqa: N801  # pyright: ignore[repo
     It's kept separate for organizational purposes.
     """
 
-    DEFAULT_APATHETIC_LOG_LEVEL: str = "info"
+    DEFAULT_APATHETIC_LOG_LEVEL: str = "detail"
     DEFAULT_APATHETIC_LOG_LEVEL_ENV_VARS: ClassVar[list[str]] = ["LOG_LEVEL"]
 
     # Flag for quick runtime enable/disable

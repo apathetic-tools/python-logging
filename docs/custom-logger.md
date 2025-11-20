@@ -33,7 +33,7 @@ from apathetic_logging import (
     Logger as ApatheticLogger,
     register_default_log_level,
     register_log_level_env_vars,
-    register_logger_name,
+    register_logger,
 )
 
 # Application-specific constants
@@ -102,11 +102,12 @@ register_log_level_env_vars([LOG_LEVEL_ENV_VAR, "LOG_LEVEL"])
 # Register the default log level
 register_default_log_level(DEFAULT_LOG_LEVEL)
 
-# Register the logger name
+# Register the logger
 # This allows get_logger() and get_logger_of_type() to find the logger instance
 # NOTE: This is also optional if you always pass the logger name explicitly
 # to get_app_logger(), but recommended for consistency
-register_logger_name(APP_NAME)
+# This also automatically extends the logging module with AppLogger
+register_logger(APP_NAME, AppLogger)
 
 
 # --- Application Logger Getter ------------------------------------------------
@@ -236,7 +237,7 @@ class AppLogger(ApatheticLogger):
 
 3. **Register default log level** - Use `register_default_log_level()` to set the fallback log level. This is optional if you always provide a default in your `determine_log_level()` override.
 
-4. **Register logger name (Optional)** - Use `register_logger_name()` so `get_logger()` and `get_logger_of_type()` can auto-infer the logger name. If you always pass the logger name explicitly to `get_app_logger()`, this is optional.
+4. **Register logger (Optional)** - Use `register_logger()` so `get_logger()` and `get_logger_of_type()` can auto-infer the logger name. If you always pass the logger name explicitly to `get_app_logger()`, this is optional. You can pass your custom logger class to `register_logger()` to automatically extend the logging module.
 
 5. **Create a typed getter** - Provide a `get_app_logger()` function that returns your custom logger type for better IDE support. Use the `get_logger_of_type()` helper function for a simple implementation:
      ```python

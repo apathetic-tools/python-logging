@@ -26,7 +26,7 @@ def test_use_level_context_manager_with_child_class() -> None:
     # --- setup ---
     app_name = "testapp_use_level"
     AppLoggerForTest.extend_logging_module()
-    mod_alogs.register_logger_name(app_name)
+    mod_alogs.register_logger(app_name)
     logger = cast("AppLoggerForTest", logging.getLogger(app_name))
     logger.setLevel("INFO")
 
@@ -46,7 +46,7 @@ def test_use_level_minimum_with_child_class() -> None:
     # --- setup ---
     app_name = "testapp_use_level_min"
     AppLoggerForTest.extend_logging_module()
-    mod_alogs.register_logger_name(app_name)
+    mod_alogs.register_logger(app_name)
     logger = cast("AppLoggerForTest", logging.getLogger(app_name))
     logger.setLevel("TRACE")  # More verbose
 
@@ -72,7 +72,7 @@ def test_log_dynamic_with_child_class() -> None:
     # --- setup ---
     app_name = "testapp_log_dynamic"
     AppLoggerForTest.extend_logging_module()
-    mod_alogs.register_logger_name(app_name)
+    mod_alogs.register_logger(app_name)
     logger = cast("AppLoggerForTest", logging.getLogger(app_name))
     logger.setLevel("DEBUG")
 
@@ -92,7 +92,7 @@ def test_error_if_not_debug_with_child_class() -> None:
     # --- setup ---
     app_name = "testapp_error_if_not_debug"
     AppLoggerForTest.extend_logging_module()
-    mod_alogs.register_logger_name(app_name)
+    mod_alogs.register_logger(app_name)
     logger = cast("AppLoggerForTest", logging.getLogger(app_name))
 
     # Test at INFO level (not debug)
@@ -123,7 +123,7 @@ def test_critical_if_not_debug_with_child_class() -> None:
     # --- setup ---
     app_name = "testapp_critical_if_not_debug"
     AppLoggerForTest.extend_logging_module()
-    mod_alogs.register_logger_name(app_name)
+    mod_alogs.register_logger(app_name)
     logger = cast("AppLoggerForTest", logging.getLogger(app_name))
 
     # Test at INFO level (not debug)
@@ -152,7 +152,7 @@ def test_trace_method_with_child_class() -> None:
     # --- setup ---
     app_name = "testapp_trace"
     AppLoggerForTest.extend_logging_module()
-    mod_alogs.register_logger_name(app_name)
+    mod_alogs.register_logger(app_name)
     logger = cast("AppLoggerForTest", logging.getLogger(app_name))
 
     # Test at TRACE level
@@ -173,7 +173,7 @@ def test_colorize_with_child_class() -> None:
     # --- setup ---
     app_name = "testapp_colorize"
     AppLoggerForTest.extend_logging_module()
-    mod_alogs.register_logger_name(app_name)
+    mod_alogs.register_logger(app_name)
     logger = cast("AppLoggerForTest", logging.getLogger(app_name))
 
     # --- execute ---
@@ -191,7 +191,7 @@ def test_custom_methods_inherit_base_features() -> None:
     # --- setup ---
     app_name = "testapp_inherit"
     AppLoggerWithCustomMethodForTest.extend_logging_module()
-    mod_alogs.register_logger_name(app_name)
+    mod_alogs.register_logger(app_name)
     # Create logger directly to ensure we get the right type
     logger = AppLoggerWithCustomMethodForTest(app_name)
 
@@ -220,7 +220,7 @@ def test_child_class_determine_log_level_env_var_override(
     # --- setup ---
     app_name = "testapp_registered_env"
     AppLoggerForTest.extend_logging_module()
-    mod_alogs.register_logger_name(app_name)
+    mod_alogs.register_logger(app_name)
     mod_alogs.register_default_log_level("warning")
     mod_alogs.register_log_level_env_vars(["TESTAPP_LOG_LEVEL", "LOG_LEVEL"])
 
@@ -247,7 +247,7 @@ def test_child_class_determine_log_level_default_precedence(
     # --- setup ---
     app_name = "testapp_registered_default"
     AppLoggerForTest.extend_logging_module()
-    mod_alogs.register_logger_name(app_name)
+    mod_alogs.register_logger(app_name)
     # Register a default that child class should override
     mod_alogs.register_default_log_level("warning")
     mod_alogs.register_log_level_env_vars(["TESTAPP_LOG_LEVEL", "LOG_LEVEL"])

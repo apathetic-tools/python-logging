@@ -18,7 +18,7 @@ A complete example of a command-line application using Apathetic Python Logger:
 
 import argparse
 import sys
-from apathetic_logging import get_logger, register_logger_name
+from apathetic_logging import get_logger, register_logger
 
 def main():
     parser = argparse.ArgumentParser(description="Example CLI tool")
@@ -31,8 +31,8 @@ def main():
     parser.add_argument("--verbose", "-v", action="store_true", help="Enable verbose output")
     args = parser.parse_args()
     
-    # Register logger name
-    register_logger_name("example_cli")
+    # Register logger
+    register_logger("example_cli")
     logger = get_logger()
     
     # Set log level from arguments
@@ -66,9 +66,9 @@ if __name__ == "__main__":
 Temporarily increase verbosity for specific operations:
 
 ```python
-from apathetic_logging import get_logger, register_logger_name
+from apathetic_logging import get_logger, register_logger
 
-register_logger_name("my_app")
+register_logger("my_app")
 logger = get_logger()
 
 # Normal operation
@@ -89,9 +89,9 @@ logger.info("Operation complete")
 Show full tracebacks only in debug mode:
 
 ```python
-from apathetic_logging import get_logger, register_logger_name
+from apathetic_logging import get_logger, register_logger
 
-register_logger_name("my_app")
+register_logger("my_app")
 logger = get_logger()
 
 def risky_operation():
@@ -114,7 +114,7 @@ Register custom environment variables for log level:
 ```python
 from apathetic_logging import (
     get_logger,
-    register_logger_name,
+    register_logger,
     register_log_level_env_vars,
     register_default_log_level,
 )
@@ -125,7 +125,7 @@ register_log_level_env_vars(["MYAPP_LOG_LEVEL", "APP_LOG_LEVEL", "LOG_LEVEL"])
 # Set a custom default
 register_default_log_level("warning")
 
-register_logger_name("my_app")
+register_logger("my_app")
 logger = get_logger()
 
 # Logger will check MYAPP_LOG_LEVEL, then APP_LOG_LEVEL, then LOG_LEVEL
@@ -139,7 +139,7 @@ Seamless integration with argparse for CLI tools:
 
 ```python
 import argparse
-from apathetic_logging import get_logger, register_logger_name
+from apathetic_logging import get_logger, register_logger
 
 def create_parser():
     parser = argparse.ArgumentParser()
@@ -155,7 +155,7 @@ def main():
     parser = create_parser()
     args = parser.parse_args()
     
-    register_logger_name("my_cli")
+    register_logger("my_cli")
     logger = get_logger()
     
     # Determine log level from args, env, or default
@@ -171,9 +171,9 @@ def main():
 Log at different levels dynamically:
 
 ```python
-from apathetic_logging import get_logger, register_logger_name
+from apathetic_logging import get_logger, register_logger
 
-register_logger_name("my_app")
+register_logger("my_app")
 logger = get_logger()
 
 # Log at different levels based on conditions
@@ -213,11 +213,11 @@ Example of using the logger in tests:
 
 ```python
 import pytest
-from apathetic_logging import get_logger, register_logger_name
+from apathetic_logging import get_logger, register_logger
 
 @pytest.fixture
 def logger():
-    register_logger_name("test_app")
+    register_logger("test_app")
     logger = get_logger()
     logger.setLevel("debug")  # Verbose for tests
     return logger
@@ -234,9 +234,9 @@ def test_operation(logger):
 Completely disable logging:
 
 ```python
-from apathetic_logging import get_logger, register_logger_name
+from apathetic_logging import get_logger, register_logger
 
-register_logger_name("my_app")
+register_logger("my_app")
 logger = get_logger()
 
 # Enable silent mode
@@ -258,12 +258,12 @@ Using the logger across multiple modules:
 
 ```main.py```
 ```python
-from apathetic_logging import register_logger_name
+from apathetic_logging import register_logger
 import module_a
 import module_b
 
 # Register once at application entry point
-register_logger_name("my_app")
+register_logger("my_app")
 
 # Modules can now use get_logger()
 module_a.do_something()
@@ -295,9 +295,9 @@ def do_something_else():
 Use `safe_log` for critical error reporting:
 
 ```python
-from apathetic_logging import safe_log, get_logger, register_logger_name
+from apathetic_logging import safe_log, get_logger, register_logger
 
-register_logger_name("my_app")
+register_logger("my_app")
 logger = get_logger()
 
 def critical_operation():
@@ -319,9 +319,9 @@ def critical_operation():
 Only increase verbosity, never decrease:
 
 ```python
-from apathetic_logging import get_logger, register_logger_name
+from apathetic_logging import get_logger, register_logger
 
-register_logger_name("my_app")
+register_logger("my_app")
 logger = get_logger()
 logger.setLevel("trace")  # Most verbose
 

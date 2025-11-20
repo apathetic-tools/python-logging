@@ -64,7 +64,7 @@ class apathetic_logging(  # noqa: N801
     - ``get_logger()`` → ``ApatheticLogging_Internal_GetLogger``
     - ``register_default_log_level()`` → ``ApatheticLogging_Internal_Registry``
     - ``register_log_level_env_vars()`` → ``ApatheticLogging_Internal_Registry``
-    - ``register_logger_name()`` → ``ApatheticLogging_Internal_Registry``
+    - ``register_logger()`` → ``ApatheticLogging_Internal_Registry``
     - ``safe_log()`` → ``ApatheticLogging_Internal_SafeLogging``
     - ``safe_trace()`` → ``ApatheticLogging_Internal_SafeLogging``
     - ``make_safe_trace()`` → ``ApatheticLogging_Internal_SafeLogging``

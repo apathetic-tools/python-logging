@@ -54,7 +54,7 @@ def test_registering_after_get_logger() -> None:
     logger = cast("AppLoggerForTest", logging.getLogger(app_name))
 
     # Then registers things after (wrong order)
-    mod_alogs.register_logger_name(app_name)
+    mod_alogs.register_logger(app_name)
     mod_alogs.register_default_log_level("debug")
     mod_alogs.register_log_level_env_vars(["TESTAPP_LOG_LEVEL"])
 
@@ -87,7 +87,7 @@ def test_registering_after_get_logger_affects_new_instances(
     _logger1 = cast("AppLoggerForTest", logging.getLogger(f"{app_name}_1"))
 
     # Register configuration
-    mod_alogs.register_logger_name(app_name)
+    mod_alogs.register_logger(app_name)
     mod_alogs.register_default_log_level("warning")
     monkeypatch.setenv("TESTAPP_LOG_LEVEL", "error")
     mod_alogs.register_log_level_env_vars(["TESTAPP_LOG_LEVEL"])

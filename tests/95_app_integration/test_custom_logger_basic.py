@@ -35,7 +35,7 @@ def test_custom_logger_correct_usage_pattern() -> None:
     mod_alogs.register_default_log_level(default_log_level)
 
     # Step 4: Register logger name
-    mod_alogs.register_logger_name(app_name)
+    mod_alogs.register_logger(app_name)
 
     # Step 5: Get logger instance
     # Since extend_logging_module() was called, this will be AppLoggerForTest
@@ -69,7 +69,7 @@ def test_custom_logger_with_typed_getter() -> None:
     # --- setup ---
     app_name = "testapp_typed"
     AppLoggerForTest.extend_logging_module()
-    mod_alogs.register_logger_name(app_name)
+    mod_alogs.register_logger(app_name)
 
     def get_app_logger() -> AppLoggerForTest:
         """Return the configured application logger."""
@@ -110,7 +110,7 @@ def test_custom_logger_determine_log_level_with_cli_args(
     # --- setup ---
     app_name = "testapp_determine_cli"
     AppLoggerForTest.extend_logging_module()
-    mod_alogs.register_logger_name(app_name)
+    mod_alogs.register_logger(app_name)
     logger = AppLoggerForTest(app_name)
 
     # Set up conflicting values that CLI args should override
@@ -133,7 +133,7 @@ def test_custom_logger_determine_log_level_with_env_var(
     # --- setup ---
     app_name = "testapp_determine_env"
     AppLoggerForTest.extend_logging_module()
-    mod_alogs.register_logger_name(app_name)
+    mod_alogs.register_logger(app_name)
     logger = AppLoggerForTest(app_name)
 
     # Set up conflicting root log level that env var should override
@@ -155,7 +155,7 @@ def test_custom_logger_determine_log_level_with_root_log_level(
     # --- setup ---
     app_name = "testapp_determine_root"
     AppLoggerForTest.extend_logging_module()
-    mod_alogs.register_logger_name(app_name)
+    mod_alogs.register_logger(app_name)
     logger = AppLoggerForTest(app_name)
 
     # Ensure no env vars are set
@@ -177,7 +177,7 @@ def test_custom_logger_determine_log_level_default_fallback(
     # --- setup ---
     app_name = "testapp_determine_default"
     AppLoggerForTest.extend_logging_module()
-    mod_alogs.register_logger_name(app_name)
+    mod_alogs.register_logger(app_name)
     logger = AppLoggerForTest(app_name)
 
     # Ensure no env vars or other settings are set
@@ -199,7 +199,7 @@ def test_custom_logger_with_custom_methods() -> None:
     app_name = "testapp_custom_methods"
     # Need to set logger class to our custom class
     AppLoggerWithCustomMethodForTest.extend_logging_module()
-    mod_alogs.register_logger_name(app_name)
+    mod_alogs.register_logger(app_name)
     # Create logger directly to ensure we get the right type
     logger = AppLoggerWithCustomMethodForTest(app_name)
 

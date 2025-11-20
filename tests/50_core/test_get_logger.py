@@ -15,7 +15,7 @@ def test_get_logger_with_registered_name() -> None:
     """get_logger() should return logger when name is registered."""
     # --- setup ---
     logger_name = "test_get_logger_registered"
-    mod_alogs.register_logger_name(logger_name)
+    mod_alogs.register_logger(logger_name)
 
     # --- execute ---
     result = mod_alogs.get_logger()
@@ -109,7 +109,7 @@ def test_get_logger_uses_existing_logger_instance() -> None:
     """get_logger() should return existing logger from logging registry."""
     # --- setup ---
     logger_name = "test_get_logger_existing"
-    mod_alogs.register_logger_name(logger_name)
+    mod_alogs.register_logger(logger_name)
 
     # --- execute ---
     result1 = mod_alogs.get_logger()

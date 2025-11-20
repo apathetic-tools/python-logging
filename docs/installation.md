@@ -60,9 +60,9 @@ Apathetic Python Logger has **zero runtime dependencies** — it uses only Pytho
 After installation, verify that it works:
 
 ```python
-from apathetic_logging import get_logger, register_logger_name
+from apathetic_logging import get_logger, register_logger
 
-register_logger_name("test")
+register_logger("test")
 logger = get_logger()
 logger.minimal("Installation successful!")
 ```

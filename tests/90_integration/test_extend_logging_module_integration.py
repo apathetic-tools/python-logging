@@ -33,7 +33,7 @@ def test_extend_logging_module_called_twice_is_safe() -> None:
 def test_extend_logging_module_before_get_logger_works() -> None:
     """extend_logging_module() should work when called before get_logger()."""
     # --- setup ---
-    mod_alogs.register_logger_name("test_integration")
+    mod_alogs.register_logger("test_integration")
 
     # --- execute ---
     # extend_logging_module() is already called at import, but we can verify
@@ -57,7 +57,7 @@ def test_extend_logging_module_before_get_logger_works() -> None:
 def test_get_logger_works_after_extend_logging_module() -> None:
     """get_logger() should work correctly after extend_logging_module() is called."""
     # --- setup ---
-    mod_alogs.register_logger_name("test_get_logger_after_extend")
+    mod_alogs.register_logger("test_get_logger_after_extend")
 
     # --- execute ---
     logger = mod_alogs.get_logger()
@@ -145,7 +145,7 @@ def test_logger_can_use_silent_level_after_extend() -> None:
 def test_extend_logging_module_sets_logger_class() -> None:
     """extend_logging_module() should set the logger class for logging.getLogger()."""
     # --- setup ---
-    mod_alogs.register_logger_name("test_logger_class")
+    mod_alogs.register_logger("test_logger_class")
 
     # --- execute ---
     # get_logger() uses logging.getLogger() internally
@@ -209,7 +209,7 @@ def test_full_integration_flow() -> None:
     # --- execute ---
     # 1. extend_logging_module() is called at import (already done)
     # 2. Register logger name
-    mod_alogs.register_logger_name("integration_test")
+    mod_alogs.register_logger("integration_test")
 
     # 3. Get logger
     logger = mod_alogs.get_logger()
@@ -241,7 +241,7 @@ def test_get_logger_requires_extend_logging_module() -> None:
     # --- setup ---
     # extend_logging_module() is already called at import time
     # Verify that get_logger() works correctly
-    mod_alogs.register_logger_name("test_requires_extend")
+    mod_alogs.register_logger("test_requires_extend")
 
     # --- execute ---
     logger = mod_alogs.get_logger()
@@ -298,7 +298,7 @@ def test_get_logger_returns_apathetic_logger_after_extend() -> None:
     # --- setup ---
     # extend_logging_module() is called at import time, which sets
     # logging.setLoggerClass(apathetic_logging.Logger)
-    mod_alogs.register_logger_name("test_logger_type")
+    mod_alogs.register_logger("test_logger_type")
 
     # --- execute ---
     logger = mod_alogs.get_logger()

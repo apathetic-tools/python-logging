@@ -24,10 +24,10 @@ permalink: /
 ## Quick Example
 
 ```python
-from apathetic_logging import get_logger, register_logger_name
+from apathetic_logging import get_logger, register_logger
 
-# Register your logger name
-register_logger_name("my_app")
+# Register your logger
+register_logger("my_app")
 
 # Get the logger instance
 logger = get_logger()
