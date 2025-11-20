@@ -45,9 +45,9 @@ import apathetic_logging
 
 This method is useful for:
 - Projects that want to integrate dependencies directly into their codebase  
-  (avoiding package managers and external dependencies)
+  *(avoiding package managers and external dependencies)*
 - Embedded systems or restricted environments  
-  (including offline/air-gapped deployments)
+  *(including offline/air-gapped deployments)*
 
 ## Requirements
 

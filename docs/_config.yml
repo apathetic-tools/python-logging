@@ -1,7 +1,7 @@
 # Jekyll configuration for GitHub Pages
 # general config reference: https://jekyllrb.com/docs/configuration/
 
-title: Apathetic Python Logger
+title: Apathetic Python Logger&nbsp;📝
 description: Minimal wrapper for the Python standard library logger
 url: https://apathetic-tools.github.io
 baseurl: /python-logging
@@ -64,7 +64,7 @@ exclude:
 
 # Site metadata
 author: 
-  name: Apathetic Tools
+  name: 😐 Apathetic Tools
   url: https://apathetic-tools.github.io/
 
 license:
