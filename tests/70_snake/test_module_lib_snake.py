@@ -3,15 +3,14 @@
 
 from __future__ import annotations
 
+import importlib
 from contextlib import suppress
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 
 import apathetic_logging as mod_alogs
-
-# Import the get_logger module to ensure it's available for patching
-import apathetic_logging.get_logger as mod_get_logger  # noqa: F401  # pyright: ignore[reportUnusedImport]
+from tests.utils.patch_everywhere import patch_everywhere
 
 
 # List of all library module-level snake_case functions and their test parameters
@@ -91,6 +90,7 @@ def test_module_lib_snake_function(
     kwargs: dict[str, object],
     mock_target_module: str,
     mock_target_function: str,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Test module-level library snake_case functions call camelCase function.
 
@@ -106,22 +106,34 @@ def test_module_lib_snake_function(
     # Mock the underlying library function
     # For library functions, patch the internal class method that the snake_case
     # function calls
+    if mock_target_module == "apathetic_logging.get_logger":
+        # get_logger is a function on the apathetic_logging namespace class
+        # The actual implementation is in ApatheticLogging_Internal_GetLogger class
+        # which is in the get_logger module. Use patch_everywhere to patch the
+        # class method everywhere it was imported.
+        mod_get_logger = importlib.import_module("apathetic_logging.get_logger")
+        mock_func = MagicMock()
+        patch_everywhere(
+            monkeypatch,
+            mod_get_logger.ApatheticLogging_Internal_GetLogger,
+            mock_target_function,
+            mock_func,
+        )
+        # Call the snake_case function
+        # Some functions may raise (e.g., if logger doesn't exist)
+        # That's okay - we just want to verify the mock was called
+        with suppress(Exception):
+            snake_func(*args, **kwargs)
+
+        # Verify the underlying function was called
+        assert mock_func.called, f"{mock_target_function} was not called by {func_name}"
+        return
+
+    # For other library functions, use standard patch
     if mock_target_module.startswith("apathetic_logging."):
         # The snake_case functions call internal class methods directly
         # Patch the internal class method
-        # (e.g., apathetic_logging.get_logger.
-        # ApatheticLogging_Internal_GetLogger.getLogger)
-
-        if mock_target_module == "apathetic_logging.get_logger":
-            # get_logger is a function on the apathetic_logging namespace class
-            # The actual implementation is in ApatheticLogging_Internal_GetLogger class
-            # which is in the get_logger module. Use the full module path for patching.
-            # The module name when imported is 'apathetic_logging.get_logger'
-            patch_target = (
-                "apathetic_logging.get_logger."
-                f"ApatheticLogging_Internal_GetLogger.{mock_target_function}"
-            )
-        elif mock_target_module == "apathetic_logging.logging_utils":
+        if mock_target_module == "apathetic_logging.logging_utils":
             patch_target = (
                 f"apathetic_logging.logging_utils."
                 f"ApatheticLogging_Internal_LoggingUtils.{mock_target_function}"
@@ -142,6 +154,7 @@ def test_module_lib_snake_function(
     else:
         # For stdlib functions, use the original target
         patch_target = f"{mock_target_module}.{mock_target_function}"
+
     with patch(patch_target) as mock_func:
         # Call the snake_case function
         # Some functions may raise (e.g., if logger doesn't exist)
