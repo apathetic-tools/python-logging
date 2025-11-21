@@ -1,38 +1,19 @@
 ---
 description: Execution and workflow conventions
 globs:
-  - "**/*.py"
+  - "**/*"
 alwaysApply: true
 ---
 
 ### Execution and Workflow
-- Always use `poetry run python3` (not bare `python3`) to ensure execution in the project's virtual environment
-- **Use poe tasks** for all common operations:
-  - `poetry run poe check` - Run linting, type checking, and tests
-  - `poetry run poe fix` - Auto-format and fix linting issues
-  - `poetry run poe test` - Run test suite
-  - `poetry run poe coverage` - Generate code coverage report (dual runtime coverage)
-  - `poetry run poe check:fix` - Fix, type check, and test (run before committing)
-  - `poetry run poe build:script` - Generate the single-file dist/package.py
-  - `poetry run poe sync:ai:guidance` - Sync AI guidance files from `.ai/` to `.cursor/` and `.claude/`
-- **NEVER edit `.cursor/` or `.claude/` files directly**: These directories are generated from `.ai/` source files. Always edit files in `.ai/rules/` or `.ai/commands/` instead, then run `poetry run poe sync:ai:guidance` to sync changes.
-- **When modifying `.ai/` files**: After changing any file in `.ai/rules/` or `.ai/commands/`, you **must**:
-  1. Run `poetry run poe sync:ai:guidance` to sync changes to `.cursor/` and `.claude/`
-  2. Include the generated files (`.cursor/rules/*.mdc`, `.cursor/commands/*.md`, `.claude/CLAUDE.md`) as part of the same changeset/commit
-- **Before committing**: Run `poetry run poe check:fix` (this also regenerates `dist/package.py` as needed)
-- **Debugging failing tests**: When tests fail and standard debugging isn't sufficient:
-  - **First try**: Set `LOG_LEVEL=test` to bypass pytest's log capture and see detailed logs:
-    ```bash
-    LOG_LEVEL=test poetry run poe test:pytest:installed tests/path/to/test.py::test_name -xvs
-    ```
-  - **If still stuck**: Consult `.ai/workflows/debug_tests.md` for comprehensive troubleshooting techniques including `logger.trace()`, `safe_trace()`, and advanced debugging strategies
-  - **Before resorting to checkpoint commits**: Try the techniques in the debug workflow first
+- **VENV:** Use the poetry venv for execution, e.g. `poetry run python3` (not bare `python3`)
+- **Poe tasks**: `check`, `fix`, `test`, `coverage`, `check:fix` (before commit), `build:script`
+- **NEVER edit `.cursor/` or `.claude/` directly**: Generated from `.ai/`. Edit `.ai/rules/` or `.ai/commands/`, then run `poetry run poe sync:ai:guidance` and include generated files in commit.
+- **Before committing**: Run `poetry run poe check:fix`
+- **Debugging tests**: 
+  1. First try `LOG_LEVEL=test poetry run poe test:pytest:installed tests/path/to/test.py::test_name -xvs`. 
+  2. If stuck, see `.ai/workflows/debug_tests.md`
 
-### When to Read Workflow and Template Files
+### When to Read Workflow/Template Files
 
-- **Do NOT read `.ai/workflows/` or `.ai/templates/` files** just because they are mentioned in rules
-- **Only read workflow/template files when**:
-  - The condition for invoking them is met (e.g., when stuck debugging tests, then read `debug_tests.md`)
-  - You are directly asked to work on or modify them
-- **Mentions in rules are references**: When a rule mentions a workflow file (e.g., "consult `.ai/workflows/debug_tests.md`"), treat it as a reference to consult when needed, not an instruction to read it immediately
-- **Purpose**: This keeps context lean by only loading detailed workflow instructions when the specific situation arises
+Only read `.ai/workflows/` or `.ai/templates/` when: condition is met (e.g., stuck debugging → read `debug_tests.md`), or directly asked to work on them. Mentions in rules are references, not immediate read instructions.

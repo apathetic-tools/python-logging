@@ -7,9 +7,6 @@ alwaysApply: true
 
 ## Apathetic Python Logger Project Context
 
-### Project Overview
-Apathetic Python Logger is a minimal wrapper for the Python standard library logger. It provides a lightweight, dependency-free logging solution designed for CLI tools with colorized output, dual-stream handling (stdout/stderr), and seamless integration with Apathetic Tools projects.
+Minimal wrapper for Python stdlib logger. Lightweight, dependency-free, for CLI tools with colorized output, dual-stream handling (stdout/stderr), Apathetic Tools integration.
 
-### See Also
-- `pyproject.toml` - All tool configurations and poe tasks
-- `ROADMAP.md` - Project roadmap and future plans
+See: `pyproject.toml` (configs/tasks), `ROADMAP.md` (roadmap)

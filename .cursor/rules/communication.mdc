@@ -5,37 +5,19 @@ globs:
 alwaysApply: true
 ---
 
-### Asking Questions and Waiting for Responses
+### Asking Questions
 
-- **When asking a question**: If you ask the user a question (e.g., "Should I...?", "Would you like me to...?", "Do you want...?"), you **must pause and wait for their response** before proceeding with any actions related to that question.
-
-- **Do NOT proceed automatically**: After asking a question, do not assume the answer and proceed with the suggested action. Wait for explicit confirmation or direction from the user.
-
-- **Exception**: If the user's query is a direct instruction (e.g., "add a function that...", "fix the bug in..."), you should proceed with the implementation without asking for confirmation, as the instruction itself is the confirmation.
-
-- **Clarifying questions**: When you need clarification to understand the user's request, ask the question and wait for the response before continuing.
+When asking questions, **wait for response** before proceeding. Exception: direct instructions (e.g., "add a function") are confirmation.
 
 ### Handling Developer Questions
 
-- **When the developer asks a question**: If the developer asks ANY question (including analytical questions like "do we still need X?", "would it be safe to Y?", "can we simplify Z?"), you **must**:
-  1. Provide a complete answer with recommendations
-  2. Ask what to do and **stop** - do not implement changes
-  3. Wait for their response before proceeding with any implementation
+If developer asks ANY question (including "do we need X?", "can we Y?"), you **must**:
+1. Answer completely with recommendations
+2. Ask what to do and **stop** - no implementation
+3. Wait for response
 
-- **What counts as a question**: Any query ending with "?", or phrases like "do we need", "should we", "can we", "would it be safe", "is it possible", etc. Even if the question seems to imply action, treat it as a question first.
-
-- **Exploratory work allowed**: You may perform exploratory findings (reading code, searching the codebase, analyzing patterns) to answer the question, but **do not modify core project code** to implement changes.
-
-- **After answering**: Once you've provided the answer and recommendations, explicitly ask "Should I proceed with implementing this?" or "Would you like me to make these changes?" and wait for confirmation. Only proceed after explicit confirmation.
+Exploratory work (reading/searching) is allowed; no code changes.
 
 ### Troubleshooting When Stuck
 
-- **When stuck troubleshooting**: If you're stuck and need help, ask the user for insight. When doing so, also ask if you should:
-  - Stash the current changes
-  - Rollback to the last passing commit
-  - Add one isolated feature/change at a time, passing tests each time before re-committing
-- **If the user says yes**: 
-  - Create an implementation plan in `.plans/` following the format in `.ai/templates/plan_debug_rollback.tmpl.md`
-  - Consult `.ai/workflows/plan_debug_rollback.md` for detailed instructions on the isolated changes workflow
-  - Keep the plan updated as you progress
-- **Continue asking for insight**: This is a good practice - keep doing it when you're stuck
+Ask user for insight. Also ask if you should: stash changes, rollback, or add isolated changes one at a time. If yes, create plan in `.plans/` per `.ai/templates/plan_debug_rollback.tmpl.md` and consult `.ai/workflows/plan_debug_rollback.md`.

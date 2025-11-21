@@ -1,37 +1,37 @@
 # ci
 
-Use GitHub CLI (`gh`) to check CI status, view failing CI runs, and examine build error messages.
+Use GitHub CLI (`gh`) to check CI status, view failing runs, and examine build errors.
 
 ## Behavior
 
-1. Use `gh` CLI commands to check CI status and view failing runs
-2. Examine build error messages from failed CI runs
-3. Analyze the errors to understand what's failing
-4. Help diagnose and fix issues based on CI error messages
-5. If needed, provide guidance on how to fix the issues
+1. Use `gh` commands to check status and view failing runs
+2. Examine error messages
+3. Analyze to understand failures
+4. Diagnose and fix issues
+5. Provide guidance if needed
 
-## Common Commands
+## Commands
 
-- `gh run list` - List recent workflow runs
-- `gh run view <run-id>` - View details of a specific run
-- `gh run view <run-id> --log` - View logs from a specific run
-- `gh run list --status failure` - List only failed runs
-- `gh run watch` - Watch the latest run in real-time
+- `gh run list` - Recent runs
+- `gh run view <run-id>` - Run details
+- `gh run view <run-id> --log` - Logs
+- `gh run list --status failure` - Failed runs only
+- `gh run watch` - Watch latest run
 
 ## Workflow
 
-1. Check recent CI runs: `gh run list`
-2. Identify failing runs (look for ❌ or failed status)
-3. View details of failing runs: `gh run view <run-id>`
-4. Examine logs: `gh run view <run-id> --log` or `gh run view <run-id> --log-failed`
-5. Analyze error messages to identify the root cause
-6. Provide recommendations or fix the issues locally
+1. `gh run list` - Check recent runs
+2. Identify failures (❌ or failed status)
+3. `gh run view <run-id>` - View details
+4. `gh run view <run-id> --log` or `--log-failed` - Examine logs
+5. Analyze errors for root cause
+6. Fix locally or provide recommendations
 
-## Important Notes
+## Notes
 
-- Always check the most recent failing run first
-- Look for error messages in the logs, especially from test failures or linting errors
-- Compare with local `poetry run poe check:fix` results if available
-- If the error is unclear, examine the full log output for context
-- Consider checking multiple failed runs if the issue persists across commits
+- Check most recent failing run first
+- Look for test/linting errors in logs
+- Compare with local `poetry run poe check:fix` if available
+- Examine full log if unclear
+- Check multiple failed runs if issue persists
 

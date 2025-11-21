@@ -1,498 +1,161 @@
-# Build Requirements
-
-## Build Reproducibility and Determinism
-
-Builds must be **reproducible, deterministic, and idempotent**. This means:
-
-- **Reproducible**: Running the same build configuration multiple times produces identical output
-- **Deterministic**: Build output does not depend on iteration order of unordered collections (sets, dicts without explicit ordering)
-- **Idempotent**: Running a build multiple times with the same inputs produces the same result
-
-### Requirements
-
-1. **Collection Iteration Order**
-   - **Always sort** before iterating over collections that affect output:
-     - Sets: `for item in sorted(my_set):`
-     - Dict keys/values/items: `for key, value in sorted(my_dict.items()):`
-     - Any collection where iteration order affects the final build output
-   - **When sorting is redundant**: If a list is already sorted and you only perform operations that preserve sorted order (e.g., deleting items, filtering), you don't need to sort again before iterating
-   - This applies to:
-     - Module ordering
-     - Import collection and ordering
-     - Dependency resolution
-     - Symbol extraction and collision detection
-     - Package detection
-     - Any other collection that ends up in the final output
-
-2. **File System Ordering**
-   - File collections from glob patterns or directory walks must be sorted
-   - Example: `collect_included_files()` already returns `sorted(filtered)` to ensure deterministic file ordering
-
-3. **Dependency Graph Ordering**
-   - Dependency graphs (e.g., for module ordering via topological sort) provide a **partial order**
-   - The graph determines which modules must come before others (dependency constraints)
-   - When multiple valid orderings exist (modules with no dependencies between them), sorting is used to break ties and ensure determinism
-   - The dependency graph (`deps`) must be built with sorted file paths to ensure consistent dict insertion order
-   - This ensures `graphlib.TopologicalSorter.static_order()` produces deterministic results even when there are multiple valid topological orderings
-
-4. **No Time-Dependent Output**
-   - Build timestamps in metadata are acceptable (they're explicitly time-dependent)
-   - But the structure and content of the stitched code must not depend on build time or execution order
-
-### Implementation Guidelines
-
-When working with collections that affect build output:
-
-```python
-# ❌ BAD: Non-deterministic iteration
-for pkg in detected_packages:  # set iteration order is undefined
-    # process package
-
-# ✅ GOOD: Deterministic iteration
-for pkg in sorted(detected_packages):
-    # process package
-```
-
-```python
-# ❌ BAD: Dict iteration without sorting
-for mod_name, source in module_sources.items():
-    # process module
-
-# ✅ GOOD: Deterministic iteration
-for mod_name, source in sorted(module_sources.items()):
-    # process module
-```
-
-**When sorting is redundant:**
-```python
-# ✅ GOOD: List already sorted, only deleting items preserves order
-sorted_list = sorted(original_collection)
-for item in sorted_list:
-    if should_keep(item):
-        process(item)
-# Later iteration - still sorted, no need to sort again
-for item in sorted_list:  # ✅ OK: still sorted after deletions
-    process_remaining(item)
-
-# ❌ BAD: Adding items without maintaining sort order
-sorted_list = sorted(original_collection)
-sorted_list.append(new_item)  # Breaks sorted order
-for item in sorted_list:  # ❌ Need to sort again
-    process(item)
-
-# ✅ GOOD: If you can guarantee the list is still sorted
-sorted_list = sorted(original_collection)
-# Only operations that preserve order (delete, filter, slice)
-filtered = [x for x in sorted_list if condition(x)]  # Still sorted
-for item in filtered:  # ✅ OK: filtered list maintains sort order
-    process(item)
-```
-
-**Dependency Graph Ordering:**
-```python
-# Dependency graphs provide partial ordering (A must come before B)
-# But when multiple valid orderings exist, sorting ensures determinism
-
-# ✅ GOOD: Build graph with sorted inputs for deterministic tie-breaking
-# Note: file_paths is already sorted from collect_included_files()
-# This ensures dict insertion order is deterministic, which makes
-# topological sort deterministic even when multiple valid orderings exist
-deps: dict[str, set[str]] = {
-    file_to_module[fp]: set() for fp in file_paths  # already sorted
-}
-# Topological sort respects dependencies AND uses dict insertion order for ties
-topo_modules = list(graphlib.TopologicalSorter(deps).static_order())
-```
-
-### Verification
-
-- All tests must pass to verify correctness
-- Builds should produce identical output when run multiple times with the same configuration
-- When making changes that affect iteration order, verify that the output remains deterministic
-
-# Code Quality
-
-## Code Quality
-
-Code quality standards apply to all code written by the user or AI. This includes:
-- Project source code (`src/`)
-- Development tooling (`dev/`)
-- Test utilities (`tests/utils/`)
-- Test files (`tests/`)
-
-Code quality standards do **not** apply to:
-- Externally sourced code
-- Generated code that is never manually edited (e.g., `dist/`, `bin/`)
-
-### Line Length
-
-Maximum 88 characters per line (enforced by Ruff). **Always fix violations; never ignore them.**
-
-**Principle**: Prioritize readability and comprehension over simply meeting the character limit.
-
-#### Comments and Strings
-
-Do not shorten comments or string literals to meet the line length limit if doing so significantly hurts readability, comprehension, or content. Instead, split them across multiple lines.
-
-**Comments:**
-- **Original** (too long): `# Validate user input before processing to ensure data integrity and prevent security vulnerabilities`
-- **Good shortening**: `# Validate user input before processing` (preserves important context)
-- **Bad shortening**: `# Validate input before processing` (removed "user" - important context lost)
-- **Split long comments** across multiple lines (preferred for very long comments):
-  ```python
-  # Validate user input before processing to ensure data integrity
-  # and prevent security vulnerabilities.
-  ```
-
-**String literals:**
-- **Original** (too long): `msg = "Invalid user input provided in the form submission"`
-- **Good shortening**: `msg = "Invalid user input"` (preserves important context)
-- **Bad shortening**: `msg = "Invalid input"` (removed "user" - important context lost)
-- **Split long strings** using parentheses for implicit line continuation (preferred for very long strings):
-  ```python
-  error_message = (
-      "Failed to validate user input. Please check the format "
-      "and ensure all required fields are present."
-  )
-  ```
-
-#### Inline Statements
-
-When inline statements (ternary expressions, comprehensions, generator expressions) exceed the line length limit, consider whether to wrap them across multiple lines or refactor into explicit if/else blocks or loops.
-
-**Ternary expressions (conditional expressions):**
-- **Original** (too long): `result = "success" if validate_user_input(data) and check_permissions(user) and process_data(data) else "failure"`
-- **Wrapped** (split across lines):
-  ```python
-  result = (
-      "success"
-      if validate_user_input(data) and check_permissions(user) and process_data(data)
-      else "failure"
-  )
-  ```
-- **Refactored** (explicit if/else - preferred for complex conditions):
-  ```python
-  if validate_user_input(data) and check_permissions(user) and process_data(data):
-      result = "success"
-  else:
-      result = "failure"
-  ```
-
-**Comprehensions (list/dict/set comprehensions):**
-- **Original** (too long): `handler_types = {type(h).__name__ for h in typed_logger.handlers if isinstance(h, FileHandler) and h.level >= logging.WARNING}`
-- **Wrapped** (split across lines):
-  ```python
-  handler_types = {
-      type(h).__name__
-      for h in typed_logger.handlers
-      if isinstance(h, FileHandler) and h.level >= logging.WARNING
-  }
-  ```
-- **Refactored** (explicit loop - preferred for complex logic):
-  ```python
-  handler_types = set()
-  for h in typed_logger.handlers:
-      if isinstance(h, FileHandler) and h.level >= logging.WARNING:
-          handler_types.add(type(h).__name__)
-  ```
-
-**Generator expressions (in function calls):**
-- **Original** (too long): `if all(i < len(list(p.parts)) and list(p.parts)[i] == part for p in resolved_paths[1:]):`
-- **Wrapped** (split across lines):
-  ```python
-  if all(
-      i < len(list(p.parts)) and list(p.parts)[i] == part
-      for p in resolved_paths[1:]
-  ):
-  ```
-- **Refactored** (explicit loop - preferred for complex conditions):
-  ```python
-  all_match = True
-  for p in resolved_paths[1:]:
-      if not (i < len(list(p.parts)) and list(p.parts)[i] == part):
-          all_match = False
-          break
-  if all_match:
-  ```
-
-### Python Version
-
-**Minimum version**: Python 3.10. All code must work on Python 3.10 and must never break when run there.
-
-**Using newer features**: You may use features from Python 3.11+ as long as you can support them in both Python 3.10 and the newer version. Acceptable approaches include:
-- `from __future__` imports
-- `typing_extensions` for type hints
-- Backported implementations of newer functionality
-
-**Backporting strategy**: When a newer Python feature behaves differently or is unavailable in Python 3.10, **encapsulate the version differences in a function** so the calling code stays clean. The function handles the Python version detection internally and provides a consistent interface. Document the backport clearly, noting that it can be removed when the minimum Python version is bumped.
-
-**Examples**:
-- `fnmatch()` behaves differently in Python 3.10 vs 3.11+. We encapsulate this in `fnmatch_portable()` which uses `fnmatch()` in 3.11+ and a backported implementation for Python 3.10 (which may be slower but maintains compatibility). Calling code uses `fnmatch_portable()` without needing to know about version differences.
-- TOML loading uses `load_toml()` which internally uses `tomllib` (built-in) in Python 3.11+ and the optional `tomli` library in Python 3.10. Calling code uses `load_toml()` without needing to handle version differences.
-
-**Backport size limit**: Do not introduce a backport if the implementation would be large (more than roughly a few hundred lines of code).
-
-**When to ask the developer**: If a modern feature exists that cannot be easily backported (due to size or complexity), **always ask the developer** for guidance on how to proceed. Do not make this decision yourself. The developer may choose to use a wrapper function (like `load_toml()`) that uses different libraries for different Python versions, or may decide on another approach.
-
-### Static checks, Type Checking, Formatting, Linting, and Tests
-
-**Requirement**: All code must pass `poetry run poe check:fix` **EVEN if the errors do not appear related to the work currently being done**. This command must be re-run every time until it is completely clean. It runs Static checks, Formatting, Type Checking, Linting, and Tests in both installed and singlefile runtimes.
-
-**CI requirement**: `poetry run poe check:fix` must pass for CI to pass. **You cannot push code until this is resolved.**
-
-For guidance on resolving type checking errors, see `type_checking.mdc`.
-
-#### Available Commands
-
-You can run individual tools using `poetry run poe <command>` (including `poetry run poe python`), but **before finishing a task, `poetry run poe check:fix` must complete successfully**.
-
-**Main commands:**
-- `poetry run poe check:fix` - Run all checks (fix, typecheck, test) - **must pass before completing work**
-- `poetry run poe check` - Run all checks without fixing (lint, typecheck, test)
-- `poetry run poe fix` - Auto-fix formatting and linting issues
-- `poetry run poe lint` - Run linting checks only
-- `poetry run poe typecheck` - Run type checking (mypy + pyright)
-- `poetry run poe test` - Run test suite in both installed and singlefile runtimes
-
-**Individual tool commands:**
-- `poetry run poe lint:ruff` - Run ruff linting checks
-- `poetry run poe fix:ruff:installed` - Auto-fix ruff linting issues
-- `poetry run poe fix:format:installed` - Format code with ruff
-- `poetry run poe typecheck:mypy` - Run mypy type checking
-- `poetry run poe typecheck:pyright` - Run pyright type checking
-- `poetry run poe test:pytest:installed` - Run tests in installed module mode
-- `poetry run poe test:pytest:script` - Run tests in singlefile runtime mode
-
-**Running tools on specific files:**
-- Format a single file: `poetry run ruff format src/package/module.py`
-- Check a single file: `poetry run ruff check src/package/module.py`
-- Fix a single file: `poetry run ruff check --fix src/package/module.py`
-- Run a specific test (installed mode): `poetry run pytest tests/path/to/test_file.py::test_function_name`
-- Run a specific test (singlefile mode): `RUNTIME_MODE=singlefile poetry run pytest tests/path/to/test_file.py::test_function_name`
-
-#### Checkpoint Commits
-
-You **CAN** check in code as a checkpoint after fixing most errors, and the AI can suggest doing so. **When committing, follow the conventions in `git_conventions.mdc`.** If you do this and need to write a prompt for opening a new chat to continue with the remaining fixes, consult `.ai/workflows/checkpoint_commit.md` for detailed instructions on writing effective prompts.
-
 # Communication
 
-### Asking Questions and Waiting for Responses
+### Asking Questions
 
-- **When asking a question**: If you ask the user a question (e.g., "Should I...?", "Would you like me to...?", "Do you want...?"), you **must pause and wait for their response** before proceeding with any actions related to that question.
-
-- **Do NOT proceed automatically**: After asking a question, do not assume the answer and proceed with the suggested action. Wait for explicit confirmation or direction from the user.
-
-- **Exception**: If the user's query is a direct instruction (e.g., "add a function that...", "fix the bug in..."), you should proceed with the implementation without asking for confirmation, as the instruction itself is the confirmation.
-
-- **Clarifying questions**: When you need clarification to understand the user's request, ask the question and wait for the response before continuing.
+When asking questions, **wait for response** before proceeding. Exception: direct instructions (e.g., "add a function") are confirmation.
 
 ### Handling Developer Questions
 
-- **When the developer asks a question**: If the developer asks ANY question (including analytical questions like "do we still need X?", "would it be safe to Y?", "can we simplify Z?"), you **must**:
-  1. Provide a complete answer with recommendations
-  2. Ask what to do and **stop** - do not implement changes
-  3. Wait for their response before proceeding with any implementation
+If developer asks ANY question (including "do we need X?", "can we Y?"), you **must**:
+1. Answer completely with recommendations
+2. Ask what to do and **stop** - no implementation
+3. Wait for response
 
-- **What counts as a question**: Any query ending with "?", or phrases like "do we need", "should we", "can we", "would it be safe", "is it possible", etc. Even if the question seems to imply action, treat it as a question first.
-
-- **Exploratory work allowed**: You may perform exploratory findings (reading code, searching the codebase, analyzing patterns) to answer the question, but **do not modify core project code** to implement changes.
-
-- **After answering**: Once you've provided the answer and recommendations, explicitly ask "Should I proceed with implementing this?" or "Would you like me to make these changes?" and wait for confirmation. Only proceed after explicit confirmation.
+Exploratory work (reading/searching) is allowed; no code changes.
 
 ### Troubleshooting When Stuck
 
-- **When stuck troubleshooting**: If you're stuck and need help, ask the user for insight. When doing so, also ask if you should:
-  - Stash the current changes
-  - Rollback to the last passing commit
-  - Add one isolated feature/change at a time, passing tests each time before re-committing
-- **If the user says yes**: 
-  - Create an implementation plan in `.plans/` following the format in `.ai/templates/plan_debug_rollback.tmpl.md`
-  - Consult `.ai/workflows/plan_debug_rollback.md` for detailed instructions on the isolated changes workflow
-  - Keep the plan updated as you progress
-- **Continue asking for insight**: This is a good practice - keep doing it when you're stuck
+Ask user for insight. Also ask if you should: stash changes, rollback, or add isolated changes one at a time. If yes, create plan in `.plans/` per `.ai/templates/plan_debug_rollback.tmpl.md` and consult `.ai/workflows/plan_debug_rollback.md`.
 
 # Git Conventions
 
 ### Git Commit Conventions
-- NEVER include AI tool attribution or Co-Authored-By trailers in commit messages
-- Write clean, conventional commit messages following the format: `type(scope): subject`
-  - **type**: The type of change (feat, fix, docs, style, refactor, test, chore)
-  - **scope**: The feature or module being worked on (optional but recommended)
-  - **subject**: A concise description of what was done
-    - **Important**: The subject line must summarize the overall work across all staged files, not just the last change
-    - If the subject line cannot summarize all changes in a short sentence, prioritize the most impactful change to the project
-    - All changes should still be detailed in the commit message body
-- Include the feature being worked on in the scope, and if appropriate, a concise description of what was done
-- **Commit message body**: After the first line, include a traditional bulleted list summarizing the key changes made in the commit
-  - **Important**: The body must cover all significant changes across all staged files, not just the most recent change
-  - If many files were changed, group related changes together in the bulleted list
-
-**Examples:**
-
-Single-line (for simple changes):
-```
-feat(build): add support for custom output paths
-```
-
-Multi-line with bulleted list (for more complex changes):
-```
-docs(ai-rules): update code quality rules with comprehensive guidelines
-
-- Add detailed line length guidance with readability emphasis
-- Add examples for comments, strings, and inline statements
-- Add comprehensive Python version compatibility guidelines
-- Add detailed static checks, type checking, formatting, linting, and tests section
-- Add checkpoint commit guidance with prompt template
-- Reference git_conventions.mdc for commit messages
-```
-
-Other examples:
-- `fix(config): resolve validation error for empty build configs`
-- `refactor(utils): simplify path normalization logic`
-- `test(integration): add tests for log level handling`
+- No AI tool attribution or Co-Authored-By trailers
+- Format: `type(scope): subject`
+- See `.ai/workflows/commit.md` for details
 
 ### Checkpoint Commits and Squashing
 
-- **Checkpoint commits** use the format `checkpoint(scope): brief description` and are intermediate saves during debugging
-- **When making a regular commit after checkpoint commits**: Before committing, check if there are checkpoint commits since the last regular commit
-- **Ask the user**: "I see [N] checkpoint commit(s) since the last regular commit. Would you like me to squash them with this commit?"
-- If yes, use interactive rebase or `git reset --soft` to squash them before committing
-- If no, proceed with a regular commit
-- This helps keep git history clean by consolidating debugging checkpoints into meaningful commits
+**Checkpoint format**: `checkpoint(scope): brief description` (intermediate saves during debugging)
+
+**Before regular commit**: Check for checkpoint commits since last regular commit. Ask: "I see [N] checkpoint commit(s). Squash with this commit?" If yes, squash via rebase/reset; if no, proceed.
 
 # Project Overview
 
 ## Apathetic Python Logger Project Context
 
-### Project Overview
-Apathetic Python Logger is a minimal wrapper for the Python standard library logger. It provides a lightweight, dependency-free logging solution designed for CLI tools with colorized output, dual-stream handling (stdout/stderr), and seamless integration with Apathetic Tools projects.
+Minimal wrapper for Python stdlib logger. Lightweight, dependency-free, for CLI tools with colorized output, dual-stream handling (stdout/stderr), Apathetic Tools integration.
 
-### See Also
-- `pyproject.toml` - All tool configurations and poe tasks
-- `ROADMAP.md` - Project roadmap and future plans
+See: `pyproject.toml` (configs/tasks), `ROADMAP.md` (roadmap)
 
 # Project Structure
 
 ### Important Files
-- `dist/apathetic_logging.py` is **generated** - never edit directly
-- Generate it using `poetry run poe build:script`
+- `dist/apathetic_logging.py` is **generated** - never edit. Generate via `poetry run poe build:script`
 - `dist/` contains build outputs - do not edit
 
 ### Project Structure
-- `src/package_name/` - Main source code (replace `package_name` with actual package name)
+- `src/package_name/` - Main source code
 - `tests/` - Test suite
-- `dev/` - Development scripts
+- `dev/` - Development scripts (**NEVER edit** - report problems, don't fix)
 
-### Development Scripts (`dev/`)
-- **NEVER edit scripts in `dev/`**: These are development tools and should not be modified by AI assistants
-- **If you believe there is a problem with a script in `dev/`**: Report the problem to the developer and stop - do not attempt to fix it yourself
+# Pytest Structure
 
-### Test Directory Structure
-- **`__init__.py` files in tests**: Only `tests/` and `tests/utils/` should have `__init__.py` files
-- **Do NOT add `__init__.py`** to test subdirectories (e.g., `tests/0_tooling/`, `tests/3_independant/`, `tests/5_core/`, `tests/9_integration/`, `tests/10_app_integration/`)
-- Test subdirectories are not Python packages and should not be treated as such by type checkers
+### PyTest Structure
+
+## Packages
+- Only `tests/` and `tests/utils/` should have `__init__.py`. Do NOT add `__init__.py` to test subdirectories (e.g., `tests/0_tooling/`, `tests/3_independant/`, `tests/5_core/`, etc.). Test subdirectories are not Python packages.
+- Use `tests/utils/` to colocate utilities that are generally helpful for tests or used in multiple test files.
+
+## Imports
+- Never import from one test_* file into another test_* file.
+- Never use `from <package> import <func>` for any `src/` packages, instead use `import <package> as mod_<package>` then use `mod_<package>.<func>`
+- Don't import general utilities not under test from `src/` as test setup helpers. You may call related src functions in a test even if they are not primarily under test. Use `tests/utils/`as helpers only even if you have to replicate the src utility.
+- You can import constants from `src/` code to use in tests, follow import rules.
+- When writting new tests, be aware of our test utilities in `tests/utils/`, especially `patch_everywhere`
+
+## Directories
+- Integration tests go in their own directories separate from unit tests.
+
+## Files
+- Unit tests should have a single file per function tested.
+- Integration tests should have a single file per feature or topic.
+- Tests primarily testing private functions go in their own file `test_priv__<function name no leading underscore>.py` with a file level ignore statement.
+- Tests primarily acting as a lint rule go in their own file  `test_lint__<purpose>.py` and should not be modified as a means of ignoring the failure. Fix the error reported instead.
+
+## Runtime
+- Tests run with `test` log-level by default so trace and debug statements bypass capsys and go to __stderr__.
+- Tests are usually run twice, once against the `src/` directory, and again using our `tests/utils/runtime_swap.py` against the `dist/<package>.py` stitched file.
+
+# Python Code Quality
+
+# Python Code Quality
+
+Does not apply to generated or externally sourced code `dist/`, `bin/`.
+
+
+## Line Length
+
+Max 88 chars (Ruff enforced). **Always fix violations; never ignore.**
+
+**Principle**: Prioritize readability over meeting the limit.
+
+**Comments/Strings**: Don't shorten if it hurts readability. Split across lines instead:
+```python
+# Validate user input before processing to ensure data integrity
+# and prevent security vulnerabilities.
+
+error_message = (
+    "Failed to validate user input. Please check the format "
+    "and ensure all required fields are present."
+)
+```
+
+**Inline statements** (ternaries, comprehensions, generators): Wrap across lines or refactor to explicit if/else/loops for complex cases.
+
+## Python Version
+
+**Minimum**: Python 3.10. All code must work on 3.10.
+
+**Newer features**: Use 3.11+ features if supported on both versions via:
+- `from __future__` imports
+- `typing_extensions`
+- Backported implementations
+
+**Backporting**: Encapsulate version differences in functions. Document clearly. Examples: `fnmatch_portable()`, `load_toml()`. Limit: ~few hundred lines max. If too large/complex, ask developer.
+
+### Checks and Tests
+
+**Requirement**: `poetry run poe check:fix` must pass completely before finishing work. Runs: formatting, linting, type checking, tests (both installed and singlefile runtimes). **CI blocks pushes until this passes.**
+
+**Commands**: `poetry run poe check:fix` (main), `check`, `fix`, `lint`, `typecheck`, `test`. Individual: `lint:ruff`, `fix:ruff:installed`, `fix:format:installed`, `typecheck:mypy`, `typecheck:pyright`, `test:pytest:installed`, `test:pytest:script`.
+
+**Single files**: `ruff format/check/check --fix <file>`, `pytest <file>::<test>` (add `RUNTIME_MODE=singlefile` for singlefile mode).
 
 # Type Checking
 
 ### Type Checking and Linting Best Practices
 
-#### General Principle: Fix Over Ignore
-- **Always prioritize fixing errors over ignoring them** when possible
-- Only use ignore comments when:
-  - The error is a false positive that cannot be resolved by fixing the code
-  - Fixing would require a significant architectural change that doesn't improve readability
-  - The signature must match exactly (e.g., pytest hooks, interface implementations)
-  - The check is intentionally defensive and provides value despite the warning
-- When in doubt, attempt to fix the error first before resorting to ignore comments
+**Fix over ignore**: Always fix when possible. Use ignore comments only for: signature-matching requirements (pytest hooks, interfaces), defensive checks with value, or two tools that conflict.
 
-#### Ignore Comments
-- **Placement**: Warning/error ignore comments go at the end of lines and don't count towards line length limits
-- **Examples**: `# type: ignore[error-code]`, `# pyright: ignore[error-code]`, `# noqa: CODE`
+**Ignore comments**: End of line, don't count toward line length. Examples: `# type: ignore[error-code]`, `# pyright: ignore[error-code]`, `# noqa: CODE`
 
-#### Common Patterns
-- **Unused arguments**: Prefix with `_` (e.g., `_unused_param`) unless signature must match exactly (pytest hooks, interfaces) - then use ignore comments
-- **Complexity/parameter warnings**: Consider refactoring only if it improves readability; otherwise add ignore comments
-- **Type inference**: Use `cast_hint()` from project utilities (if available) or `typing.cast()` when possible (not in tests); mypy can often infer types better than pyright
-  - **`cast_hint()`**: Import from project utilities if available. Use when:
-    - You want to silence mypy's redundant-cast warnings
-    - You want to signal "this narrowing is intentional"
-    - You need IDEs (like Pylance) to retain strong inference on a value
-    - **Do NOT use** for Union, Optional, or nested generics - use `cast()` for those
-    - **Example**: `from project.utils import cast_hint; items = cast_hint(list[Any], value)`
-  - **`typing.cast()`**: Use for Union, Optional, or nested generics where type narrowing is meaningful
-    - **Example**: `from typing import cast; result = cast(ResolvedType, dict_obj)`
-- **Defensive checks**: Runtime checks like `isinstance()` with ignore comments are only acceptable as defensive checks when data comes from external sources (function parameters, config files, user input). Do NOT use for constants or values that are known and can be typed properly within the function.
-  - **Acceptable**: `if not isinstance(package, str):  # pyright: ignore[reportUnnecessaryIsInstance]` when `package` comes from parsed config file
-  - **Not acceptable**: `if isinstance(CONSTANT_VALUE, str):` when `CONSTANT_VALUE` is a module-level constant that can be properly typed
+**Common patterns**:
+- Unused args: Prefix with `_` unless signature must match (pytest hooks, interfaces) - then ignore
+- Complexity/param warnings: Refactor if improves readability; otherwise ignore
+- Type inference: Use `cast_hint()` (project utils) or `typing.cast()` (not in tests). `cast_hint()` for intentional narrowing/IDE inference; `cast()` for Union/Optional/nested generics
+- Defensive checks: `isinstance()` with ignore only for external data (params, config, user input). Not for constants.
 
-#### TypedDict Maintenance
-- **Always update TypedDict definitions when adding properties**: When adding a new property to a dictionary that is typed as a TypedDict (or should be), **always** update the corresponding TypedDict class definition to include that property. This ensures type safety and prevents runtime errors.
-  - **Required**: If you add a field like `config["_new_field"] = value`, you must add `_new_field: NotRequired[Type]` (or `_new_field: Type` if required) to the TypedDict definition
-  - **Never use `type: ignore` comments** to bypass missing TypedDict fields - instead, add the field to the type definition
-  - **Example**: If adding `resolved_cfg["_new_field"] = value`, add `_new_field: NotRequired[Type]` to the corresponding TypedDict
-  - This applies to all TypedDict classes in the project
+**TypedDict maintenance**: Always update TypedDict when adding properties. Add `_new_field: NotRequired[Type]` (or `Type` if required). Never use `type: ignore` to bypass missing fields.
 
-#### Resolved TypedDict Pattern
-- **"Resolved" TypedDicts should not use `NotRequired` for fields that can be resolved**: TypedDicts with "Resolved" suffix (e.g., `ConfigResolved`, `SettingsResolved`) represent fully resolved configurations. Fields that can be resolved (even to "empty" defaults) should **always be present**, not marked as `NotRequired`.
-  - **Use `NotRequired` only for**: Fields that are truly optional throughout the entire resolution process and may never be set (e.g., optional feature flags, conditional settings)
-  - **Do NOT use `NotRequired` for**: Fields that can be resolved to a default value (empty list `[]`, empty dict `{}`, `False`, empty string `""`, etc.) - these should always be present in the resolved config
-  - **Rationale**: A "Resolved" TypedDict represents a fully resolved state. If a field can be resolved (even to an empty default), it should be present to maintain the "fully resolved" contract and simplify usage (no need to check `if "field" in config`)
-  - **Examples**:
-    - ✅ **Correct**: `items: list[Item]` in `ConfigResolved` (always set to `[]` if not provided)
-    - ✅ **Correct**: `settings: SettingsResolved` in `ConfigResolved` (always resolved with defaults)
-    - ✅ **Correct**: `optional_feature: NotRequired[str]` in `ConfigResolved` (only present when feature is enabled)
-    - ❌ **Incorrect**: `items: NotRequired[list[Item]]` in `ConfigResolved` (can be resolved to `[]`)
+**Resolved TypedDict pattern**: "Resolved" TypedDicts (e.g., `ConfigResolved`) - fields that can be resolved (even to empty defaults) should always be present, not `NotRequired`. Use `NotRequired` only for truly optional fields that may never be set. Examples: ✅ `items: list[Item]` (resolves to `[]`), ✅ `optional_feature: NotRequired[str]` (conditional), ❌ `items: NotRequired[list[Item]]` (can resolve to `[]`).
 
-#### Configuration File Changes
-
-- **NEVER modify linter/formatter/type checker configuration files to "fix" errors**
-- **Forbidden changes**: Do NOT modify these files to suppress or work around errors:
-  - `pyproject.toml` (ruff, mypy, pyright, pytest configuration)
-  - `pytest.ini` (pytest configuration)
-  - Any new configuration files for these tools
-- **Required action**: If you believe changing configuration is the correct solution:
-  1. **STOP** and do NOT make the change
-  2. **PROMPT the developer** explaining:
-     - What error you encountered
-     - Why you think a configuration change might be needed
-     - What specific change you're proposing
-     - Ask for explicit approval before proceeding
-- **Rationale**: Configuration changes affect the entire project and may hide real issues. The developer should make these decisions intentionally.
-- **Exception**: You may modify configuration if the user explicitly requests it in their query
+**Configuration files**: NEVER modify `pyproject.toml`, `pytest.ini`, or tool configs to "fix" errors. STOP and ask developer if needed. Exception: explicit user request.
 
 # Workflow
 
 ### Execution and Workflow
-- Always use `poetry run python3` (not bare `python3`) to ensure execution in the project's virtual environment
-- **Use poe tasks** for all common operations:
-  - `poetry run poe check` - Run linting, type checking, and tests
-  - `poetry run poe fix` - Auto-format and fix linting issues
-  - `poetry run poe test` - Run test suite
-  - `poetry run poe coverage` - Generate code coverage report (dual runtime coverage)
-  - `poetry run poe check:fix` - Fix, type check, and test (run before committing)
-  - `poetry run poe build:script` - Generate the single-file dist/package.py
-  - `poetry run poe sync:ai:guidance` - Sync AI guidance files from `.ai/` to `.cursor/` and `.claude/`
-- **NEVER edit `.cursor/` or `.claude/` files directly**: These directories are generated from `.ai/` source files. Always edit files in `.ai/rules/` or `.ai/commands/` instead, then run `poetry run poe sync:ai:guidance` to sync changes.
-- **When modifying `.ai/` files**: After changing any file in `.ai/rules/` or `.ai/commands/`, you **must**:
-  1. Run `poetry run poe sync:ai:guidance` to sync changes to `.cursor/` and `.claude/`
-  2. Include the generated files (`.cursor/rules/*.mdc`, `.cursor/commands/*.md`, `.claude/CLAUDE.md`) as part of the same changeset/commit
-- **Before committing**: Run `poetry run poe check:fix` (this also regenerates `dist/package.py` as needed)
-- **Debugging failing tests**: When tests fail and standard debugging isn't sufficient:
-  - **First try**: Set `LOG_LEVEL=test` to bypass pytest's log capture and see detailed logs:
-    ```bash
-    LOG_LEVEL=test poetry run poe test:pytest:installed tests/path/to/test.py::test_name -xvs
-    ```
-  - **If still stuck**: Consult `.ai/workflows/debug_tests.md` for comprehensive troubleshooting techniques including `logger.trace()`, `safe_trace()`, and advanced debugging strategies
-  - **Before resorting to checkpoint commits**: Try the techniques in the debug workflow first
+- **VENV:** Use the poetry venv for execution, e.g. `poetry run python3` (not bare `python3`)
+- **Poe tasks**: `check`, `fix`, `test`, `coverage`, `check:fix` (before commit), `build:script`
+- **NEVER edit `.cursor/` or `.claude/` directly**: Generated from `.ai/`. Edit `.ai/rules/` or `.ai/commands/`, then run `poetry run poe sync:ai:guidance` and include generated files in commit.
+- **Before committing**: Run `poetry run poe check:fix`
+- **Debugging tests**: 
+  1. First try `LOG_LEVEL=test poetry run poe test:pytest:installed tests/path/to/test.py::test_name -xvs`. 
+  2. If stuck, see `.ai/workflows/debug_tests.md`
 
-### When to Read Workflow and Template Files
+### When to Read Workflow/Template Files
 
-- **Do NOT read `.ai/workflows/` or `.ai/templates/` files** just because they are mentioned in rules
-- **Only read workflow/template files when**:
-  - The condition for invoking them is met (e.g., when stuck debugging tests, then read `debug_tests.md`)
-  - You are directly asked to work on or modify them
-- **Mentions in rules are references**: When a rule mentions a workflow file (e.g., "consult `.ai/workflows/debug_tests.md`"), treat it as a reference to consult when needed, not an instruction to read it immediately
-- **Purpose**: This keeps context lean by only loading detailed workflow instructions when the specific situation arises
+Only read `.ai/workflows/` or `.ai/templates/` when: condition is met (e.g., stuck debugging → read `debug_tests.md`), or directly asked to work on them. Mentions in rules are references, not immediate read instructions.
 
 # Claude Extra
 
