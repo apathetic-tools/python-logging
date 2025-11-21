@@ -75,6 +75,15 @@ class ApatheticLogging_Internal_DualStreamHandler:  # noqa: N801  # pyright: ign
 
             # Check if logger is in TEST mode (bypass capture for verbose levels)
             logger_name = record.name
+            # from .get_logger import (
+            #     ApatheticLogging_Internal_GetLogger,
+            # )
+
+            # logger_instance = ApatheticLogging_Internal_GetLogger.getLogger(
+            #     logger_name, extend=False
+            # )
+            # can't use internal getLogger() here
+            #   because then it will call extendLoggingModule again
             logger_instance = logging.getLogger(logger_name)
 
             # Use duck typing to check if this is our Logger class

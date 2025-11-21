@@ -4,27 +4,19 @@
 Some of these we just want to consider, and may not want to implement.
 
 ## 🎯 Core Features
-Major stitching capabilities and enhancements:
 
 
 ## 🧩 Joiner Scripts (Build System)
 Exploring bundling options for generating the single-file release:
 
 - zip file: zipapp / shiv / pyinstaller --onefile
-- serger for stitched file
+
 
 ## 🧪 Tests
 - can we test on py3.10 locally via poetry venv?
 - should we make lint tests that check for new functions we don't cover?
 
 ## 🧑‍💻 Development
-
-- **Architectural principle: Use our own wrappers instead of `logging.*` directly**
-  - Audit all internal code (excluding wrapper classes) for direct `logging.*` calls
-  - Replace with our namespace functions or internal class methods
-  - Only wrapper/extender functions (`logging_std_snake.py`, `logging_std_camel.py`) should call `logging.*` directly
-  - Document as architectural rule and consider linting/static analysis to catch violations
-  - Benefits: consistency, future-proofing, automatic custom feature support, easier refactoring
 
 
 ## 🚀 Deployment

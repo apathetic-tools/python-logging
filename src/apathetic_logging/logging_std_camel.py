@@ -10,17 +10,7 @@ from __future__ import annotations
 import logging
 from collections.abc import Callable
 from types import FrameType
-from typing import TYPE_CHECKING, Any
-
-from .get_logger import (
-    ApatheticLogging_Internal_GetLogger,
-)
-
-
-if TYPE_CHECKING:
-    from .logger_namespace import (
-        ApatheticLogging_Internal_Logger,
-    )
+from typing import Any
 
 
 class ApatheticLogging_Internal_StdCamelCase:  # noqa: N801  # pyright: ignore[reportUnusedClass]
@@ -155,19 +145,18 @@ class ApatheticLogging_Internal_StdCamelCase:  # noqa: N801  # pyright: ignore[r
     @staticmethod
     def getLogger(
         name: str | None = None, *_args: Any, **_kwargs: Any
-    ) -> ApatheticLogging_Internal_Logger.Logger:
+    ) -> logging.Logger:
         """Return a logger with the specified name, creating it if necessary.
 
         If no name is specified, return the root logger.
 
-        Returns an ApatheticLogging_Internal_Logger.Logger instance.
+        Returns an logging.Logger instance.
 
         Wrapper for logging.getLogger with camelCase naming.
 
         https://docs.python.org/3.10/library/logging.html#logging.getLogger
         """
-        # Use the custom getLogger from get_logger.py which returns our Logger type
-        return ApatheticLogging_Internal_GetLogger.getLogger(name)
+        return logging.getLogger(name)
 
     @staticmethod
     def getLoggerClass(*args: Any, **kwargs: Any) -> type[logging.Logger]:

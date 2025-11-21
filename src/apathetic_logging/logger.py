@@ -326,6 +326,7 @@ class ApatheticLogging_Internal_LoggerCore(logging.Logger):  # noqa: N801  # pyr
 
         # Always set the logger class to cls, even if already extended.
         # This allows subclasses to override the logger class.
+        # stdlib unwrapped
         logging.setLoggerClass(cls)
 
         # If already extended, skip the rest (level registration, etc.)

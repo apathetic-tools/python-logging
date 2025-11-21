@@ -50,8 +50,10 @@ class ApatheticLogging_Internal_GetLogger:  # noqa: N801  # pyright: ignore[repo
         Returns:
             A logger instance of the specified type.
         """
+        # stdlib unwrapped
         original_class = logging.getLoggerClass()
         logging.setLoggerClass(klass)
+        # avoid circular dependency by using logging.getLogger directly
         logger = logging.getLogger(name)
         logging.setLoggerClass(original_class)
         typed_logger = cast("ApatheticLogging_Internal_GetLogger._LoggerType", logger)
@@ -63,6 +65,7 @@ class ApatheticLogging_Internal_GetLogger:  # noqa: N801  # pyright: ignore[repo
         *args: Any,
         level: str | int | None = None,
         minimum: bool | None = None,
+        extend: bool | None = None,
         **kwargs: Any,
     ) -> ApatheticLogging_Internal_Logger.Logger:
         """Return a logger with the specified name, creating it if necessary.
@@ -90,6 +93,7 @@ class ApatheticLogging_Internal_GetLogger:  # noqa: N801  # pyright: ignore[repo
                 from a more verbose level (e.g., TRACE) to a less verbose one
                 (e.g., DEBUG). If None, defaults to False. Only used when
                 `level` is provided.
+            extend: If True (default), extend the logging module.
             **kwargs: Additional keyword arguments (for future-proofing)
 
         Returns:
@@ -109,6 +113,7 @@ class ApatheticLogging_Internal_GetLogger:  # noqa: N801  # pyright: ignore[repo
             *args,
             level=level,
             minimum=minimum,
+            extend=extend,
             **kwargs,
         )
         return cast("ApatheticLogging_Internal_Logger.Logger", result)  # type: ignore[redundant-cast]
@@ -121,6 +126,7 @@ class ApatheticLogging_Internal_GetLogger:  # noqa: N801  # pyright: ignore[repo
         *args: Any,
         level: str | int | None = None,
         minimum: bool | None = None,
+        extend: bool | None = True,
         **kwargs: Any,
     ) -> ApatheticLogging_Internal_GetLogger._LoggerType:
         """Get a logger of the specified type, creating it if necessary.
@@ -151,6 +157,7 @@ class ApatheticLogging_Internal_GetLogger:  # noqa: N801  # pyright: ignore[repo
                 from a more verbose level (e.g., TRACE) to a less verbose one
                 (e.g., DEBUG). If None, defaults to False. Only used when
                 `level` is provided.
+            extend: If True (default), extend the logging module.
             **kwargs: Additional keyword arguments (for future-proofing)
 
         Returns:
@@ -176,11 +183,12 @@ class ApatheticLogging_Internal_GetLogger:  # noqa: N801  # pyright: ignore[repo
         )
 
         # extend logging module
-        # Check for camelCase first, then snake_case for compatibility
-        if hasattr(class_type, "extendLoggingModule"):
-            class_type.extendLoggingModule()  # type: ignore[attr-defined]
-        elif hasattr(class_type, "extend_logging_module"):
-            class_type.extend_logging_module()  # type: ignore[attr-defined]
+        if extend:
+            # Check for camelCase first, then snake_case for compatibility
+            if hasattr(class_type, "extendLoggingModule"):
+                class_type.extendLoggingModule()  # type: ignore[attr-defined]
+            elif hasattr(class_type, "extend_logging_module"):
+                class_type.extend_logging_module()  # type: ignore[attr-defined]
 
         # recreate if wrong type
         logger: logging.Logger | None = None

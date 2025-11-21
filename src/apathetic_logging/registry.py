@@ -167,6 +167,7 @@ class ApatheticLogging_Internal_Registry:  # noqa: N801  # pyright: ignore[repor
             elif hasattr(logger_class, "extend_logging_module"):
                 logger_class.extend_logging_module()  # type: ignore[attr-defined]
             else:
+                # stdlib unwrapped
                 logging.setLoggerClass(logger_class)
 
         # registerLogger always stores the result (explicit or inferred)
