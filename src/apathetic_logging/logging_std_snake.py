@@ -8,6 +8,7 @@ licensed under the Python Software Foundation License Version 2.
 from __future__ import annotations
 
 import logging
+import sys
 from collections.abc import Callable
 from types import FrameType
 from typing import TYPE_CHECKING, Any
@@ -145,9 +146,15 @@ class ApatheticLogging_Internal_StdSnakeCase:  # noqa: N801  # pyright: ignore[r
 
         Wrapper for logging.getLevelNamesMapping with snake_case naming.
 
-        https://docs.python.org/3.10/library/logging.html#logging.getLevelNamesMapping
+        https://docs.python.org/3.11/library/logging.html#logging.getLevelNamesMapping
         """
-        return logging.getLevelNamesMapping(*args, **kwargs)  # type: ignore[attr-defined,no-any-return]
+        if sys.version_info < (3, 11):
+            msg = (
+                "get_level_names_mapping is not available in "
+                "Python versions earlier than 3.11"
+            )
+            raise NotImplementedError(msg)
+        return logging.getLevelNamesMapping(*args, **kwargs)
 
     @staticmethod
     def disable(level: int = 50, *args: Any, **kwargs: Any) -> None:
@@ -238,9 +245,15 @@ class ApatheticLogging_Internal_StdSnakeCase:  # noqa: N801  # pyright: ignore[r
 
         Wrapper for logging.getHandlerByName with snake_case naming.
 
-        https://docs.python.org/3.10/library/logging.html#logging.getHandlerByName
+        https://docs.python.org/3.12/library/logging.html#logging.getHandlerByName
         """
-        return logging.getHandlerByName(name, *args, **kwargs)  # type: ignore[attr-defined,no-any-return]
+        if sys.version_info < (3, 12):
+            msg = (
+                "get_handler_by_name is not available in "
+                "Python versions earlier than 3.12"
+            )
+            raise NotImplementedError(msg)
+        return logging.getHandlerByName(name, *args, **kwargs)
 
     @staticmethod
     def get_handler_names(*args: Any, **kwargs: Any) -> list[str]:
@@ -248,9 +261,15 @@ class ApatheticLogging_Internal_StdSnakeCase:  # noqa: N801  # pyright: ignore[r
 
         Wrapper for logging.getHandlerNames with snake_case naming.
 
-        https://docs.python.org/3.10/library/logging.html#logging.getHandlerNames
+        https://docs.python.org/3.12/library/logging.html#logging.getHandlerNames
         """
-        return logging.getHandlerNames(*args, **kwargs)  # type: ignore[attr-defined,no-any-return]
+        if sys.version_info < (3, 12):
+            msg = (
+                "get_handler_names is not available in "
+                "Python versions earlier than 3.12"
+            )
+            raise NotImplementedError(msg)
+        return logging.getHandlerNames(*args, **kwargs)
 
     # --- Factory Functions ---
 

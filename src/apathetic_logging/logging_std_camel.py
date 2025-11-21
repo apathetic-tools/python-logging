@@ -8,6 +8,7 @@ licensed under the Python Software Foundation License Version 2.
 from __future__ import annotations
 
 import logging
+import sys
 from collections.abc import Callable
 from types import FrameType
 from typing import Any
@@ -126,9 +127,15 @@ class ApatheticLogging_Internal_StdCamelCase:  # noqa: N801  # pyright: ignore[r
 
         Wrapper for logging.getLevelNamesMapping with camelCase naming.
 
-        https://docs.python.org/3.10/library/logging.html#logging.getLevelNamesMapping
+        https://docs.python.org/3.11/library/logging.html#logging.getLevelNamesMapping
         """
-        return logging.getLevelNamesMapping(*args, **kwargs)  # type: ignore[attr-defined,no-any-return]
+        if sys.version_info < (3, 11):
+            msg = (
+                "getLevelNamesMapping is not available in "
+                "Python versions earlier than 3.11"
+            )
+            raise NotImplementedError(msg)
+        return logging.getLevelNamesMapping(*args, **kwargs)
 
     @staticmethod
     def disable(level: int = 50, *args: Any, **kwargs: Any) -> None:
@@ -196,9 +203,14 @@ class ApatheticLogging_Internal_StdCamelCase:  # noqa: N801  # pyright: ignore[r
 
         Wrapper for logging.getHandlerByName with camelCase naming.
 
-        https://docs.python.org/3.10/library/logging.html#logging.getHandlerByName
+        https://docs.python.org/3.12/library/logging.html#logging.getHandlerByName
         """
-        return logging.getHandlerByName(name, *args, **kwargs)  # type: ignore[attr-defined,no-any-return]
+        if sys.version_info < (3, 12):
+            msg = (
+                "getHandlerByName is not available in Python versions earlier than 3.12"
+            )
+            raise NotImplementedError(msg)
+        return logging.getHandlerByName(name, *args, **kwargs)
 
     @staticmethod
     def getHandlerNames(*args: Any, **kwargs: Any) -> list[str]:
@@ -206,9 +218,14 @@ class ApatheticLogging_Internal_StdCamelCase:  # noqa: N801  # pyright: ignore[r
 
         Wrapper for logging.getHandlerNames with camelCase naming.
 
-        https://docs.python.org/3.10/library/logging.html#logging.getHandlerNames
+        https://docs.python.org/3.12/library/logging.html#logging.getHandlerNames
         """
-        return logging.getHandlerNames(*args, **kwargs)  # type: ignore[attr-defined,no-any-return]
+        if sys.version_info < (3, 12):
+            msg = (
+                "getHandlerNames is not available in Python versions earlier than 3.12"
+            )
+            raise NotImplementedError(msg)
+        return logging.getHandlerNames(*args, **kwargs)
 
     # --- Factory Functions ---
 
