@@ -1,6 +1,6 @@
-# p
+# prep
 
-Alias of `prep` command.
+Alias of `p` command.
 
 Planning/discussion session. Answer questions, summarize, recommend. **Do NOT implement.**
 

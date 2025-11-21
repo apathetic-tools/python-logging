@@ -1,5 +1,7 @@
 # p
 
+Alias of `prep` command.
+
 Planning/discussion session. Answer questions, summarize, recommend. **Do NOT implement.**
 
 ## Behavior
