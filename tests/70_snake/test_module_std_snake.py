@@ -102,6 +102,15 @@ def test_module_std_snake_function(
     # Test the success case (either naturally or by mocking to sufficient version)
     if min_version is not None and sys.version_info < min_version:
         # If we're actually on an older version, mock to a sufficient version
+        # But first check if the underlying function exists in the logging module
+        # If it doesn't exist, we can't patch it, so skip the test
+        module_name, func_name_in_module = mock_target.rsplit(".", 1)
+        if module_name == "logging" and not hasattr(logging, func_name_in_module):
+            # Check if the function exists in the logging module
+            pytest.skip(
+                f"{func_name} requires Python {min_version[0]}.{min_version[1]}+ "
+                f"but {func_name_in_module} doesn't exist in logging module"
+            )
         monkeypatch.setattr(mod_std_snake.sys, "version_info", min_version)  # type: ignore[attr-defined]
         with patch(mock_target) as mock_func:
             with suppress(Exception):
@@ -109,6 +118,15 @@ def test_module_std_snake_function(
             mock_func.assert_called_once_with(*args, **kwargs)
     else:
         # We're on a sufficient version, test normally
+        # But first check if the underlying function exists
+        module_name, func_name_in_module = mock_target.rsplit(".", 1)
+        if module_name == "logging" and not hasattr(logging, func_name_in_module):
+            # Check if the function exists in the logging module
+            py_version = f"{sys.version_info[0]}.{sys.version_info[1]}"
+            pytest.skip(
+                f"{func_name} requires {func_name_in_module} which doesn't exist "
+                f"in logging module on Python {py_version}"
+            )
         with patch(mock_target) as mock_func:
             # Call the snake_case function
             # Some functions may raise (e.g., if logging is already configured)

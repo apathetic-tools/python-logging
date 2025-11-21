@@ -3,9 +3,12 @@
 
 from __future__ import annotations
 
+import sys
 from contextlib import suppress
 from typing import Any
 from unittest import mock
+
+import pytest
 
 
 def create_mock_superclass_test(
@@ -37,6 +40,13 @@ def create_mock_superclass_test(
         AssertionError: If the camelCase method was not called as expected
     """
     # Get the real camelCase method from parent class to use as the base implementation
+    # Check if the method exists first
+    if not hasattr(parent_class, camel_case_method_name):
+        py_version = f"{sys.version_info[0]}.{sys.version_info[1]}"
+        pytest.skip(
+            f"{camel_case_method_name} does not exist on {parent_class.__name__} "
+            f"(Python {py_version})"
+        )
     camel_method_unbound = getattr(parent_class, camel_case_method_name)
 
     # Create a base class with the camelCase method (what super() resolves to)

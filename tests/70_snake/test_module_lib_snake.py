@@ -110,6 +110,9 @@ def test_module_lib_snake_function(
         # ApatheticLogging_Internal_GetLogger.getLogger)
 
         if mock_target_module == "apathetic_logging.get_logger":
+            # get_logger is a function on the apathetic_logging namespace class
+            # The actual implementation is in ApatheticLogging_Internal_GetLogger class
+            # which is in the get_logger module. Patch the class method directly.
             patch_target = (
                 f"apathetic_logging.get_logger."
                 f"ApatheticLogging_Internal_GetLogger.{mock_target_function}"
