@@ -84,6 +84,79 @@ poetry run poe test
 
 Pytest will discover all files in `tests/` automatically.
 
+### Testing on Python 3.10
+
+The project supports Python 3.10+ and CI tests on both Python 3.10 and the latest 3.x.  
+To test locally on Python 3.10, you can either use a system-installed Python 3.10 or pyenv.
+
+> [!NOTE]
+> pyenv setup is optional. You can develop and test on any Python 3.10+ version.  
+> The `test:py310` task is only useful if you want to match CI's Python 3.10 environment exactly.
+
+#### Option 1: System Python 3.10 (Simplest)
+
+If you're on Ubuntu/Debian and Python 3.10 is available in your repositories:
+
+```bash
+sudo apt install python3.10 python3.10-venv python3.10-dev
+```
+
+Then you can use `poetry run poe env:py310` directly — no pyenv needed!
+
+#### Option 2: pyenv (For Multiple Versions or Newer Systems)
+
+If Python 3.10 isn't available via your system package manager (e.g., Ubuntu 24.04), you can use pyenv:
+
+**1. Install pyenv:**
+
+```bash
+curl https://pyenv.run | bash
+```
+
+**2. Add to your shell configuration** (`~/.bashrc` or `~/.zshrc`):
+
+```bash
+export PYENV_ROOT="$HOME/.pyenv"
+[ -d "$PYENV_ROOT/bin" ] && export PATH="$PYENV_ROOT/bin:$PATH"
+eval "$(pyenv init - bash)"
+```
+
+**3. Restart your shell** or run `source ~/.bashrc`
+
+**4. Run the check command** — it will guide you through the rest:
+
+```bash
+poetry run poe setup:pyenv:check
+```
+
+The check command will:
+- Verify pyenv is set up correctly
+- Check if Python 3.10 is installed
+- Provide exact commands for installing build dependencies (if needed)
+- Guide you through installing Python 3.10.19
+- Verify everything is working
+
+> [!TIP]
+> Run `poetry run poe setup:pyenv:check` repeatedly until it shows all checks passing. It provides interactive, step-by-step guidance.
+
+> [!NOTE]
+> The `env:py310` task automatically detects system Python 3.10 first, then falls back to pyenv if needed.
+
+#### Using Python 3.10 for Testing
+
+Once pyenv is set up, you can switch between Python versions:
+
+```bash
+# Switch to Python 3.10
+poetry run poe env:py310
+
+# Run tests on Python 3.10, then switch back
+poetry run poe test:py310
+
+# Switch back to latest Python 3.x
+poetry run poe env:py3x
+```
+
 ## Building and Publishing (for maintainers)
 
 Apathetic Python Logger ships in two forms:

@@ -76,13 +76,16 @@ fix = ["sync:ai:guidance", "fix:ruff:installed", "fix:format:installed"]
 "pre-commit:install" = { shell = "if [ ! -f .git/hooks/pre-commit ] || ! grep -q 'pre-commit' .git/hooks/pre-commit 2>/dev/null; then poetry run pre-commit install --install-hooks && poetry run pre-commit install --hook-type pre-push; fi" }
 
 # 🐍 Python version management
-"env:py310" = { shell = "poetry env use ~/.pyenv/versions/3.10.19/bin/python3 && poetry install" }
-"env:py312" = { shell = "poetry env use python3.12 && poetry install" }
+"env:py310" = "bash dev/env_use_py310.sh"
+"env:py3x" = "bash dev/env_use_py3x.sh"
 "test:py310" = [
   "env:py310",
   "test",
-  "env:py312"
+  "env:py3x"
 ]
+
+# 🐍 pyenv setup helpers (for Python 3.10 testing)
+"setup:pyenv:check" = "bash dev/setup_pyenv_check.sh"
 
 # 🧪 Internal verification
 [tool.poe.tasks."verify:pytest"]
