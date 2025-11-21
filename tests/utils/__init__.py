@@ -8,6 +8,7 @@ from .constants import (
     PROGRAM_SCRIPT,
     PROJ_ROOT,
 )
+from .debug_logger import debug_logger_summary
 from .level_validation import validate_test_level
 from .mock_superclass import create_mock_superclass_test
 from .patch_everywhere import patch_everywhere
@@ -26,6 +27,8 @@ __all__ = [  # noqa: RUF022
     "PROGRAM_CONFIG",
     "PROGRAM_PACKAGE",
     "PROGRAM_SCRIPT",
+    # debug_logger
+    "debug_logger_summary",
     # level_validation
     "validate_test_level",
     # mock_superclass

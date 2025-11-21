@@ -52,6 +52,7 @@ SAFE_TRACE_ENABLED = apathetic_logging.SAFE_TRACE_ENABLED
 TRACE_LEVEL = apathetic_logging.TRACE_LEVEL
 MINIMAL_LEVEL = apathetic_logging.MINIMAL_LEVEL
 DETAIL_LEVEL = apathetic_logging.DETAIL_LEVEL
+NOTSET_LEVEL = apathetic_logging.NOTSET_LEVEL
 
 # ANSI Colors
 ANSIColors = apathetic_logging.ANSIColors
@@ -85,10 +86,14 @@ setLoggerClass = apathetic_logging.setLoggerClass
 
 # Functions (camelCase - library functions)
 getLevelNumber = apathetic_logging.getLevelNumber
+getLoggerOfType = apathetic_logging.getLoggerOfType
+hasLogger = apathetic_logging.hasLogger
 makeSafeTrace = apathetic_logging.makeSafeTrace
 registerDefaultLogLevel = apathetic_logging.registerDefaultLogLevel
 registerLogLevelEnvVars = apathetic_logging.registerLogLevelEnvVars
 registerLogger = apathetic_logging.registerLogger
+removeLogger = apathetic_logging.removeLogger
+resolveLoggerName = apathetic_logging.resolveLoggerName
 safeLog = apathetic_logging.safeLog
 
 # Functions (snake_case - stdlib wrappers)
@@ -138,6 +143,7 @@ __all__ = [
     "DETAIL_LEVEL",
     "LEVEL_ORDER",
     "MINIMAL_LEVEL",
+    "NOTSET_LEVEL",
     "SAFE_TRACE_ENABLED",
     "SILENT_LEVEL",
     "TAG_STYLES",
@@ -169,6 +175,7 @@ __all__ = [
     "getLogRecordFactory",
     "getLogger",
     "getLoggerClass",
+    "getLoggerOfType",
     "get_handler_by_name",
     "get_handler_names",
     "get_level_name",
@@ -178,6 +185,7 @@ __all__ = [
     "get_logger",
     "get_logger_class",
     "get_logger_of_type",
+    "hasLogger",
     "has_logger",
     "info",
     "log",
@@ -191,7 +199,9 @@ __all__ = [
     "register_default_log_level",
     "register_log_level_env_vars",
     "register_logger",
+    "removeLogger",
     "remove_logger",
+    "resolveLoggerName",
     "resolve_logger_name",
     "safeLog",
     "safeTrace",

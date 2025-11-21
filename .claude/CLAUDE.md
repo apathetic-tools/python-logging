@@ -28,7 +28,7 @@ Ask user for insight. Also ask if you should: stash changes, rollback, or add is
 
 **Checkpoint format**: `checkpoint(scope): brief description` (intermediate saves during debugging)
 
-**Before regular commit**: Check for checkpoint commits since last regular commit. Ask: "I see [N] checkpoint commit(s). Squash with this commit?" If yes, squash via rebase/reset; if no, proceed.
+**Before regular commit**: Check for checkpoint commits since last regular commit. Ask: "I see [N] checkpoint commit(s). Squash with this commit?" and wait for response. If yes, squash via rebase/reset; if no, proceed.
 
 # Project Overview
 
