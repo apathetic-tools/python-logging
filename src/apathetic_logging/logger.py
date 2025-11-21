@@ -139,7 +139,7 @@ class ApatheticLogging_Internal_LoggerCore(logging.Logger):  # noqa: N801  # pyr
         self.ensureHandlers()
         super()._log(level, msg, args, **kwargs)
 
-    def setLevel(self, level: int | str) -> None:
+    def setLevel(self, level: int | str, *, minimum: bool | None = False) -> None:
         """Set the logging level of this logger.
 
         Changed:
@@ -148,47 +148,50 @@ class ApatheticLogging_Internal_LoggerCore(logging.Logger):  # noqa: N801  # pyr
         - Supports custom level names (TEST, TRACE, MINIMAL, DETAIL, SILENT)
         - Validates that custom levels are not set to 0, which would cause
           NOTSET inheritance from root logger
+        - Added `minimum` parameter: if True, only sets the level if it's more
+          verbose (lower numeric value) than the current level
 
         Args:
             level: The logging level, either as an integer or a string name
                 (case-insensitive). Standard levels (DEBUG, INFO, WARNING, ERROR,
                 CRITICAL) and custom levels (TEST, TRACE, MINIMAL, DETAIL, SILENT)
                 are supported.
+            minimum: If True, only set the level if it's more verbose (lower
+                numeric value) than the current level. This prevents downgrading
+                from a more verbose level (e.g., TRACE) to a less verbose one
+                (e.g., DEBUG). Defaults to False. None is accepted and treated
+                as False.
 
         Wrapper for logging.Logger.setLevel.
 
         https://docs.python.org/3.10/library/logging.html#logging.Logger.setLevel
         """
-        _constants = ApatheticLogging_Internal_Constants
-        # Resolve string to integer if needed
+        from .logging_utils import (  # noqa: PLC0415
+            ApatheticLogging_Internal_LoggingUtils,
+        )
+
+        _logging_utils = ApatheticLogging_Internal_LoggingUtils
+
+        # Resolve string to integer if needed using utility function
         if isinstance(level, str):
-            level_str = level.upper()
-            # Handle custom level names (TEST, TRACE, MINIMAL, DETAIL, SILENT)
-            # directly
-            if level_str == "TEST":
-                level = _constants.TEST_LEVEL
-            elif level_str == "TRACE":
-                level = _constants.TRACE_LEVEL
-            elif level_str == "DETAIL":
-                level = _constants.DETAIL_LEVEL
-            elif level_str == "MINIMAL":
-                level = _constants.MINIMAL_LEVEL
-            elif level_str == "SILENT":
-                level = _constants.SILENT_LEVEL
-            else:
-                # Try to resolve via logging module (for standard levels)
-                resolved = self.resolveLevelName(level_str)
-                # Fall back to standard logging level names if not resolved
-                level = resolved if resolved is not None else level_str
+            level = _logging_utils.getLevelNumber(level)
+
+        # Handle minimum level logic (None is treated as False)
+        if minimum:
+            current_level = self.getEffectiveLevel()
+            # Lower number = more verbose, so only set if new level is more verbose
+            if level >= current_level:
+                # Don't downgrade - keep current level
+                return
 
         # Validate any level <= 0 (prevents NOTSET inheritance)
         # Built-in levels (DEBUG=10, INFO=20, etc.) are all > 0, so they pass
         # validate_level_positive() will raise if level <= 0
-        if isinstance(level, int):
-            level_name = logging.getLevelName(level) or str(level)
-            self.validate_level_positive(level, level_name)
+        # At this point, level is guaranteed to be int (resolved above)
+        level_name = _logging_utils.getLevelName(level)
+        self.validate_level_positive(level, level_name=level_name)
 
-            super().setLevel(level)
+        super().setLevel(level)
 
     @classmethod
     def determine_color_enabled(cls) -> bool:
@@ -203,7 +206,7 @@ class ApatheticLogging_Internal_LoggerCore(logging.Logger):  # noqa: N801  # pyr
         return sys.stdout.isatty()
 
     @staticmethod
-    def validate_level_positive(level: int, level_name: str | None = None) -> None:
+    def validate_level_positive(level: int, *, level_name: str | None = None) -> None:
         """Validate that a level value is positive (> 0).
 
         Custom levels with values <= 0 will inherit from the root logger,
@@ -212,19 +215,23 @@ class ApatheticLogging_Internal_LoggerCore(logging.Logger):  # noqa: N801  # pyr
         Args:
             level: The numeric level value to validate
             level_name: Optional name for the level (for error messages).
-                If None, will attempt to get from logging.getLevelName()
+                If None, will attempt to get from getLevelName()
 
         Raises:
             ValueError: If level <= 0
 
         Example:
-            >>> Logger.validate_level_positive(5, "TRACE")
-            >>> Logger.validate_level_positive(0, "TEST")
+            >>> Logger.validate_level_positive(5, level_name="TRACE")
+            >>> Logger.validate_level_positive(0, level_name="TEST")
             ValueError: Level 'TEST' has value 0...
         """
         if level <= 0:
             if level_name is None:
-                level_name = logging.getLevelName(level) or str(level)
+                from .logging_utils import (  # noqa: PLC0415
+                    ApatheticLogging_Internal_LoggingUtils,
+                )
+
+                level_name = ApatheticLogging_Internal_LoggingUtils.getLevelName(level)
             msg = (
                 f"Level '{level_name}' has value {level}, "
                 "which is <= 0. This causes NOTSET inheritance from root logger. "
@@ -257,7 +264,9 @@ class ApatheticLogging_Internal_LoggerCore(logging.Logger):  # noqa: N801  # pyr
         https://docs.python.org/3.10/library/logging.html#logging.addLevelName
         """
         # Validate level is positive
-        ApatheticLogging_Internal_LoggerCore.validate_level_positive(level, level_name)
+        ApatheticLogging_Internal_LoggerCore.validate_level_positive(
+            level, level_name=level_name
+        )
 
         # Check if attribute already exists and validate it
         existing_value = getattr(logging, level_name, None)
@@ -272,7 +281,7 @@ class ApatheticLogging_Internal_LoggerCore(logging.Logger):  # noqa: N801  # pyr
                 raise ValueError(msg)
             # Validate existing value is positive
             ApatheticLogging_Internal_LoggerCore.validate_level_positive(
-                existing_value, level_name
+                existing_value, level_name=level_name
             )
             if existing_value != level:
                 msg = (
@@ -406,9 +415,95 @@ class ApatheticLogging_Internal_LoggerCore(logging.Logger):  # noqa: N801  # pyr
 
     @property
     def levelName(self) -> str:
-        """Return the current effective level name
-        (see also: logging.getLevelName)."""
-        return logging.getLevelName(self.getEffectiveLevel())
+        """Return the explicit level name set on this logger.
+
+        This property returns the name of the level explicitly set on this logger
+        (via self.level). For the effective level name (what's actually used,
+        considering inheritance), use effectiveLevelName instead.
+
+        See also: logging.getLevelName, effectiveLevelName
+        """
+        return self.getLevelName()
+
+    @property
+    def effectiveLevel(self) -> int:
+        """Return the effective level (what's actually used).
+
+        This property returns the effective logging level for this logger,
+        considering inheritance from parent loggers. This is the preferred
+        way to get the effective level. Also available via getEffectiveLevel()
+        for stdlib compatibility.
+
+        See also: logging.Logger.getEffectiveLevel, effectiveLevelName
+        """
+        return self.getEffectiveLevel()
+
+    @property
+    def effectiveLevelName(self) -> str:
+        """Return the effective level name (what's actually used).
+
+        This property returns the name of the effective logging level for this
+        logger, considering inheritance from parent loggers. This is the
+        preferred way to get the effective level name. Also available via
+        getEffectiveLevelName() for consistency.
+
+        See also: logging.getLevelName, effectiveLevel
+        """
+        return self.getEffectiveLevelName()
+
+    def getLevel(self) -> int:
+        """Return the explicit level set on this logger.
+
+        This method returns the level explicitly set on this logger (via
+        self.level). For the effective level (what's actually used, considering
+        inheritance), use getEffectiveLevel() or the effectiveLevel property.
+
+        Returns:
+            The explicit level value (int) set on this logger.
+
+        See also: level property, getEffectiveLevel
+        """
+        return self.level
+
+    def getLevelName(self) -> str:
+        """Return the explicit level name set on this logger.
+
+        This method returns the name of the level explicitly set on this logger
+        (via self.level). For the effective level name (what's actually used,
+        considering inheritance), use getEffectiveLevelName() or the
+        effectiveLevelName property.
+
+        Returns:
+            The explicit level name (str) set on this logger.
+
+        See also: levelName property, getEffectiveLevelName
+        """
+        from .logging_utils import (  # noqa: PLC0415
+            ApatheticLogging_Internal_LoggingUtils,
+        )
+
+        return ApatheticLogging_Internal_LoggingUtils.getLevelName(self.level)
+
+    def getEffectiveLevelName(self) -> str:
+        """Return the effective level name (what's actually used).
+
+        This method returns the name of the effective logging level for this
+        logger, considering inheritance from parent loggers. Prefer the
+        effectiveLevelName property for convenience, or use this method for
+        consistency with getEffectiveLevel().
+
+        Returns:
+            The effective level name (str) for this logger.
+
+        See also: effectiveLevelName property, getEffectiveLevel
+        """
+        from .logging_utils import (  # noqa: PLC0415
+            ApatheticLogging_Internal_LoggingUtils,
+        )
+
+        return ApatheticLogging_Internal_LoggingUtils.getLevelName(
+            self.getEffectiveLevel()
+        )
 
     def errorIfNotDebug(self, msg: str, *args: Any, **kwargs: Any) -> None:
         """Logs an exception with the real traceback starting from the caller.
@@ -484,17 +579,6 @@ class ApatheticLogging_Internal_LoggerCore(logging.Logger):  # noqa: N801  # pyr
         if self.isEnabledFor(_constants.TEST_LEVEL):
             self._log(_constants.TEST_LEVEL, msg, args, **kwargs)
 
-    def resolveLevelName(self, level_name: str) -> int | None:
-        """Resolve a level name to its numeric value. Case-insensitive.
-
-        Args:
-            level_name: Level name (e.g., "DEBUG", "INFO")
-
-        Returns:
-            Numeric level value, or None if not found
-        """
-        return getattr(logging, level_name.upper(), None)
-
     def logDynamic(self, level: str | int, msg: str, *args: Any, **kwargs: Any) -> None:
         """Log a message with a dynamically provided log level
            (unlike .info(), .error(), etc.).
@@ -510,8 +594,13 @@ class ApatheticLogging_Internal_LoggerCore(logging.Logger):  # noqa: N801  # pyr
         """
         # Resolve level
         if isinstance(level, str):
-            level_no = self.resolveLevelName(level)
-            if not isinstance(level_no, int):
+            from .logging_utils import (  # noqa: PLC0415
+                ApatheticLogging_Internal_LoggingUtils,
+            )
+
+            try:
+                level_no = ApatheticLogging_Internal_LoggingUtils.getLevelNumber(level)
+            except ValueError:
                 self.error("Unknown log level: %r", level)
                 return
         elif isinstance(level, int):  # pyright: ignore[reportUnnecessaryIsInstance]
@@ -542,8 +631,13 @@ class ApatheticLogging_Internal_LoggerCore(logging.Logger):  # noqa: N801  # pyr
 
         # Resolve level
         if isinstance(level, str):
-            level_no = self.resolveLevelName(level)
-            if not isinstance(level_no, int):
+            from .logging_utils import (  # noqa: PLC0415
+                ApatheticLogging_Internal_LoggingUtils,
+            )
+
+            try:
+                level_no = ApatheticLogging_Internal_LoggingUtils.getLevelNumber(level)
+            except ValueError:
                 self.error("Unknown log level: %r", level)
                 # Yield control anyway so the 'with' block doesn't explode
                 yield

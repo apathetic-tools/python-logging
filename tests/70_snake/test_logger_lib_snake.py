@@ -35,11 +35,13 @@ LOGGER_LIB_SNAKE_TESTS: list[tuple[str, tuple[object, ...], dict[str, object], s
         {"args": None, "root_log_level": None},
         "determineLogLevel",
     ),
-    ("resolve_level_name", ("DEBUG",), {}, "resolveLevelName"),
     ("error_if_not_debug", ("test",), {}, "errorIfNotDebug"),
     ("critical_if_not_debug", ("test",), {}, "criticalIfNotDebug"),
     ("log_dynamic", (logging.INFO, "test"), {}, "logDynamic"),
     ("use_level", (logging.DEBUG,), {"minimum": False}, "useLevel"),
+    ("get_level", (), {}, "getLevel"),
+    ("get_level_name", (), {}, "getLevelName"),
+    ("get_effective_level_name", (), {}, "getEffectiveLevelName"),
 ]
 
 

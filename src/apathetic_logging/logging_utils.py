@@ -28,6 +28,133 @@ class ApatheticLogging_Internal_LoggingUtils:  # noqa: N801  # pyright: ignore[r
     _LoggerType = TypeVar("_LoggerType", bound=logging.Logger)
 
     @staticmethod
+    def getLevelName(level: int | str, *, strict: bool = False) -> str:
+        """Return the textual representation of a logging level.
+
+        Extended version of logging.getLevelName that always returns a string.
+
+        **Breaking change from stdlib**: Unlike `logging.getLevelName` which is
+        bidirectional (returns str for int input, int for str input), this function
+        always returns a string. The stdlib's string->int behavior was considered
+        an undocumented mistake and removed in Python 3.4, but reinstated in 3.4.2
+        for backward compatibility. While not deprecated, this behavior is not endorsed.
+        This function provides the cleaner, intended API.
+
+        For string->int conversion, use `getLevelNumber()` instead.
+
+        Extended features:
+        - Always returns a string (unlike stdlib which returns int for string input)
+        - Accepts both int and str inputs (returns str uppercased if already str)
+        - Optional strict mode to raise ValueError for unknown levels
+        - Supports all levels registered via logging.addLevelName() (including
+          custom apathetic levels and user-registered levels)
+
+        Args:
+            level: Log level as integer or string name
+            strict: If True, raise ValueError for unknown levels. If False (default),
+                returns "Level {level}" format for unknown integer levels (matching
+                stdlib behavior).
+
+        Returns:
+            Level name (uppercase string). If level is already a string,
+            returns it as-is (uppercased). For unknown integer levels (when
+            strict=False), returns "Level {level}" format (e.g., "Level 999").
+
+        Raises:
+            ValueError: If strict=True and level cannot be resolved to a known
+                level name.
+
+        Example:
+            >>> getLevelName(10)
+            "DEBUG"
+            >>> getLevelName(5)
+            "TRACE"
+            >>> getLevelName("DEBUG")
+            "DEBUG"
+            >>> getLevelName(999)
+            "Level 999"
+            >>> getLevelName(999, strict=True)
+            ValueError: Unknown log level: 999
+            >>> getLevelNumber("DEBUG")  # For string->int conversion
+            10
+
+        Wrapper for logging.getLevelName with extensions.
+
+        https://docs.python.org/3.10/library/logging.html#logging.getLevelName
+        """
+        # If already a string, return it uppercased
+        if isinstance(level, str):
+            return level.upper()
+
+        # Use logging.getLevelName() which handles all registered levels:
+        # - Standard library levels (DEBUG, INFO, etc.)
+        # - Custom apathetic levels (TEST, TRACE, etc.)
+        #   registered via extend_logging_module()
+        # - User-registered levels via logging.addLevelName()
+        level_name = logging.getLevelName(level)
+        # getLevelName returns "Level {level}" format for unknown levels
+        # Check if this is a known level (not in "Level {number}" format)
+        if level_name.startswith("Level "):
+            # Unknown level: raise if strict, otherwise return stdlib format
+            if strict:
+                msg = f"Unknown log level: {level}"
+                raise ValueError(msg)
+            return level_name
+
+        # Known level (from stdlib, our custom levels, or user-registered levels)
+        return level_name
+
+    @staticmethod
+    def getLevelNumber(level: str | int) -> int:
+        """Convert a log level name to its numeric value.
+
+        Recommended way to convert string level names to integers. This function
+        explicitly performs string->int conversion, unlike `getLevelName()` which
+        has bidirectional behavior for backward compatibility.
+
+        Handles all levels registered via logging.addLevelName() (including
+        standard library levels, custom apathetic levels, and user-registered levels).
+
+        Args:
+            level: Log level as string name (case-insensitive) or integer
+
+        Returns:
+            Integer level value
+
+        Raises:
+            ValueError: If level cannot be resolved
+
+        Example:
+            >>> getLevelNumber("DEBUG")
+            10
+            >>> getLevelNumber("TRACE")
+            5
+            >>> getLevelNumber(20)
+            20
+
+        See Also:
+            getLevelName() - Convert int to string (intended use)
+        """
+        if isinstance(level, int):
+            return level
+
+        level_str = level.upper()
+
+        # Use getattr() to find level constants registered via logging.addLevelName():
+        # - Standard library levels (DEBUG, INFO, etc.) - registered by default
+        # - Custom apathetic levels (TEST, TRACE, etc.)
+        #   registered via extend_logging_module()
+        # - User-registered levels via our addLevelName() method
+        #   (but not stdlib's logging.addLevelName() which doesn't set attribute)
+        # - User-registered levels via setattr(logging, level_str, value)
+        resolved = getattr(logging, level_str, None)
+        if isinstance(resolved, int):
+            return resolved
+
+        msg = f"Unknown log level: {level!r}"
+        raise ValueError(msg)
+
+    @staticmethod
     def hasLogger(logger_name: str) -> bool:
         """Check if a logger exists in the logging manager's registry.
 

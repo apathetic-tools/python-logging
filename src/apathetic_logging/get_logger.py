@@ -61,6 +61,8 @@ class ApatheticLogging_Internal_GetLogger:  # noqa: N801  # pyright: ignore[repo
     def getLogger(
         name: str | None = None,
         *args: Any,
+        level: str | int | None = None,
+        minimum: bool | None = None,
         **kwargs: Any,
     ) -> ApatheticLogging_Internal_Logger.Logger:
         """Return a logger with the specified name, creating it if necessary.
@@ -80,6 +82,14 @@ class ApatheticLogging_Internal_GetLogger:  # noqa: N801  # pyright: ignore[repo
                 will be auto-inferred from the calling module's __package__.
                 If an empty string (""), returns the root logger.
             *args: Additional positional arguments (for future-proofing)
+            level: Exact log level to set on the logger. Accepts both string
+                names (case-insensitive) and numeric values. If provided,
+                sets the logger's level to this value. Defaults to None.
+            minimum: If True, only set the level if it's more verbose (lower
+                numeric value) than the current level. This prevents downgrading
+                from a more verbose level (e.g., TRACE) to a less verbose one
+                (e.g., DEBUG). If None, defaults to False. Only used when
+                `level` is provided.
             **kwargs: Additional keyword arguments (for future-proofing)
 
         Returns:
@@ -93,7 +103,13 @@ class ApatheticLogging_Internal_GetLogger:  # noqa: N801  # pyright: ignore[repo
         _logger = ApatheticLogging_Internal_Logger
         skip_frames = 2
         result = _get_logger.getLoggerOfType(
-            name, _logger.Logger, skip_frames, *args, **kwargs
+            name,
+            _logger.Logger,
+            skip_frames,
+            *args,
+            level=level,
+            minimum=minimum,
+            **kwargs,
         )
         return cast("ApatheticLogging_Internal_Logger.Logger", result)  # type: ignore[redundant-cast]
 
@@ -103,6 +119,8 @@ class ApatheticLogging_Internal_GetLogger:  # noqa: N801  # pyright: ignore[repo
         class_type: type[ApatheticLogging_Internal_GetLogger._LoggerType],
         skip_frames: int = 1,
         *args: Any,
+        level: str | int | None = None,
+        minimum: bool | None = None,
         **kwargs: Any,
     ) -> ApatheticLogging_Internal_GetLogger._LoggerType:
         """Get a logger of the specified type, creating it if necessary.
@@ -125,6 +143,14 @@ class ApatheticLogging_Internal_GetLogger:  # noqa: N801  # pyright: ignore[repo
             skip_frames: Number of frames to skip when inferring logger name.
                 Prefer using as a keyword argument (e.g., skip_frames=2) for clarity.
             *args: Additional positional arguments (for future-proofing)
+            level: Exact log level to set on the logger. Accepts both string
+                names (case-insensitive) and numeric values. If provided,
+                sets the logger's level to this value. Defaults to None.
+            minimum: If True, only set the level if it's more verbose (lower
+                numeric value) than the current level. This prevents downgrading
+                from a more verbose level (e.g., TRACE) to a less verbose one
+                (e.g., DEBUG). If None, defaults to False. Only used when
+                `level` is provided.
             **kwargs: Additional keyword arguments (for future-proofing)
 
         Returns:
@@ -154,7 +180,7 @@ class ApatheticLogging_Internal_GetLogger:  # noqa: N801  # pyright: ignore[repo
             class_type.extend_logging_module()  # type: ignore[attr-defined]
 
         # recreate if wrong type
-        logger = None
+        logger: logging.Logger | None = None
         registered = _logging_utils.hasLogger(register_name)
         if registered:
             logger = logging.getLogger(register_name, *args, **kwargs)
@@ -165,6 +191,10 @@ class ApatheticLogging_Internal_GetLogger:  # noqa: N801  # pyright: ignore[repo
             logger = ApatheticLogging_Internal_GetLogger._setLoggerClassTemporarily(
                 class_type, register_name
             )
+
+        # Apply log level settings if provided
+        if logger is not None and level is not None:
+            logger.setLevel(level, minimum=minimum)  # type: ignore[call-arg]
 
         typed_logger = cast("ApatheticLogging_Internal_GetLogger._LoggerType", logger)
         return typed_logger

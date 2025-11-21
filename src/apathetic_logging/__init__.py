@@ -84,6 +84,7 @@ setLogRecordFactory = apathetic_logging.setLogRecordFactory
 setLoggerClass = apathetic_logging.setLoggerClass
 
 # Functions (camelCase - library functions)
+getLevelNumber = apathetic_logging.getLevelNumber
 makeSafeTrace = apathetic_logging.makeSafeTrace
 registerDefaultLogLevel = apathetic_logging.registerDefaultLogLevel
 registerLogLevelEnvVars = apathetic_logging.registerLogLevelEnvVars
@@ -118,6 +119,7 @@ warn = apathetic_logging.warn
 warning = apathetic_logging.warning
 
 # Functions (snake_case - library wrappers)
+get_level_number = apathetic_logging.get_level_number
 get_logger_of_type = apathetic_logging.get_logger_of_type
 has_logger = apathetic_logging.has_logger
 make_safe_trace = apathetic_logging.make_safe_trace
@@ -163,6 +165,7 @@ __all__ = [
     "getHandlerNames",
     "getLevelName",
     "getLevelNamesMapping",
+    "getLevelNumber",
     "getLogRecordFactory",
     "getLogger",
     "getLoggerClass",
@@ -170,6 +173,7 @@ __all__ = [
     "get_handler_names",
     "get_level_name",
     "get_level_names_mapping",
+    "get_level_number",
     "get_log_record_factory",
     "get_logger",
     "get_logger_class",

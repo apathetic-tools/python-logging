@@ -16,7 +16,7 @@ Complete API documentation for Apathetic Python Logger.
 
 These functions are new to Apathetic Python Logger or have modified behavior compared to stdlib logging.
 
-### `get_logger(logger_name: str | None = None) -> Logger`
+### `get_logger(logger_name: str | None = None, *, level: str | int | None = None, minimum: bool | None = None) -> Logger`
 
 Return the registered logger instance.
 
@@ -26,12 +26,15 @@ Uses Python's built-in logging registry (`logging.getLogger()`) to retrieve the 
 
 **Parameters:**
 - `logger_name` (str | None): Optional logger name. If not provided, uses the registered logger name or auto-infers from the calling module. Use `""` to get the root logger.
+- `level` (str | int | None): Exact log level to set on the logger. Accepts both string names (case-insensitive) and numeric values. If provided, sets the logger's level to this value. Defaults to None (no change).
+- `minimum` (bool | None): If True, only set the level if it's more verbose (lower numeric value) than the current level. This prevents downgrading from a more verbose level (e.g., TRACE) to a less verbose one (e.g., DEBUG). If None, defaults to False. Only used when `level` is provided.
 
 **Returns:**
 - The logger instance from `logging.getLogger()` (as `apathetic_logging.Logger` type)
 
 **Raises:**
 - `RuntimeError`: If no logger name is provided and no logger name has been registered and auto-inference fails.
+- `ValueError`: If an invalid log level is provided.
 
 **Example:**
 ```python
@@ -44,11 +47,17 @@ logger = get_logger()  # Gets "my_app" logger
 # Or specify logger name directly
 logger = get_logger("my_app")  # Gets "my_app" logger
 
+# Set exact log level
+logger = get_logger("my_app", level="debug")  # Sets level to DEBUG
+
+# Set minimum log level (only if current is less verbose)
+logger = get_logger("my_app", level="info", minimum=True)  # At least INFO
+
 # To get root logger (use "" instead of None)
 logger = get_logger("")  # Returns root logger
 ```
 
-### `get_logger_of_type(name: str | None, class_type: type[Logger], skip_frames: int = 1, *args: Any, **kwargs: Any) -> Logger`
+### `get_logger_of_type(name: str | None, class_type: type[Logger], skip_frames: int = 1, *args: Any, level: str | int | None = None, minimum: bool | None = None, **kwargs: Any) -> Logger`
 
 Get a logger of the specified type, creating it if necessary.
 
@@ -56,10 +65,16 @@ Get a logger of the specified type, creating it if necessary.
 - `name` (str | None): The name of the logger to get. If None, auto-infers from the calling module. Use `""` for root logger.
 - `class_type`: The logger class type to use.
 - `skip_frames` (int): Number of frames to skip when inferring logger name (default: 1).
-- `*args`, `**kwargs`: Additional arguments (for future-proofing)
+- `*args`: Additional positional arguments (for future-proofing)
+- `level` (str | int | None): Exact log level to set on the logger. Accepts both string names (case-insensitive) and numeric values. If provided, sets the logger's level to this value. Defaults to None (no change).
+- `minimum` (bool | None): If True, only set the level if it's more verbose (lower numeric value) than the current level. This prevents downgrading from a more verbose level (e.g., TRACE) to a less verbose one (e.g., DEBUG). If None, defaults to False. Only used when `level` is provided.
+- `**kwargs`: Additional keyword arguments (for future-proofing)
 
 **Returns:**
 - A logger instance of the specified type
+
+**Raises:**
+- `ValueError`: If an invalid log level is provided.
 
 **Example:**
 ```python
@@ -69,6 +84,12 @@ class AppLogger(Logger):
     pass
 
 logger = get_logger_of_type("my_app", AppLogger)
+
+# Set exact log level
+logger = get_logger_of_type("my_app", AppLogger, level="debug")
+
+# Set minimum log level
+logger = get_logger_of_type("my_app", AppLogger, level="info", minimum=True)
 ```
 
 ### `register_logger(logger_name: str | None = None, logger_class: type[Logger] | None = None) -> None`
@@ -405,26 +426,152 @@ with logger.use_level("debug"):
 # Level is restored after the context
 ```
 
-##### `resolve_level_name(level_name: str) -> int | None`
-
-Resolve a log level name to its numeric value.
-
-**Parameters:**
-- `level_name` (str): Log level name (case-insensitive)
-
-**Returns:**
-- `int | None`: Numeric log level, or None if not found
-
 #### Properties
+
+##### `level: int`
+
+Return the explicit level set on this logger (read-only).
+
+This property is inherited from `logging.Logger` and returns the level
+explicitly set on this logger. For the effective level (what's actually used,
+considering inheritance), use `effective_level` instead.
+
+**Example:**
+```python
+logger.set_level("debug")
+print(logger.level)  # 10 (DEBUG)
+```
 
 ##### `level_name: str`
 
-Return the current effective level name (read-only).
+Return the explicit level name set on this logger (read-only).
+
+This property returns the name of the level explicitly set on this logger.
+For the effective level name (what's actually used, considering inheritance),
+use `effective_level_name` instead.
 
 **Example:**
 ```python
 logger.set_level("debug")
 print(logger.level_name)  # "DEBUG"
+```
+
+##### `effective_level: int`
+
+Return the effective level (what's actually used) (read-only).
+
+This property returns the effective logging level for this logger, considering
+inheritance from parent loggers. This is the preferred way to get the effective
+level. Also available via `get_effective_level()` for stdlib compatibility.
+
+**Example:**
+```python
+parent = get_logger("parent")
+parent.set_level("info")
+
+child = get_logger("parent.child")
+print(child.level)  # 0 (NOTSET - explicit)
+print(child.effective_level)  # 20 (INFO - effective, from parent)
+```
+
+##### `effective_level_name: str`
+
+Return the effective level name (what's actually used) (read-only).
+
+This property returns the name of the effective logging level for this logger,
+considering inheritance from parent loggers. This is the preferred way to get
+the effective level name. Also available via `get_effective_level_name()` for
+consistency.
+
+**Example:**
+```python
+parent = get_logger("parent")
+parent.set_level("info")
+
+child = get_logger("parent.child")
+print(child.level_name)  # "NOTSET" (explicit)
+print(child.effective_level_name)  # "INFO" (effective, from parent)
+```
+
+#### Level Access Methods
+
+For users who prefer method-based access or stdlib compatibility, these methods
+provide the same functionality as the properties above.
+
+##### `get_level() -> int`
+
+Return the explicit level set on this logger.
+
+This method returns the level explicitly set on this logger (same as `level`
+property). For the effective level, use `get_effective_level()` or the
+`effective_level` property.
+
+**Returns:**
+- `int`: The explicit level value set on this logger
+
+**Example:**
+```python
+logger.set_level("debug")
+print(logger.get_level())  # 10
+```
+
+##### `get_level_name() -> str`
+
+Return the explicit level name set on this logger.
+
+This method returns the name of the level explicitly set on this logger (same
+as `level_name` property). For the effective level name, use
+`get_effective_level_name()` or the `effective_level_name` property.
+
+**Returns:**
+- `str`: The explicit level name set on this logger
+
+**Example:**
+```python
+logger.set_level("debug")
+print(logger.get_level_name())  # "DEBUG"
+```
+
+##### `get_effective_level() -> int`
+
+Return the effective level (what's actually used).
+
+This method returns the effective logging level for this logger, considering
+inheritance from parent loggers. This is inherited from `logging.Logger` and
+is available for stdlib compatibility. Prefer the `effective_level` property
+for convenience.
+
+**Returns:**
+- `int`: The effective level value for this logger
+
+**Example:**
+```python
+parent = get_logger("parent")
+parent.set_level("info")
+
+child = get_logger("parent.child")
+print(child.get_effective_level())  # 20 (from parent)
+```
+
+##### `get_effective_level_name() -> str`
+
+Return the effective level name (what's actually used).
+
+This method returns the name of the effective logging level for this logger,
+considering inheritance from parent loggers. Prefer the `effective_level_name`
+property for convenience, or use this method for consistency with
+`get_effective_level()`.
+
+**Returns:**
+- `str`: The effective level name for this logger
+
+**Example:**
+```python
+parent = get_logger("parent")
+parent.set_level("info")
+
+child = get_logger("parent.child")
+print(child.get_effective_level_name())  # "INFO" (from parent)
 ```
 
 ### `TagFormatter`
@@ -560,8 +707,8 @@ The CamelCase API provides compatibility with existing codebases and follows the
 
 ### New and Modified Functions (CamelCase)
 
-- `getLogger(name: str | None = None) -> Logger` — Same as `get_logger()`
-- `getLoggerOfType(name: str | None, class_type: type[Logger], skip_frames: int = 1, *args: Any, **kwargs: Any) -> Logger` — Same as `get_logger_of_type()`
+- `getLogger(name: str | None = None, *, level: str | int | None = None, minimum: bool | None = None) -> Logger` — Same as `get_logger()`
+- `getLoggerOfType(name: str | None, class_type: type[Logger], skip_frames: int = 1, *args: Any, level: str | int | None = None, minimum: bool | None = None, **kwargs: Any) -> Logger` — Same as `get_logger_of_type()`
 - `registerLogger(logger_name: str | None = None, logger_class: type[Logger] | None = None) -> None` — Same as `register_logger()`
 - `registerLogLevelEnvVars(env_vars: list[str]) -> None` — Same as `register_log_level_env_vars()`
 - `registerDefaultLogLevel(default_level: str) -> None` — Same as `register_default_log_level()`

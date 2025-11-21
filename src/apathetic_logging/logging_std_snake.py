@@ -26,14 +26,23 @@ if TYPE_CHECKING:
 class ApatheticLogging_Internal_StdSnakeCase:  # noqa: N801  # pyright: ignore[reportUnusedClass]
     """Mixin class that provides snake_case convenience functions for logging.*.
 
+    **Purpose**: Stdlib-compatible wrappers that match the standard library API exactly.
+
     This class contains snake_case wrapper functions for standard library
     `logging.*` functions that use camelCase naming. These wrappers provide
     a more Pythonic interface that follows PEP 8 naming conventions while
-    maintaining full compatibility with the underlying logging module functions.
+    maintaining **full API compatibility** with the underlying logging module
+    functions. The function signatures match the stdlib exactly - extended
+    parameters are not part of the signature (though they may be passed via
+    `**kwargs` and forwarded to the underlying implementation).
 
     When mixed into apathetic_logging, it provides snake_case alternatives
     to standard logging module functions (e.g., `basicConfig` -> `basic_config`,
     `addLevelName` -> `add_level_name`, `setLoggerClass` -> `set_logger_class`).
+
+    **Note**: For extended functionality with additional parameters, see
+    `ApatheticLogging_Internal_LibSnakeCase`, which wraps apathetic logging's
+    library functions with their extended APIs.
     """
 
     # --- Configuration Functions ---
@@ -154,20 +163,40 @@ class ApatheticLogging_Internal_StdSnakeCase:  # noqa: N801  # pyright: ignore[r
 
     @staticmethod
     def get_logger(
-        name: str | None = None, *_args: Any, **_kwargs: Any
+        name: str | None = None, *args: Any, **kwargs: Any
     ) -> ApatheticLogging_Internal_Logger.Logger:
         """Return a logger with the specified name, creating it if necessary.
 
+        **Stdlib-compatible wrapper**: This function matches the standard library
+        `logging.getLogger()` API exactly. It only accepts `name` and passes through
+        `*args` and `**kwargs` for future-proofing.
+
+        **Note**: Due to Python's method resolution order (MRO), this function is
+        shadowed by `ApatheticLogging_Internal_LibSnakeCase.get_logger()` which
+        comes earlier in the inheritance chain and provides extended parameters
+        (`level`, `minimum_level`). This stdlib-compatible signature is maintained
+        for documentation purposes and to show the stdlib API, but the extended
+        version from `LibSnakeCase` is the one actually called at runtime.
+
         If no name is specified, return the root logger.
 
-        Returns an ApatheticLogging_Internal_Logger.Logger instance.
+        Args:
+            name: The name of the logger to get. If None, the logger name
+                will be auto-inferred from the calling module's __package__.
+                If an empty string (""), returns the root logger.
+            *args: Additional positional arguments (for future-proofing)
+            **kwargs: Additional keyword arguments (for future-proofing)
+
+        Returns:
+            An ApatheticLogging_Internal_Logger.Logger instance.
 
         Wrapper for logging.getLogger with snake_case naming.
 
         https://docs.python.org/3.10/library/logging.html#logging.getLogger
         """
         # Use the custom getLogger from get_logger.py which returns our Logger type
-        return ApatheticLogging_Internal_GetLogger.getLogger(name)
+        # Note: This function is shadowed by LibSnakeCase.get_logger() in the MRO
+        return ApatheticLogging_Internal_GetLogger.getLogger(name, *args, **kwargs)
 
     @staticmethod
     def get_logger_class(*args: Any, **kwargs: Any) -> type[logging.Logger]:

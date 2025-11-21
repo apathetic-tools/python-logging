@@ -30,34 +30,78 @@ if TYPE_CHECKING:
 class ApatheticLogging_Internal_LibSnakeCase:  # noqa: N801  # pyright: ignore[reportUnusedClass]
     """Mixin class that provides snake_case convenience functions for apathetic logging.
 
+    **Purpose**: Extended wrappers for apathetic logging library functions with
+    additional functionality beyond the standard library.
+
     This class contains snake_case wrapper functions for apathetic logging library
     functions that use camelCase naming. These wrappers provide a more Pythonic
     interface that follows PEP 8 naming conventions while maintaining full
-    compatibility with the underlying apathetic logging functions.
+    compatibility with the underlying apathetic logging functions. Unlike
+    `ApatheticLogging_Internal_StdSnakeCase` (which maintains stdlib API compatibility),
+    these functions explicitly document and type extended parameters that provide
+    additional functionality beyond the standard library.
 
     When mixed into apathetic_logging, it provides snake_case alternatives
     to apathetic logging functions (e.g., `getLogger` -> `get_logger`,
     `registerDefaultLogLevel` -> `register_default_log_level`,
     `safeLog` -> `safe_log`).
+
+    **Note**: For stdlib-compatible wrappers that match the standard library API
+    exactly, see `ApatheticLogging_Internal_StdSnakeCase`.
     """
 
     # --- GetLogger Functions ---
 
     @staticmethod
     def get_logger(
-        logger_name: str | None = None,
+        name: str | None = None,
+        *args: Any,
+        level: str | int | None = None,
+        minimum: bool | None = None,
+        **kwargs: Any,
     ) -> ApatheticLogging_Internal_Logger.Logger:
         """Get a logger with the specified name, creating it if necessary.
+
+        **Apathetic logging library wrapper**: This function wraps apathetic logging's
+        extended `getLogger()` implementation, which provides additional functionality
+        beyond the standard library. Unlike the stdlib-compatible wrapper in
+        `ApatheticLogging_Internal_StdSnakeCase`, this function explicitly documents
+        and types extended parameters like `level` and `minimum`.
+
+        **Note**: Due to Python's method resolution order (MRO), this function is
+        the one that actually gets called at runtime (it comes before
+        `ApatheticLogging_Internal_StdSnakeCase` in the inheritance chain). The
+        extended parameters are therefore available and properly typed when using
+        `apathetic_logging.get_logger()`.
 
         If no name is specified, the logger name will be auto-inferred from the
         calling module's __package__.
 
-        Returns an ApatheticLogging_Internal_Logger.Logger instance.
+        Args:
+            name: The name of the logger to get. If None, the logger name
+                will be auto-inferred from the calling module's __package__.
+            *args: Additional positional arguments (for future-proofing)
+            level: Exact log level to set on the logger. Accepts both string
+                names (case-insensitive) and numeric values. If provided,
+                sets the logger's level to this value. Defaults to None.
+            minimum: If True, only set the level if it's more verbose (lower
+                numeric value) than the current level. This prevents downgrading
+                from a more verbose level (e.g., TRACE) to a less verbose one
+                (e.g., DEBUG). If None, defaults to False. Only used when
+                `level` is provided.
+            **kwargs: Additional keyword arguments (for future-proofing)
+
+        Returns:
+            An ApatheticLogging_Internal_Logger.Logger instance.
 
         Wrapper for ApatheticLogging_Internal_GetLogger.getLogger with
-        snake_case naming.
+        snake_case naming. This is the extended version with additional parameters;
+        for stdlib-compatible API documentation, see
+        ApatheticLogging_Internal_StdSnakeCase.get_logger.
         """
-        return ApatheticLogging_Internal_GetLogger.getLogger(logger_name)
+        return ApatheticLogging_Internal_GetLogger.getLogger(
+            name, *args, level=level, minimum=minimum, **kwargs
+        )
 
     @staticmethod
     def get_logger_of_type(
@@ -65,6 +109,8 @@ class ApatheticLogging_Internal_LibSnakeCase:  # noqa: N801  # pyright: ignore[r
         class_type: type[Any],
         skip_frames: int = 1,
         *args: Any,
+        level: str | int | None = None,
+        minimum: bool | None = None,
         **kwargs: Any,
     ) -> Any:
         """Get a logger of the specified type, creating it if necessary.
@@ -76,6 +122,14 @@ class ApatheticLogging_Internal_LibSnakeCase:  # noqa: N801  # pyright: ignore[r
             skip_frames: Number of frames to skip when inferring logger name.
                 Prefer using as a keyword argument (e.g., skip_frames=2) for clarity.
             *args: Additional positional arguments (for future-proofing)
+            level: Exact log level to set on the logger. Accepts both string
+                names (case-insensitive) and numeric values. If provided,
+                sets the logger's level to this value. Defaults to None.
+            minimum: If True, only set the level if it's more verbose (lower
+                numeric value) than the current level. This prevents downgrading
+                from a more verbose level (e.g., TRACE) to a less verbose one
+                (e.g., DEBUG). If None, defaults to False. Only used when
+                `level` is provided.
             **kwargs: Additional keyword arguments (for future-proofing)
 
         Returns:
@@ -85,7 +139,13 @@ class ApatheticLogging_Internal_LibSnakeCase:  # noqa: N801  # pyright: ignore[r
         with snake_case naming.
         """
         return ApatheticLogging_Internal_GetLogger.getLoggerOfType(
-            name, class_type, skip_frames, *args, **kwargs
+            name,
+            class_type,
+            skip_frames,
+            *args,
+            level=level,
+            minimum=minimum,
+            **kwargs,
         )
 
     # --- Registry Functions ---
@@ -245,3 +305,85 @@ class ApatheticLogging_Internal_LibSnakeCase:  # noqa: N801  # pyright: ignore[r
         return ApatheticLogging_Internal_LoggingUtils.resolveLoggerName(
             logger_name, check_registry=check_registry, skip_frames=skip_frames
         )
+
+    @staticmethod
+    def get_level_name(level: int | str, *, strict: bool = False) -> str:
+        """Return the textual representation of a logging level.
+
+        **Apathetic logging library wrapper**: This function wraps apathetic
+        logging's extended `getLevelName()` implementation, which provides
+        additional functionality beyond the standard library. Unlike the
+        stdlib-compatible wrapper in `ApatheticLogging_Internal_StdSnakeCase`,
+        this function always returns a string
+        (breaking change from stdlib's bidirectional behavior).
+
+        **Note**: Due to Python's method resolution order (MRO), this function is
+        the one that actually gets called at runtime (it comes before
+        `ApatheticLogging_Internal_StdSnakeCase` in the inheritance chain).
+
+        Extended features:
+        - Always returns a string (unlike stdlib which returns int for string input)
+        - Accepts both int and str inputs (returns str uppercased if already str)
+        - Optional strict mode to raise ValueError for unknown levels
+        - Supports all levels registered via logging.addLevelName() (including
+          custom apathetic levels and user-registered levels)
+
+        Args:
+            level: Log level as integer or string name
+            strict: If True, raise ValueError for unknown levels. If False (default),
+                returns "Level {level}" format for unknown integer levels (matching
+                stdlib behavior).
+
+        Returns:
+            Level name (uppercase string). If level is already a string,
+            returns it as-is (uppercased). For unknown integer levels (when
+            strict=False), returns "Level {level}" format (e.g., "Level 999").
+
+        Raises:
+            ValueError: If strict=True and level cannot be resolved to a known
+                level name.
+
+        Wrapper for ApatheticLogging_Internal_LoggingUtils.getLevelName with
+        snake_case naming. This is the extended version with additional functionality;
+        for stdlib-compatible API documentation, see
+        ApatheticLogging_Internal_StdSnakeCase.get_level_name.
+
+        https://docs.python.org/3.10/library/logging.html#logging.getLevelName
+        """
+        return ApatheticLogging_Internal_LoggingUtils.getLevelName(level, strict=strict)
+
+    @staticmethod
+    def get_level_number(level: str | int) -> int:
+        """Convert a log level name to its numeric value.
+
+        Recommended way to convert string level names to integers. This function
+        explicitly performs string->int conversion, unlike `get_level_name()` which
+        has bidirectional behavior for backward compatibility.
+
+        Handles all levels registered via logging.addLevelName() (including
+        standard library levels, custom apathetic levels, and user-registered levels).
+
+        Args:
+            level: Log level as string name (case-insensitive) or integer
+
+        Returns:
+            Integer level value
+
+        Raises:
+            ValueError: If level cannot be resolved
+
+        Example:
+            >>> get_level_number("DEBUG")
+            10
+            >>> get_level_number("TRACE")
+            5
+            >>> get_level_number(20)
+            20
+
+        Wrapper for ApatheticLogging_Internal_LoggingUtils.getLevelNumber with
+        snake_case naming.
+
+        See Also:
+            get_level_name() - Convert int to string (intended use)
+        """
+        return ApatheticLogging_Internal_LoggingUtils.getLevelNumber(level)

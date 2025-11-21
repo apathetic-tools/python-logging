@@ -23,28 +23,28 @@ else:
 def testvalidate_level_positive_valid_level() -> None:
     """validate_level_positive() should pass for valid levels (> 0)."""
     # Should not raise for valid levels
-    mod_alogs.Logger.validate_level_positive(1, "TEST")
-    mod_alogs.Logger.validate_level_positive(5, "TRACE")
-    mod_alogs.Logger.validate_level_positive(10, "DEBUG")
-    mod_alogs.Logger.validate_level_positive(100, "CUSTOM")
+    mod_alogs.Logger.validate_level_positive(1, level_name="TEST")
+    mod_alogs.Logger.validate_level_positive(5, level_name="TRACE")
+    mod_alogs.Logger.validate_level_positive(10, level_name="DEBUG")
+    mod_alogs.Logger.validate_level_positive(100, level_name="CUSTOM")
 
 
 def testvalidate_level_positive_zero_raises() -> None:
     """validate_level_positive() should raise ValueError for level 0."""
     with pytest.raises(ValueError, match=r"<= 0.*NOTSET inheritance"):
-        mod_alogs.Logger.validate_level_positive(0, "TEST")
+        mod_alogs.Logger.validate_level_positive(0, level_name="TEST")
 
 
 def testvalidate_level_positive_negative_raises() -> None:
     """validate_level_positive() should raise ValueError for negative levels."""
     with pytest.raises(ValueError, match=r"<= 0.*NOTSET inheritance"):
-        mod_alogs.Logger.validate_level_positive(-5, "NEGATIVE")
+        mod_alogs.Logger.validate_level_positive(-5, level_name="NEGATIVE")
 
 
 def testvalidate_level_positive_auto_detects_name() -> None:
     """validate_level_positive() should auto-detect level name if None."""
     with pytest.raises(ValueError, match=r"NOTSET.*<= 0"):
-        mod_alogs.Logger.validate_level_positive(0, None)
+        mod_alogs.Logger.validate_level_positive(0, level_name=None)
 
 
 # ---------------------------------------------------------------------------

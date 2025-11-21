@@ -88,17 +88,54 @@ class ApatheticLogging_Internal_LibLoggerSnakeCase:  # noqa: N801  # pyright: ig
             args=args, root_log_level=root_log_level, **kwargs
         )
 
-    def resolve_level_name(
-        self, level_name: str, *args: Any, **kwargs: Any
-    ) -> int | None:
-        """Resolve a level name to its numeric value.
+    # --- Level Properties (snake_case) ---
 
-        logging.getLevelNamesMapping() is only introduced in Python 3.11, so
-        this method provides compatibility for earlier versions.
+    @property
+    def level_name(self) -> str:
+        """Return the explicit level name set on this logger.
 
-        Wrapper for Logger.resolveLevelName with snake_case naming.
+        Wrapper for Logger.levelName property with snake_case naming.
         """
-        return self.resolveLevelName(level_name, *args, **kwargs)  # type: ignore[attr-defined,no-any-return]
+        return self.levelName  # type: ignore[attr-defined,no-any-return]
+
+    @property
+    def effective_level(self) -> int:
+        """Return the effective level (what's actually used).
+
+        Wrapper for Logger.effectiveLevel property with snake_case naming.
+        """
+        return self.effectiveLevel  # type: ignore[attr-defined,no-any-return]
+
+    @property
+    def effective_level_name(self) -> str:
+        """Return the effective level name (what's actually used).
+
+        Wrapper for Logger.effectiveLevelName property with snake_case naming.
+        """
+        return self.effectiveLevelName  # type: ignore[attr-defined,no-any-return]
+
+    # --- Level Methods (snake_case) ---
+
+    def get_level(self) -> int:
+        """Return the explicit level set on this logger.
+
+        Wrapper for Logger.getLevel() with snake_case naming.
+        """
+        return self.getLevel()  # type: ignore[attr-defined,no-any-return]
+
+    def get_level_name(self) -> str:
+        """Return the explicit level name set on this logger.
+
+        Wrapper for Logger.getLevelName() with snake_case naming.
+        """
+        return self.getLevelName()  # type: ignore[attr-defined,no-any-return]
+
+    def get_effective_level_name(self) -> str:
+        """Return the effective level name (what's actually used).
+
+        Wrapper for Logger.getEffectiveLevelName() with snake_case naming.
+        """
+        return self.getEffectiveLevelName()  # type: ignore[attr-defined,no-any-return]
 
     # --- Logging Methods ---
 

@@ -28,6 +28,9 @@ class ApatheticLogging_Internal_Constants:  # noqa: N801  # pyright: ignore[repo
     }
     """Enable safe trace diagnostics (controlled by SAFE_TRACE env var)."""
 
+    NOTSET_LEVEL: int = logging.NOTSET
+    """NOTSET level (0) - logger inherits level from parent."""
+
     # levels must be careful not to equal 0 to avoid NOTSET
     TEST_LEVEL: int = logging.DEBUG - 8
     """Most verbose level, bypasses capture."""
