@@ -272,33 +272,7 @@ You can run individual tools using `poetry run poe <command>` (including `poetry
 
 #### Checkpoint Commits
 
-You **CAN** check in code as a checkpoint after fixing most errors, and the AI can suggest doing so. **When committing, follow the conventions in `git_conventions.mdc`.** If you do this, the AI should write a prompt for opening a new chat to continue with the remaining fixes. The prompt should contain:
-
-1. **Context**: Brief description of what was being worked on
-2. **Current status**: What has been fixed and what remains
-3. **Remaining issues**: List of specific errors or test failures that still need to be addressed
-4. **Next steps**: What needs to be done to get `poetry run poe check:fix` passing
-5. **Files changed**: List of files that were modified in this checkpoint
-
-**Example prompt for new chat:**
-```
-I'm working on [feature/change description]. I've made a checkpoint commit after fixing most issues, but `poetry run poe check:fix` still has [X] remaining errors.
-
-**Fixed:**
-- [List of what was fixed]
-
-**Remaining issues:**
-- [Specific error messages or test failures]
-- [Files that still need work]
-
-**Next steps:**
-- [What needs to be done]
-
-**Files modified:**
-- [List of changed files]
-
-Please help me resolve the remaining issues to get `poetry run poe check:fix` passing.
-```
+You **CAN** check in code as a checkpoint after fixing most errors, and the AI can suggest doing so. **When committing, follow the conventions in `git_conventions.mdc`.** If you do this and need to write a prompt for opening a new chat to continue with the remaining fixes, consult `.ai/workflows/checkpoint_commit.md` for detailed instructions on writing effective prompts.
 
 # Communication
 
@@ -503,26 +477,22 @@ Apathetic Python Logger is a minimal wrapper for the Python standard library log
   1. Run `poetry run poe sync:ai:guidance` to sync changes to `.cursor/` and `.claude/`
   2. Include the generated files (`.cursor/rules/*.mdc`, `.cursor/commands/*.md`, `.claude/CLAUDE.md`) as part of the same changeset/commit
 - **Before committing**: Run `poetry run poe check:fix` (this also regenerates `dist/package.py` as needed)
-- **Debugging failing tests**: Use these troubleshooting techniques:
-  - **Set `LOG_LEVEL=test`** to output TRACE and DEBUG logs in failing tests, bypassing pytest's log capture:
+- **Debugging failing tests**: When tests fail and standard debugging isn't sufficient:
+  - **First try**: Set `LOG_LEVEL=test` to bypass pytest's log capture and see detailed logs:
     ```bash
     LOG_LEVEL=test poetry run poe test:pytest:installed tests/path/to/test.py::test_name -xvs
     ```
-    The `test` log level is the most verbose and bypasses pytest's log capture, allowing you to see all TRACE and DEBUG logs even when tests fail.
-  - **Add copious `logger.trace()` statements** throughout the code to trace execution flow and variable values during debugging
-  - **Use `apathetic_logging.safe_trace()`** when logging is not available or captured even with `LOG_LEVEL=test`. `safe_trace()` writes directly to `sys.__stderr__` and bypasses all logging frameworks and capture systems, making it useful for:
-    - Pre-logging framework initialization debugging
-    - When pytest's capture is interfering
-    - When the logging system itself might be broken
-  - **Use `apathetic_logging.make_safe_trace(icon)`** to create custom trace functions with specific icons for easier visual scanning (e.g., `trace = make_safe_trace("🔍")` then use `trace("label", value)`)
-  - **Enable `safe_trace()` output** by setting the `SAFE_TRACE` environment variable:
-    ```bash
-    SAFE_TRACE=1 poetry run poe test:pytest:installed tests/path/to/test.py::test_name -xvs
-    ```
-    Or combine with `LOG_LEVEL=test`:
-    ```bash
-    LOG_LEVEL=test SAFE_TRACE=1 poetry run poe test:pytest:installed tests/path/to/test.py::test_name -xvs
-    ```
+  - **If still stuck**: Consult `.ai/workflows/debug_tests.md` for comprehensive troubleshooting techniques including `logger.trace()`, `safe_trace()`, and advanced debugging strategies
+  - **Before resorting to checkpoint commits**: Try the techniques in the debug workflow first
+
+### When to Read Workflow and Template Files
+
+- **Do NOT read `.ai/workflows/` or `.ai/templates/` files** just because they are mentioned in rules
+- **Only read workflow/template files when**:
+  - The condition for invoking them is met (e.g., when stuck debugging tests, then read `debug_tests.md`)
+  - You are directly asked to work on or modify them
+- **Mentions in rules are references**: When a rule mentions a workflow file (e.g., "consult `.ai/workflows/debug_tests.md`"), treat it as a reference to consult when needed, not an instruction to read it immediately
+- **Purpose**: This keeps context lean by only loading detailed workflow instructions when the specific situation arises
 
 # Claude Extra
 

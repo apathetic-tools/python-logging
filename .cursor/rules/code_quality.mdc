@@ -165,30 +165,4 @@ You can run individual tools using `poetry run poe <command>` (including `poetry
 
 #### Checkpoint Commits
 
-You **CAN** check in code as a checkpoint after fixing most errors, and the AI can suggest doing so. **When committing, follow the conventions in `git_conventions.mdc`.** If you do this, the AI should write a prompt for opening a new chat to continue with the remaining fixes. The prompt should contain:
-
-1. **Context**: Brief description of what was being worked on
-2. **Current status**: What has been fixed and what remains
-3. **Remaining issues**: List of specific errors or test failures that still need to be addressed
-4. **Next steps**: What needs to be done to get `poetry run poe check:fix` passing
-5. **Files changed**: List of files that were modified in this checkpoint
-
-**Example prompt for new chat:**
-```
-I'm working on [feature/change description]. I've made a checkpoint commit after fixing most issues, but `poetry run poe check:fix` still has [X] remaining errors.
-
-**Fixed:**
-- [List of what was fixed]
-
-**Remaining issues:**
-- [Specific error messages or test failures]
-- [Files that still need work]
-
-**Next steps:**
-- [What needs to be done]
-
-**Files modified:**
-- [List of changed files]
-
-Please help me resolve the remaining issues to get `poetry run poe check:fix` passing.
-```
+You **CAN** check in code as a checkpoint after fixing most errors, and the AI can suggest doing so. **When committing, follow the conventions in `git_conventions.mdc`.** If you do this and need to write a prompt for opening a new chat to continue with the remaining fixes, consult `.ai/workflows/checkpoint_commit.md` for detailed instructions on writing effective prompts.
