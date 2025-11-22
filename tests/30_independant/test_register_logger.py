@@ -145,7 +145,9 @@ def test_register_logger_with_custom_class() -> None:
         _logging_module_extended = False
 
         @classmethod
-        def extendLoggingModule(cls) -> bool:
+        def extendLoggingModule(
+            cls,
+        ) -> bool:
             """Custom extend that sets a flag."""
             if cls._logging_module_extended:
                 return False
@@ -162,3 +164,116 @@ def test_register_logger_with_custom_class() -> None:
     # Verify logger name was registered
     _registry = mod_registry.ApatheticLogging_Internal_RegistryData
     assert _registry.registered_internal_logger_name == "test_custom"
+
+
+def test_register_logger_with_target_python_version() -> None:
+    """register_logger() should set target_python_version via convenience parameter."""
+    # --- setup ---
+    version = (3, 11)
+
+    # --- execute ---
+    mod_alogs.registerLogger("test", target_python_version=version)
+
+    # --- verify ---
+    _registry = mod_registry.ApatheticLogging_Internal_RegistryData
+    assert _registry.registered_internal_target_python_version == version
+    assert _registry.registered_internal_logger_name == "test"
+
+
+def test_register_logger_with_log_level_env_vars() -> None:
+    """register_logger() should set log_level_env_vars via convenience parameter."""
+    # --- setup ---
+    env_vars = ["TEST_LOG_LEVEL"]
+
+    # --- execute ---
+    mod_alogs.registerLogger("test", log_level_env_vars=env_vars)
+
+    # --- verify ---
+    _registry = mod_registry.ApatheticLogging_Internal_RegistryData
+    assert _registry.registered_internal_log_level_env_vars == env_vars
+    assert _registry.registered_internal_logger_name == "test"
+
+
+def test_register_logger_with_default_log_level() -> None:
+    """register_logger() should set default_log_level via convenience parameter."""
+    # --- setup ---
+    default_level = "debug"
+
+    # --- execute ---
+    mod_alogs.registerLogger("test", default_log_level=default_level)
+
+    # --- verify ---
+    _registry = mod_registry.ApatheticLogging_Internal_RegistryData
+    assert _registry.registered_internal_default_log_level == default_level
+    assert _registry.registered_internal_logger_name == "test"
+
+
+def test_register_logger_with_propagate() -> None:
+    """register_logger() should set propagate via convenience parameter."""
+    # --- setup ---
+    propagate = True
+
+    # --- execute ---
+    mod_alogs.registerLogger("test", propagate=propagate)
+
+    # --- verify ---
+    _registry = mod_registry.ApatheticLogging_Internal_RegistryData
+    assert _registry.registered_internal_propagate == propagate
+    assert _registry.registered_internal_logger_name == "test"
+
+
+def test_register_logger_with_all_convenience_parameters() -> None:
+    """register_logger() should set all convenience parameters at once."""
+    # --- setup ---
+    version = (3, 12)
+    env_vars = ["TEST_LOG_LEVEL"]
+    default_level = "warning"
+    propagate = False
+
+    # --- execute ---
+    mod_alogs.registerLogger(
+        "test",
+        target_python_version=version,
+        log_level_env_vars=env_vars,
+        default_log_level=default_level,
+        propagate=propagate,
+    )
+
+    # --- verify ---
+    _registry = mod_registry.ApatheticLogging_Internal_RegistryData
+    assert _registry.registered_internal_target_python_version == version
+    assert _registry.registered_internal_log_level_env_vars == env_vars
+    assert _registry.registered_internal_default_log_level == default_level
+    assert _registry.registered_internal_propagate == propagate
+    assert _registry.registered_internal_logger_name == "test"
+
+
+def test_register_logger_with_none_convenience_parameters() -> None:
+    """register_logger() should handle None convenience parameters (no change)."""
+    # --- setup ---
+    mod_alogs.registerTargetPythonVersion((3, 11))
+    mod_alogs.registerLogLevelEnvVars(["OLD_VAR"])
+    mod_alogs.registerDefaultLogLevel("info")
+    mod_alogs.registerPropagate(propagate=True)
+    _registry = mod_registry.ApatheticLogging_Internal_RegistryData
+    original_version = _registry.registered_internal_target_python_version
+    original_env_vars = _registry.registered_internal_log_level_env_vars
+    original_default = _registry.registered_internal_default_log_level
+    original_propagate = _registry.registered_internal_propagate
+
+    # --- execute ---
+    mod_alogs.registerLogger(
+        "test",
+        target_python_version=None,
+        log_level_env_vars=None,
+        default_log_level=None,
+        propagate=None,
+    )
+
+    # --- verify ---
+    # Should not have changed any values
+    assert _registry.registered_internal_target_python_version == original_version
+    assert _registry.registered_internal_log_level_env_vars == original_env_vars
+    assert _registry.registered_internal_default_log_level == original_default
+    assert _registry.registered_internal_propagate == original_propagate
+    assert _registry.registered_internal_logger_name == "test"

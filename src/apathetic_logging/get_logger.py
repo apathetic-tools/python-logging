@@ -60,6 +60,71 @@ class ApatheticLogging_Internal_GetLogger:  # noqa: N801  # pyright: ignore[repo
         return typed_logger
 
     @staticmethod
+    def _getOrCreateLoggerOfType(
+        register_name: str,
+        class_type: type[ApatheticLogging_Internal_GetLogger._LoggerType],
+        *args: Any,
+        **kwargs: Any,
+    ) -> ApatheticLogging_Internal_GetLogger._LoggerType:
+        """Get or create a logger of the specified type.
+
+        Checks if a logger with the given name exists. If it exists but is not
+        of the correct type, removes it and creates a new one. If it doesn't
+        exist, creates a new logger of the specified type.
+
+        Args:
+            register_name: The name of the logger to get or create.
+            class_type: The logger class type to use.
+            *args: Additional positional arguments to pass to logging.getLogger.
+            **kwargs: Additional keyword arguments to pass to logging.getLogger.
+
+        Returns:
+            A logger instance of the specified type.
+        """
+        _logging_utils = ApatheticLogging_Internal_LoggingUtils
+
+        logger: logging.Logger | None = None
+        registered = _logging_utils.hasLogger(register_name)
+        if registered:
+            logger = logging.getLogger(register_name, *args, **kwargs)
+            if not isinstance(logger, class_type):
+                _logging_utils.removeLogger(register_name)
+                registered = False
+        if not registered:  # may have changed above
+            logger = ApatheticLogging_Internal_GetLogger._setLoggerClassTemporarily(
+                class_type, register_name
+            )
+        typed_logger = cast("ApatheticLogging_Internal_GetLogger._LoggerType", logger)
+        return typed_logger
+
+    @staticmethod
+    def _applyPropagateSetting(logger: logging.Logger) -> None:
+        """Apply propagate setting to a logger from registry or default.
+
+        Determines the propagate value from the registry (if set) or falls back
+        to the default from constants, then applies it to the logger.
+
+        Args:
+            logger: The logger instance to apply the propagate setting to.
+        """
+        from .constants import (  # noqa: PLC0415
+            ApatheticLogging_Internal_Constants,
+        )
+        from .registry_data import (  # noqa: PLC0415
+            ApatheticLogging_Internal_RegistryData,
+        )
+
+        _constants = ApatheticLogging_Internal_Constants
+        _registry_data = ApatheticLogging_Internal_RegistryData
+
+        if _registry_data.registered_internal_propagate is not None:
+            # Use registered value
+            logger.propagate = _registry_data.registered_internal_propagate
+        else:
+            # Use default from constants
+            logger.propagate = _constants.DEFAULT_PROPAGATE
+
+    @staticmethod
     def getLogger(
         name: str | None = None,
         *args: Any,
@@ -190,22 +255,16 @@ class ApatheticLogging_Internal_GetLogger:  # noqa: N801  # pyright: ignore[repo
             elif hasattr(class_type, "extend_logging_module"):
                 class_type.extend_logging_module()  # type: ignore[attr-defined]
 
-        # recreate if wrong type
-        logger: logging.Logger | None = None
-        registered = _logging_utils.hasLogger(register_name)
-        if registered:
-            logger = logging.getLogger(register_name, *args, **kwargs)
-            if not isinstance(logger, class_type):
-                _logging_utils.removeLogger(register_name)
-                registered = False
-        if not registered:  # may have changed above
-            logger = ApatheticLogging_Internal_GetLogger._setLoggerClassTemporarily(
-                class_type, register_name
-            )
+        # Get or create logger of the correct type
+        logger = ApatheticLogging_Internal_GetLogger._getOrCreateLoggerOfType(
+            register_name, class_type, *args, **kwargs
+        )
 
         # Apply log level settings if provided
-        if logger is not None and level is not None:
+        if level is not None:
             logger.setLevel(level, minimum=minimum)  # type: ignore[call-arg]
 
-        typed_logger = cast("ApatheticLogging_Internal_GetLogger._LoggerType", logger)
-        return typed_logger
+        # Apply propagate setting from registry or default
+        ApatheticLogging_Internal_GetLogger._applyPropagateSetting(logger)
+
+        return logger

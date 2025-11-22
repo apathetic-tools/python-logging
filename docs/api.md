@@ -92,7 +92,7 @@ logger = get_logger_of_type("my_app", AppLogger, level="debug")
 logger = get_logger_of_type("my_app", AppLogger, level="info", minimum=True)
 ```
 
-### `register_logger(logger_name: str | None = None, logger_class: type[Logger] | None = None) -> None`
+### `register_logger(logger_name: str | None = None, logger_class: type[Logger] | None = None, *, target_python_version: tuple[int, int] | None = None, log_level_env_vars: list[str] | None = None, default_log_level: str | None = None, propagate: bool | None = None) -> None`
 
 Register a logger for use by `get_logger()`. This registers the logger name and extends the logging module with custom levels if needed.
 
@@ -103,6 +103,10 @@ If `logger_class` is provided and has an `extend_logging_module()` method, it wi
 **Parameters:**
 - `logger_name` (str | None): The logger name to register. If None, auto-infers from the calling module.
 - `logger_class` (type[Logger] | None): Optional logger class to use. If provided and the class has an `extend_logging_module()` method, it will be called. If None, defaults to the standard `Logger` class.
+- `target_python_version` (tuple[int, int] | None): Optional target Python version (major, minor) tuple. If provided, sets the target Python version in the registry permanently. Defaults to None (no change).
+- `log_level_env_vars` (list[str] | None): Optional list of environment variable names to check for log level. If provided, sets the log level environment variables in the registry permanently. Defaults to None (no change).
+- `default_log_level` (str | None): Optional default log level name. If provided, sets the default log level in the registry permanently. Defaults to None (no change).
+- `propagate` (bool | None): Optional propagate setting. If provided, sets the propagate value in the registry permanently. If None, uses registered propagate setting or falls back to DEFAULT_PROPAGATE from constants.py. Defaults to None (no change).
 
 **Example:**
 ```python
@@ -119,6 +123,15 @@ class AppLogger(Logger):
     pass
 
 register_logger("my_app", AppLogger)
+
+# Or with convenience parameters to configure registry settings:
+register_logger(
+    "my_app",
+    target_python_version=(3, 10),
+    log_level_env_vars=["MYAPP_LOG_LEVEL", "LOG_LEVEL"],
+    default_log_level="info",
+    propagate=False,
+)
 ```
 
 ### `register_log_level_env_vars(env_vars: list[str]) -> None`
@@ -149,6 +162,52 @@ Register the default log level to use when no other source is found.
 from apathetic_logging import register_default_log_level
 
 register_default_log_level("warning")
+```
+
+### `register_target_python_version(version: tuple[int, int] | None) -> None`
+
+Register the target Python version for compatibility checking.
+
+This sets the global target Python version that the library will use when checking for feature availability. Functions requiring a newer Python version than the registered target will raise a `NotImplementedError`, even if the runtime Python version is sufficient.
+
+If not set, the library defaults to `MIN_PYTHON_VERSION` (3.10) from constants.py.
+
+**Parameters:**
+- `version` (tuple[int, int] | None): A tuple (major, minor) representing the target Python version (e.g., `(3, 10)` for Python 3.10). If None, the registration is skipped.
+
+**Example:**
+```python
+from apathetic_logging import register_target_python_version
+
+# Target Python 3.10
+register_target_python_version((3, 10))
+
+# Target Python 3.11
+register_target_python_version((3, 11))
+```
+
+**Note:** This is useful when developing on a newer Python version (e.g., 3.12) but targeting an older version (e.g., 3.10). The library will validate function calls against your target version, preventing accidental use of features that don't exist in your target environment.
+
+### `register_propagate(*, propagate: bool | None) -> None`
+
+Register the propagate setting for loggers.
+
+This sets the default propagate value that will be used when creating loggers. If not set, the library defaults to `DEFAULT_PROPAGATE` (False) from constants.py.
+
+When `propagate` is `False`, loggers do not propagate messages to parent loggers, avoiding duplicate root logs.
+
+**Parameters:**
+- `propagate` (bool | None): Propagate setting (True or False). If None, the registration is skipped.
+
+**Example:**
+```python
+from apathetic_logging import register_propagate
+
+# Enable propagation (messages propagate to parent loggers)
+register_propagate(propagate=True)
+
+# Disable propagation (default, avoids duplicate logs)
+register_propagate(propagate=False)
 ```
 
 ### `safe_log(msg: str) -> None`
@@ -709,9 +768,11 @@ The CamelCase API provides compatibility with existing codebases and follows the
 
 - `getLogger(name: str | None = None, *, level: str | int | None = None, minimum: bool | None = None) -> Logger` — Same as `get_logger()`
 - `getLoggerOfType(name: str | None, class_type: type[Logger], skip_frames: int = 1, *args: Any, level: str | int | None = None, minimum: bool | None = None, **kwargs: Any) -> Logger` — Same as `get_logger_of_type()`
-- `registerLogger(logger_name: str | None = None, logger_class: type[Logger] | None = None) -> None` — Same as `register_logger()`
-- `registerLogLevelEnvVars(env_vars: list[str]) -> None` — Same as `register_log_level_env_vars()`
-- `registerDefaultLogLevel(default_level: str) -> None` — Same as `register_default_log_level()`
+- `registerLogger(logger_name: str | None = None, logger_class: type[Logger] | None = None, *, target_python_version: tuple[int, int] | None = None, log_level_env_vars: list[str] | None = None, default_log_level: str | None = None, propagate: bool | None = None) -> None` — Same as `register_logger()`
+- `registerLogLevelEnvVars(env_vars: list[str] | None) -> None` — Same as `register_log_level_env_vars()`
+- `registerDefaultLogLevel(default_level: str | None) -> None` — Same as `register_default_log_level()`
+- `registerTargetPythonVersion(version: tuple[int, int] | None) -> None` — Same as `register_target_python_version()`
+- `registerPropagate(*, propagate: bool | None) -> None` — Same as `register_propagate()`
 - `safeLog(msg: str) -> None` — Same as `safe_log()`
 - `safeTrace(label: str, *args: Any, icon: str = "🧪") -> None` — Same as `safe_trace()`
 - `makeSafeTrace(icon: str = "🧪") -> Callable` — Same as `make_safe_trace()`

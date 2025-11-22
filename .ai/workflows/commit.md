@@ -90,3 +90,21 @@ docs(ai-rules): update code quality rules with comprehensive guidelines
   - The change requires explanation beyond the subject line
   - You want to document the rationale or approach
 
+## Checking for Checkpoint Commits
+
+Before making a regular commit, check for checkpoint commits since the last regular commit:
+
+1. Find the last commit that is NOT a checkpoint:
+   ```bash
+   LAST_REGULAR=$(git log --oneline --format="%H" --grep="checkpoint" --invert-grep -1)
+   ```
+
+2. Check for checkpoint commits between that and HEAD:
+   ```bash
+   git log --oneline --grep="checkpoint" ${LAST_REGULAR}..HEAD
+   ```
+
+3. If checkpoint commits are found, ask the user: "I see [N] checkpoint commit(s). Squash with this commit?" and wait for response.
+
+**Important**: Do NOT use `git log --grep="checkpoint"` alone, as this searches all history, not just commits since the last regular commit.
+

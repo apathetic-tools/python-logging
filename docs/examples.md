@@ -336,6 +336,55 @@ with logger.use_level("debug", minimum=True):
     logger.debug("This will show (upgraded from info to debug)")
 ```
 
+## Target Python Version Configuration
+
+When developing on a newer Python version (e.g., 3.12) but targeting an older version (e.g., 3.10), you can register your target Python version to ensure compatibility:
+
+```python
+from apathetic_logging import (
+    register_logger,
+    register_target_python_version,
+    get_logger,
+)
+
+# Register your target Python version
+# This ensures functions requiring 3.11+ will raise errors
+# even if you're running on 3.12
+register_target_python_version((3, 10))
+
+# Register logger
+register_logger("my_app")
+logger = get_logger()
+
+# Now if you try to use a 3.11+ function, it will raise
+# even though you're running on 3.12
+try:
+    from apathetic_logging import get_level_names_mapping
+    mapping = get_level_names_mapping()  # Raises NotImplementedError on 3.10 target
+except NotImplementedError as e:
+    logger.warning(f"Function not available: {e}")
+    # Error message will suggest raising target version if needed
+```
+
+**Why this matters:**
+- Prevents accidental use of newer Python features during development
+- Ensures your code works on your target Python version
+- Error messages guide you to either avoid the function or raise your target version
+
+**Example with convenience parameters:**
+```python
+from apathetic_logging import register_logger
+
+# Configure everything at once
+register_logger(
+    "my_app",
+    target_python_version=(3, 10),  # Target Python 3.10
+    log_level_env_vars=["MYAPP_LOG_LEVEL", "LOG_LEVEL"],
+    default_log_level="info",
+    propagate=False,  # Don't propagate to root logger
+)
+```
+
 These examples demonstrate the flexibility and power of Apathetic Python Logger. 
 
 ## Next Steps

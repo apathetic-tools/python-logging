@@ -98,3 +98,10 @@ class ApatheticLogging_Internal_Constants:  # noqa: N801  # pyright: ignore[repo
 
     MIN_PYTHON_VERSION: tuple[int, int] = (3, 10)
     """Minimum supported Python version (major, minor)."""
+
+    DEFAULT_PROPAGATE: bool = False
+    """Default propagate setting for loggers.
+
+    When False, loggers do not propagate messages to parent loggers,
+    avoiding duplicate root logs.
+    """

@@ -23,7 +23,6 @@ Exploring bundling options for generating the single-file release:
 
 ## 🔌 API
 - let getLogger/get_logger/getLoggerOfType/get_logger_of_type() provide the log level using keyword arguments, both exact log level (set the log level on the logger to this) and minimum (make the logger have at least this log level if it doesn't already)
-- what to do about new methods or new signatures in newer than 3.10 python? does the user provide a init setting/registry for what py version they support so they can bump beyond 3.10, and our 3.11+ functions should raise() if they don't meet it? do we infer from pyproject.toml?
 - **Compatibility mode for `getLevelNumber()` unknown level handling**
   - it does really mess with our type system since the return type becomes ambiguous, may not be worth it?
   - Add a registration/configuration option for backwards-compatible behavior when `getLevelNumber()` encounters unknown levels

@@ -22,7 +22,8 @@ class ApatheticLogging_Internal_Registry:  # noqa: N801  # pyright: ignore[repor
 
     This class contains static methods for registering configuration values.
     When mixed into apathetic_logging, it provides registration methods for
-    log level environment variables, default log level, and logger name.
+    log level environment variables, default log level, logger name, and
+    target Python version.
 
     Registry storage is provided by ``ApatheticLogging_Internal_RegistryData``.
 
@@ -30,23 +31,30 @@ class ApatheticLogging_Internal_Registry:  # noqa: N801  # pyright: ignore[repor
     - ``registerDefaultLogLevel()``: Register the default log level
     - ``registerLogLevelEnvVars()``: Register environment variable names
     - ``registerLogger()``: Register a logger (public API)
+    - ``registerTargetPythonVersion()``: Register target Python version
+    - ``registerPropagate()``: Register propagate setting
     """
 
     _LoggerType = TypeVar("_LoggerType", bound=logging.Logger)
 
     @staticmethod
-    def registerDefaultLogLevel(default_level: str) -> None:
+    def registerDefaultLogLevel(default_level: str | None) -> None:
         """Register the default log level to use when no other source is found.
 
         Args:
-            default_level: Default log level name (e.g., "info", "warning")
+            default_level: Default log level name (e.g., "info", "warning").
+                If None, returns immediately without making any changes.
 
         Example:
             >>> from apathetic_logging import ApatheticLogging
             >>> apathetic_logging.registerDefaultLogLevel("warning")
         """
+        if default_level is None:
+            return
+
         _registry_data = ApatheticLogging_Internal_RegistryData
         _safe_logging = ApatheticLogging_Internal_SafeLogging
+
         _registry_data.registered_internal_default_log_level = default_level
         _safe_logging.safeTrace(
             "registerDefaultLogLevel() called",
@@ -54,7 +62,7 @@ class ApatheticLogging_Internal_Registry:  # noqa: N801  # pyright: ignore[repor
         )
 
     @staticmethod
-    def registerLogLevelEnvVars(env_vars: list[str]) -> None:
+    def registerLogLevelEnvVars(env_vars: list[str] | None) -> None:
         """Register environment variable names to check for log level.
 
         The environment variables will be checked in order, and the first
@@ -62,7 +70,8 @@ class ApatheticLogging_Internal_Registry:  # noqa: N801  # pyright: ignore[repor
 
         Args:
             env_vars: List of environment variable names to check
-                (e.g., ["SERGER_LOG_LEVEL", "LOG_LEVEL"])
+                (e.g., ["SERGER_LOG_LEVEL", "LOG_LEVEL"]).
+                If None, returns immediately without making any changes.
 
         Example:
             >>> from apathetic_logging import ApatheticLogging
@@ -70,8 +79,12 @@ class ApatheticLogging_Internal_Registry:  # noqa: N801  # pyright: ignore[repor
             ...     ["MYAPP_LOG_LEVEL", "LOG_LEVEL"]
             ... )
         """
+        if env_vars is None:
+            return
+
         _registry_data = ApatheticLogging_Internal_RegistryData
         _safe_logging = ApatheticLogging_Internal_SafeLogging
+
         _registry_data.registered_internal_log_level_env_vars = env_vars
         _safe_logging.safeTrace(
             "registerLogLevelEnvVars() called",
@@ -83,6 +96,11 @@ class ApatheticLogging_Internal_Registry:  # noqa: N801  # pyright: ignore[repor
         logger_name: str | None = None,
         logger_class: type[ApatheticLogging_Internal_Registry._LoggerType]
         | None = None,
+        *,
+        target_python_version: tuple[int, int] | None = None,
+        log_level_env_vars: list[str] | None = None,
+        default_log_level: str | None = None,
+        propagate: bool | None = None,
     ) -> None:
         """Register a logger for use by getLogger().
 
@@ -115,6 +133,19 @@ class ApatheticLogging_Internal_Registry:  # noqa: N801  # pyright: ignore[repor
                 If the class doesn't have that method, ``logging.setLoggerClass()``
                 will be called directly. If None, nothing is done (default Logger
                 is already set up at import time).
+            target_python_version: Optional target Python version (major, minor)
+                tuple. If provided, sets the target Python version in the registry
+                permanently. Defaults to None (no change).
+            log_level_env_vars: Optional list of environment variable names to
+                check for log level. If provided, sets the log level environment
+                variables in the registry permanently. Defaults to None (no change).
+            default_log_level: Optional default log level name. If provided, sets
+                the default log level in the registry permanently. Defaults to None
+                (no change).
+            propagate: Optional propagate setting. If provided, sets the propagate
+                value in the registry permanently. If None, uses registered propagate
+                setting or falls back to DEFAULT_PROPAGATE from constants.py.
+                Defaults to None (no change).
 
         Example:
             >>> # Explicit registration with default Logger (already extended)
@@ -139,9 +170,16 @@ class ApatheticLogging_Internal_Registry:  # noqa: N801  # pyright: ignore[repor
             ...     pass
             >>> registerLogger("myapp", SimpleLogger)  # Sets logger class directly
         """
+        _registry = ApatheticLogging_Internal_Registry
         _registry_data = ApatheticLogging_Internal_RegistryData
         _logging_utils = ApatheticLogging_Internal_LoggingUtils
         _safe_logging = ApatheticLogging_Internal_SafeLogging
+
+        # Handle convenience parameters that set registry values
+        _registry.registerTargetPythonVersion(target_python_version)
+        _registry.registerLogLevelEnvVars(log_level_env_vars)
+        _registry.registerDefaultLogLevel(default_log_level)
+        _registry.registerPropagate(propagate=propagate)
 
         # Import Logger locally to avoid circular import
 
@@ -178,4 +216,77 @@ class ApatheticLogging_Internal_Registry:  # noqa: N801  # pyright: ignore[repor
             f"name={resolved_name}",
             f"auto_inferred={not was_explicit}",
             f"logger_class={logger_class.__name__ if logger_class else None}",
+        )
+
+    @staticmethod
+    def registerTargetPythonVersion(version: tuple[int, int] | None) -> None:
+        """Register the target Python version for compatibility checking.
+
+        This sets the target Python version that will be used to validate
+        function calls. If a function requires a Python version newer than
+        the target version, it will raise a NotImplementedError even if
+        the runtime version is sufficient.
+
+        If not set, the library defaults to MIN_PYTHON_VERSION (3, 10) from
+        constants.py. This allows developers to catch version incompatibilities
+        during development even when running on a newer Python version than
+        their target.
+
+        Args:
+            version: Target Python version as (major, minor) tuple
+                (e.g., (3, 10) or (3, 11)). If None, returns immediately
+                without making any changes.
+
+        Example:
+            >>> from apathetic_logging import registerTargetPythonVersion
+            >>> registerTargetPythonVersion((3, 10))
+            >>> # Now functions requiring 3.11+ will raise if called
+
+        Note:
+            The runtime version is still checked as a safety net. If the
+            runtime version is older than required, the function will still
+            raise an error even if the target version is sufficient.
+        """
+        if version is None:
+            return
+
+        _registry_data = ApatheticLogging_Internal_RegistryData
+        _safe_logging = ApatheticLogging_Internal_SafeLogging
+
+        _registry_data.registered_internal_target_python_version = version
+        _safe_logging.safeTrace(
+            "registerTargetPythonVersion() called",
+            f"version={version[0]}.{version[1]}",
+        )
+
+    @staticmethod
+    def registerPropagate(*, propagate: bool | None) -> None:
+        """Register the propagate setting for loggers.
+
+        This sets the default propagate value that will be used when creating
+        loggers. If not set, the library defaults to DEFAULT_PROPAGATE (False)
+        from constants.py.
+
+        When propagate is False, loggers do not propagate messages to parent
+        loggers, avoiding duplicate root logs.
+
+        Args:
+            propagate: Propagate setting (True or False). If None, returns
+                immediately without making any changes.
+
+        Example:
+            >>> from apathetic_logging import registerPropagate
+            >>> registerPropagate(propagate=True)
+            >>> # Now new loggers will propagate by default
+        """
+        if propagate is None:
+            return
+
+        _registry_data = ApatheticLogging_Internal_RegistryData
+        _safe_logging = ApatheticLogging_Internal_SafeLogging
+
+        _registry_data.registered_internal_propagate = propagate
+        _safe_logging.safeTrace(
+            "registerPropagate() called",
+            f"propagate={propagate}",
         )

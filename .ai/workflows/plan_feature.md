@@ -26,20 +26,19 @@ This format is designed for **complex changes** that require careful planning an
   - Example: `001_make_get_app_logger_safe.md`
 - Numbering:
   - Use the next available number higher than existing plans
-  - Check both `.plans/` and `.plans/archive/` directories
+  - Check `.plan/` directory for existing plans
   - If no plans exist, start with `001`
 
 ## File Management
 
-**First step when working with plans**: Before creating or updating any plan document, move old plan files to archive:
-- Check `.plans/` directory for plan files (`XXX_*.md` where XXX is a 3-digit number)
-- Move any plan files older than 24 hours to `.plans/archive/`
-- Create `.plans/archive/` directory if it doesn't exist
+**First step when working with plans**: Before creating or updating any plan document, check for old plan files:
+- Check `.plan/` directory for plan files (`XXX_*.md` where XXX is a 3-digit number)
+- If plan files older than 24 hours exist, ask the developer if they should be deleted
 - This keeps the active plans directory clean and focused on current work
 
 ## Using the Template
 
-**For AI assistants**: When creating a new plan document, start by copying `.ai/templates/plan_feature.tmpl.md` and filling in the structure. The template provides:
+**For AI assistants**: When creating a new plan document, start by copying `.ai/templates/plan_feature.tmpl.md` and filling in the structure. The template follows this specification (`.ai/workflows/plan_feature.md`). The template provides:
 - All required phases with proper structure
 - Quick reference checklist pre-populated
 - Standard phase actions and checkpoints
@@ -96,7 +95,7 @@ Each plan document must be organized into **phases**. Phases should be clearly m
 - Run `poetry run poe check:fix` to identify pre-existing problems
 - Document all issues found
 - **Stop and ask the developer** what to do about pre-existing issues
-- This confirms that any problems encountered during implementation are due to our changes, not pre-existing issues
+- **After this phase, all errors are related to your changes** - fix all errors, even in untouched files
 - Developer options:
   - Fix pre-existing issues first (add as new phase)
   - Proceed and document that issues were pre-existing
@@ -115,7 +114,11 @@ Each plan document must be organized into **phases**. Phases should be clearly m
 ### Phase N-1: Documentation Updates
 **Always the second-to-last phase.**
 
-- Review what documentation needs updating
+- Review what documentation needs updating:
+  - API docs (`docs/api.md`) - update both snake_case and CamelCase versions
+  - Examples (`docs/examples.md`)
+  - README if needed
+  - Other relevant docs
 - Update relevant documentation files
 - Ensure examples and API docs reflect changes
 - Document any breaking changes or migration paths
@@ -135,7 +138,6 @@ Each plan document must be organized into **phases**. Phases should be clearly m
 - Review the plan execution process
 - Recommend improvements to `.ai/workflows/plan_feature.md` (don't implement, just recommend)
 - Recommend changes to `.ai/rules/` and `.ai/commands/` that would reduce problems (don't implement, just recommend)
-- Document what worked well and what didn't
 - These recommendations help improve the format and AI guidance for future plans
 
 ## Implementation Phases
@@ -144,21 +146,29 @@ Between Phase 3 and the final three phases, add implementation phases as needed:
 
 - Each implementation phase should be focused on a specific aspect of the change
 - **Phase granularity guidance:**
-  - Too granular: Each function/method gets its own phase
-  - Just right: Logical units of work (e.g., "Add validation", "Update API", "Refactor module X")
-  - Too coarse: Multiple unrelated changes in one phase
-- Try to make each phase pass `poetry run poe check:fix` even if errors seem unrelated
-- If errors appear unrelated, investigate and fix them anyway
+  - Too granular: Each function/method gets its own phase (e.g., "Phase 4: Add constant", "Phase 5: Add registry field")
+  - Just right: Logical units of work (e.g., "Phase 4: Registry Storage" includes constant, registry field, setup)
+  - Too coarse: Multiple unrelated changes in one phase (e.g., "Phase 4: Implement entire feature")
+- **Error handling:** After Phase 3 (Baseline Check), all errors are related to your changes. Even if a file appears untouched, your changes may have introduced the error or require updates elsewhere. Only pre-existing errors (from before Phase 3) are unrelated.
 - Document what was done in each phase
 - **End of phase actions:**
   - Run `poetry run poe check:fix`
-  - If all errors are resolved (including unrelated ones), commit the phase
-  - Update the quick reference phase checklist at the top of the document
-- **Scope changes during implementation:**
-  - If new requirements emerge, pause and return to Phase 1/2
-  - Document scope changes clearly
-  - Get developer approval for scope expansion
-  - Consider splitting into separate plans if scope grows significantly
+  - If all errors are resolved, commit the phase
+  - **Update the quick reference phase checklist at the top of the document** (required, not optional)
+- **Mid-implementation design changes:**
+  - If a design decision needs reconsideration, pause and return to Phase 2 (Developer Q&A)
+  - Document the change and rationale
+  - Update affected phases if needed
+  - Treat as refinement, not blocker
+- **Feature additions during implementation:**
+  - If a related feature is requested, assess if it fits the current plan
+  - If it fits: Add as new implementation phase
+  - If it doesn't fit: Ask the developer what to do (add to plan or split off) and wait for decision
+  - Don't auto-create separate plans
+- **Scope change handling:**
+  - Minor refinement: Update current phase and continue
+  - Significant change: Return to Phase 2 (Q&A)
+  - Major expansion: Ask developer if it should be a separate plan
 
 ## General Guidelines
 
@@ -208,7 +218,6 @@ Between Phase 3 and the final three phases, add implementation phases as needed:
 ### Optional Sections to Consider
 - **Dependencies**: External dependencies, blocking issues, prerequisites
 - **Risk Assessment**: High-risk areas, potential breaking changes, areas needing extra testing
-- **Lessons Learned**: What worked well, what didn't, what to do differently next time (add at end)
 
 ## Example Structure
 
@@ -274,6 +283,5 @@ Why this change is needed.
 - [ ] Review plan execution
 - [ ] Recommend plan_feature.md improvements
 - [ ] Recommend .ai/rules and .ai/commands changes
-- [ ] Document lessons learned
 ```
 

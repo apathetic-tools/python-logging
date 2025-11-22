@@ -1,5 +1,7 @@
 # Plan: <Title>
 
+> **Note:** This template follows `.ai/workflows/plan_feature.md`. Read that file for complete specifications.
+
 ## Summary
 Brief overview of the change.
 
@@ -38,9 +40,9 @@ Why this change is needed.
 - [ ] Step 1: [Describe step]
 - [ ] Step 2: [Describe step]
 - [ ] Run `poetry run poe check:fix`
-- [ ] Resolve all errors (including unrelated ones)
+- [ ] Resolve all errors (all errors after Phase 3 are related)
 - [ ] Commit phase if check:fix passes
-- [ ] Update quick reference checklist
+- [ ] Update quick reference checklist (required - last action)
 
 ## Phase N-2: Additional Tests
 
@@ -53,7 +55,11 @@ Why this change is needed.
 
 ## Phase N-1: Documentation Updates
 
-- [ ] Review what documentation needs updating
+- [ ] Review what documentation needs updating:
+  - API docs (`docs/api.md`) - update both snake_case and CamelCase versions
+  - Examples (`docs/examples.md`)
+  - README if needed
+  - Other relevant docs
 - [ ] Update relevant documentation files
 - [ ] Ensure examples and API docs reflect changes
 - [ ] Document breaking changes or migration paths if any
@@ -74,6 +80,5 @@ Why this change is needed.
 - [ ] Review plan execution process
 - [ ] Recommend improvements to `.ai/workflows/plan_feature.md` (don't implement, just recommend)
 - [ ] Recommend changes to `.ai/rules/` and `.ai/commands/` that would reduce problems (don't implement, just recommend)
-- [ ] Document what worked well and what didn't
 - [ ] Update quick reference checklist
 

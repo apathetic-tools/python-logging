@@ -8,13 +8,15 @@ licensed under the Python Software Foundation License Version 2.
 from __future__ import annotations
 
 import logging
-import sys
 from collections.abc import Callable
 from types import FrameType
 from typing import TYPE_CHECKING, Any
 
 from .get_logger import (
     ApatheticLogging_Internal_GetLogger,
+)
+from .logging_utils import (
+    ApatheticLogging_Internal_LoggingUtils,
 )
 
 
@@ -144,17 +146,15 @@ class ApatheticLogging_Internal_StdSnakeCase:  # noqa: N801  # pyright: ignore[r
     def get_level_names_mapping(*args: Any, **kwargs: Any) -> dict[int, str]:
         """Return a mapping of all level names to their numeric values.
 
+        **Requires Python 3.11+**
+
         Wrapper for logging.getLevelNamesMapping with snake_case naming.
 
         https://docs.python.org/3.11/library/logging.html#logging.getLevelNamesMapping
         """
-        if sys.version_info < (3, 11):
-            msg = (
-                "get_level_names_mapping is not available in "
-                "Python versions earlier than 3.11"
-            )
-            raise NotImplementedError(msg)
-        return logging.getLevelNamesMapping(*args, **kwargs)
+        _logging_utils = ApatheticLogging_Internal_LoggingUtils
+        _logging_utils.checkPythonVersionRequirement((3, 11), "get_level_names_mapping")
+        return logging.getLevelNamesMapping(*args, **kwargs)  # type: ignore[attr-defined,no-any-return]
 
     @staticmethod
     def disable(level: int = 50, *args: Any, **kwargs: Any) -> None:
@@ -243,33 +243,29 @@ class ApatheticLogging_Internal_StdSnakeCase:  # noqa: N801  # pyright: ignore[r
     ) -> logging.Handler | None:
         """Get a handler with the specified name, or None if there isn't one.
 
+        **Requires Python 3.12+**
+
         Wrapper for logging.getHandlerByName with snake_case naming.
 
         https://docs.python.org/3.12/library/logging.html#logging.getHandlerByName
         """
-        if sys.version_info < (3, 12):
-            msg = (
-                "get_handler_by_name is not available in "
-                "Python versions earlier than 3.12"
-            )
-            raise NotImplementedError(msg)
-        return logging.getHandlerByName(name, *args, **kwargs)
+        _logging_utils = ApatheticLogging_Internal_LoggingUtils
+        _logging_utils.checkPythonVersionRequirement((3, 12), "get_handler_by_name")
+        return logging.getHandlerByName(name, *args, **kwargs)  # type: ignore[attr-defined,no-any-return]
 
     @staticmethod
     def get_handler_names(*args: Any, **kwargs: Any) -> list[str]:
         """Return all known handler names as an immutable set.
 
+        **Requires Python 3.12+**
+
         Wrapper for logging.getHandlerNames with snake_case naming.
 
         https://docs.python.org/3.12/library/logging.html#logging.getHandlerNames
         """
-        if sys.version_info < (3, 12):
-            msg = (
-                "get_handler_names is not available in "
-                "Python versions earlier than 3.12"
-            )
-            raise NotImplementedError(msg)
-        return logging.getHandlerNames(*args, **kwargs)
+        _logging_utils = ApatheticLogging_Internal_LoggingUtils
+        _logging_utils.checkPythonVersionRequirement((3, 12), "get_handler_names")
+        return logging.getHandlerNames(*args, **kwargs)  # type: ignore[attr-defined,no-any-return]
 
     # --- Factory Functions ---
 

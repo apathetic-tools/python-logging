@@ -298,7 +298,9 @@ class ApatheticLogging_Internal_LoggerCore(logging.Logger):  # noqa: N801  # pyr
         setattr(logging, level_name, level)
 
     @classmethod
-    def extendLoggingModule(cls) -> bool:
+    def extendLoggingModule(
+        cls,
+    ) -> bool:
         """The return value tells you if we ran or not.
         If it is False and you're calling it via super(),
         you can likely skip your code too.

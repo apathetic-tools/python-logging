@@ -42,3 +42,18 @@ def test_register_default_log_level_accepts_valid_levels(level: str) -> None:
     # --- verify ---
     _registry = mod_registry.ApatheticLogging_Internal_RegistryData
     assert _registry.registered_internal_default_log_level == level
+
+
+def test_register_default_log_level_accepts_none() -> None:
+    """register_default_log_level() should accept None and return early."""
+    # --- setup ---
+    mod_alogs.registerDefaultLogLevel("info")
+    _registry = mod_registry.ApatheticLogging_Internal_RegistryData
+    original_value = _registry.registered_internal_default_log_level
+
+    # --- execute ---
+    mod_alogs.registerDefaultLogLevel(None)
+
+    # --- verify ---
+    # Should not have changed the value
+    assert _registry.registered_internal_default_log_level == original_value

@@ -15,7 +15,11 @@ Exploratory work (reading/searching) is allowed; no code changes.
 
 ### Troubleshooting When Stuck
 
-Ask user for insight. Also ask if you should: stash changes, rollback, or add isolated changes one at a time. If yes, create plan in `.plans/` per `.ai/templates/plan_debug_rollback.tmpl.md` and consult `.ai/workflows/plan_debug_rollback.md`.
+Ask user for insight. Also ask if you should: stash changes, rollback, or add isolated changes one at a time. If yes, create plan in `.plan/` per `.ai/templates/plan_debug_rollback.tmpl.md` and consult `.ai/workflows/plan_debug_rollback.md`.
+
+### Using Plan Documents
+
+For complex features, refactors, API changes, or multi-phase work, use the plan format (`.ai/workflows/plan_feature.md`). Plans help coordinate work, track progress, and ensure all phases are completed.
 
 # Git Conventions
 
@@ -28,7 +32,12 @@ Ask user for insight. Also ask if you should: stash changes, rollback, or add is
 
 **Checkpoint format**: `checkpoint(scope): brief description` (intermediate saves during debugging)
 
-**Before regular commit**: Check for checkpoint commits since last regular commit. Ask: "I see [N] checkpoint commit(s). Squash with this commit?" and wait for response. If yes, squash via rebase/reset; if no, proceed.
+**Before regular commit**: Check for checkpoint commits since last regular commit using:
+```bash
+LAST_REGULAR=$(git log --oneline --format="%H" --grep="checkpoint" --invert-grep -1)
+git log --oneline --grep="checkpoint" ${LAST_REGULAR}..HEAD
+```
+This finds the last commit that is NOT a checkpoint, then checks for checkpoint commits between that and HEAD. If checkpoint commits are found, ask: "I see [N] checkpoint commit(s). Squash with this commit?" and wait for response. If yes, squash via rebase/reset; if no, proceed.
 
 # Project Overview
 
@@ -122,6 +131,35 @@ error_message = (
 
 **Single files**: `ruff format/check/check --fix <file>`, `pytest <file>::<test>` (add `RUNTIME_MODE=singlefile` for singlefile mode).
 
+# Python Src Dir
+
+# Snake Case Wrapper Synchronization
+
+When modifying camelCase functions/methods, update their snake_case wrappers to match.
+
+**Library wrappers** (`logging_lib_snake.py`, `logger_lib_snake.py`): Must match camelCase versions in parameters, return type, docstring, and function call.
+
+**Stdlib wrappers** (`logging_std_camel.py` ↔ `logging_std_snake.py`): Must be kept in sync with each other - same functions, same signatures, same behavior.
+
+**Must match**:
+- Parameters (positional, keyword-only, defaults)
+- Return type annotation
+- Docstring (if behavior changed)
+- Function call (pass all parameters correctly)
+
+**Example**:
+```python
+# camelCase
+def registerLogger(name: str | None = None, *, version: tuple[int, int] | None = None) -> None:
+    ...
+
+# snake_case - must match
+def register_logger(name: str | None = None, *, version: tuple[int, int] | None = None) -> None:
+    ApatheticLogging_Internal_Registry.registerLogger(name, version=version)
+```
+
+**Checklist**: Find wrapper → Update params/return/docstring → Update call → Test
+
 # Type Checking
 
 ### Type Checking and Linting Best Practices
@@ -152,6 +190,14 @@ error_message = (
 - **Debugging tests**: 
   1. First try `LOG_LEVEL=test poetry run poe test:pytest:installed tests/path/to/test.py::test_name -xvs`. 
   2. If stuck, see `.ai/workflows/debug_tests.md`
+
+### Plan File Management
+
+When creating a **new** plan document:
+- Check `.plan/` for plan files older than 24 hours
+- If found, ask developer if they should be deleted
+- Note any plans that are not marked as all phases completed
+- Keep implemented/completed plans; only ask about stale incomplete plans
 
 ### When to Read Workflow/Template Files
 

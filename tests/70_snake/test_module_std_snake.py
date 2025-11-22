@@ -12,7 +12,8 @@ import pytest
 
 import apathetic_logging as mod_alogs
 import apathetic_logging.constants as mod_constants
-import apathetic_logging.logging_std_snake as mod_std_snake
+import apathetic_logging.logging_utils as mod_logging_utils
+import apathetic_logging.registry_data as mod_registry_data
 from tests.utils.level_validation import validate_test_level
 
 
@@ -68,7 +69,7 @@ MODULE_STD_SNAKE_TESTS: list[
     ("func_name", "args", "kwargs", "mock_target", "min_version"),
     MODULE_STD_SNAKE_TESTS,
 )
-def test_module_std_snake_function(
+def test_module_std_snake_function(  # noqa: PLR0915
     func_name: str,
     args: tuple[object, ...],
     kwargs: dict[str, object],
@@ -92,12 +93,20 @@ def test_module_std_snake_function(
 
     # For functions with version requirements, test exception case
     if min_version is not None:
-        # Mock an older version to test that NotImplementedError is raised
-        # Patch sys.version_info in the module where the function is defined
+        # Mock an older target version to test that NotImplementedError is raised
+        # Also mock sys.version_info in logging_utils for runtime check
         older_version = (min_version[0], min_version[1] - 1)
-        monkeypatch.setattr(mod_std_snake.sys, "version_info", older_version)  # type: ignore[attr-defined]
-        with pytest.raises(NotImplementedError):
-            snake_func(*args, **kwargs)
+        _registry = mod_registry_data.ApatheticLogging_Internal_RegistryData
+        original_target = _registry.registered_internal_target_python_version
+        _registry.registered_internal_target_python_version = older_version
+        # Also mock runtime version in logging_utils
+        monkeypatch.setattr(mod_logging_utils.sys, "version_info", older_version)  # type: ignore[attr-defined]
+        try:
+            with pytest.raises(NotImplementedError):
+                snake_func(*args, **kwargs)
+        finally:
+            _registry.registered_internal_target_python_version = original_target
+            monkeypatch.undo()
 
     # Test the success case (either naturally or by mocking to sufficient version)
     if min_version is not None and sys.version_info < min_version:
@@ -111,11 +120,19 @@ def test_module_std_snake_function(
                 f"{func_name} requires Python {min_version[0]}.{min_version[1]}+ "
                 f"but {func_name_in_module} doesn't exist in logging module"
             )
-        monkeypatch.setattr(mod_std_snake.sys, "version_info", min_version)  # type: ignore[attr-defined]
-        with patch(mock_target) as mock_func:
-            with suppress(Exception):
-                snake_func(*args, **kwargs)
-            mock_func.assert_called_once_with(*args, **kwargs)
+        # Set target version and mock runtime version
+        _registry = mod_registry_data.ApatheticLogging_Internal_RegistryData
+        original_target = _registry.registered_internal_target_python_version
+        _registry.registered_internal_target_python_version = min_version
+        monkeypatch.setattr(mod_logging_utils.sys, "version_info", min_version)  # type: ignore[attr-defined]
+        try:
+            with patch(mock_target) as mock_func:
+                with suppress(Exception):
+                    snake_func(*args, **kwargs)
+                mock_func.assert_called_once_with(*args, **kwargs)
+        finally:
+            _registry.registered_internal_target_python_version = original_target
+            monkeypatch.undo()
     else:
         # We're on a sufficient version, test normally
         # But first check if the underlying function exists
@@ -127,15 +144,27 @@ def test_module_std_snake_function(
                 f"{func_name} requires {func_name_in_module} which doesn't exist "
                 f"in logging module on Python {py_version}"
             )
-        with patch(mock_target) as mock_func:
-            # Call the snake_case function
-            # Some functions may raise (e.g., if logging is already configured)
-            # That's okay - we just want to verify the mock was called
-            with suppress(Exception):
-                snake_func(*args, **kwargs)
+        # Ensure target version is set appropriately if this function has a min version
+        _registry = mod_registry_data.ApatheticLogging_Internal_RegistryData
+        original_target = _registry.registered_internal_target_python_version
+        if min_version is not None and (
+            original_target is None or original_target < min_version
+        ):
+            # Set target version to at least min_version to allow the function to work
+            _registry.registered_internal_target_python_version = min_version
+        try:
+            with patch(mock_target) as mock_func:
+                # Call the snake_case function
+                # Some functions may raise (e.g., if logging is already configured)
+                # That's okay - we just want to verify the mock was called
+                with suppress(Exception):
+                    snake_func(*args, **kwargs)
 
-            # Verify the underlying function was called
-            mock_func.assert_called_once_with(*args, **kwargs)
+                # Verify the underlying function was called
+                mock_func.assert_called_once_with(*args, **kwargs)
+        finally:
+            if min_version is not None:
+                _registry.registered_internal_target_python_version = original_target
 
 
 def test_module_std_snake_function_exists() -> None:

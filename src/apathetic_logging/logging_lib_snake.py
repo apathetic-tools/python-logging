@@ -151,11 +151,12 @@ class ApatheticLogging_Internal_LibSnakeCase:  # noqa: N801  # pyright: ignore[r
     # --- Registry Functions ---
 
     @staticmethod
-    def register_default_log_level(default_level: str) -> None:
+    def register_default_log_level(default_level: str | None) -> None:
         """Register the default log level to use when no other source is found.
 
         Args:
-            default_level: Default log level name (e.g., "info", "warning")
+            default_level: Default log level name (e.g., "info", "warning").
+                If None, returns immediately without making any changes.
 
         Wrapper for ApatheticLogging_Internal_Registry.registerDefaultLogLevel
         with snake_case naming.
@@ -163,7 +164,7 @@ class ApatheticLogging_Internal_LibSnakeCase:  # noqa: N801  # pyright: ignore[r
         ApatheticLogging_Internal_Registry.registerDefaultLogLevel(default_level)
 
     @staticmethod
-    def register_log_level_env_vars(env_vars: list[str]) -> None:
+    def register_log_level_env_vars(env_vars: list[str] | None) -> None:
         """Register environment variable names to check for log level.
 
         The environment variables will be checked in order, and the first
@@ -171,7 +172,8 @@ class ApatheticLogging_Internal_LibSnakeCase:  # noqa: N801  # pyright: ignore[r
 
         Args:
             env_vars: List of environment variable names to check
-                (e.g., ["MYAPP_LOG_LEVEL", "LOG_LEVEL"])
+                (e.g., ["MYAPP_LOG_LEVEL", "LOG_LEVEL"]). If None, returns
+                immediately without making any changes.
 
         Wrapper for ApatheticLogging_Internal_Registry.registerLogLevelEnvVars
         with snake_case naming.
@@ -182,6 +184,11 @@ class ApatheticLogging_Internal_LibSnakeCase:  # noqa: N801  # pyright: ignore[r
     def register_logger(
         logger_name: str | None = None,
         logger_class: type[Any] | None = None,
+        *,
+        target_python_version: tuple[int, int] | None = None,
+        log_level_env_vars: list[str] | None = None,
+        default_log_level: str | None = None,
+        propagate: bool | None = None,
     ) -> None:
         """Register a logger for use by getLogger().
 
@@ -196,11 +203,78 @@ class ApatheticLogging_Internal_LibSnakeCase:  # noqa: N801  # pyright: ignore[r
                 If None, extracts the top-level package from __package__.
             logger_class: Optional logger class to use. If provided and the class
                 has an ``extendLoggingModule()`` method, it will be called.
+                If the class doesn't have that method, ``logging.setLoggerClass()``
+                will be called directly. If None, nothing is done (default Logger
+                is already set up at import time).
+            target_python_version: Optional target Python version (major, minor)
+                tuple. If provided, sets the target Python version in the registry
+                permanently. Defaults to None (no change).
+            log_level_env_vars: Optional list of environment variable names to
+                check for log level. If provided, sets the log level environment
+                variables in the registry permanently. Defaults to None (no change).
+            default_log_level: Optional default log level name. If provided, sets
+                the default log level in the registry permanently. Defaults to None
+                (no change).
+            propagate: Optional propagate setting. If provided, sets the propagate
+                value in the registry permanently. If None, uses registered propagate
+                setting or falls back to DEFAULT_PROPAGATE from constants.py.
+                Defaults to None (no change).
 
         Wrapper for ApatheticLogging_Internal_Registry.registerLogger
         with snake_case naming.
         """
-        ApatheticLogging_Internal_Registry.registerLogger(logger_name, logger_class)
+        ApatheticLogging_Internal_Registry.registerLogger(
+            logger_name,
+            logger_class,
+            target_python_version=target_python_version,
+            log_level_env_vars=log_level_env_vars,
+            default_log_level=default_log_level,
+            propagate=propagate,
+        )
+
+    @staticmethod
+    def register_target_python_version(version: tuple[int, int] | None) -> None:
+        """Register the target Python version for compatibility checking.
+
+        This sets the target Python version that will be used to validate
+        function calls. If a function requires a Python version newer than
+        the target version, it will raise a NotImplementedError even if
+        the runtime version is sufficient.
+
+        If not set, the library defaults to MIN_PYTHON_VERSION (3, 10) from
+        constants.py. This allows developers to catch version incompatibilities
+        during development even when running on a newer Python version than
+        their target.
+
+        Args:
+            version: Target Python version as (major, minor) tuple
+                (e.g., (3, 10) or (3, 11)). If None, returns immediately
+                without making any changes.
+
+        Wrapper for ApatheticLogging_Internal_Registry.registerTargetPythonVersion
+        with snake_case naming.
+        """
+        ApatheticLogging_Internal_Registry.registerTargetPythonVersion(version)
+
+    @staticmethod
+    def register_propagate(*, propagate: bool | None) -> None:
+        """Register the propagate setting for loggers.
+
+        This sets the default propagate value that will be used when creating
+        loggers. If not set, the library defaults to DEFAULT_PROPAGATE (False)
+        from constants.py.
+
+        When propagate is False, loggers do not propagate messages to parent
+        loggers, avoiding duplicate root logs.
+
+        Args:
+            propagate: Propagate setting (True or False). If None, returns
+                immediately without making any changes.
+
+        Wrapper for ApatheticLogging_Internal_Registry.registerPropagate
+        with snake_case naming.
+        """
+        ApatheticLogging_Internal_Registry.registerPropagate(propagate=propagate)
 
     # --- Safe Logging Functions ---
 

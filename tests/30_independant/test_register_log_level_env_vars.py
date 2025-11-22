@@ -53,3 +53,18 @@ def test_register_log_level_env_vars_single_var() -> None:
     # --- verify ---
     _registry = mod_registry.ApatheticLogging_Internal_RegistryData
     assert _registry.registered_internal_log_level_env_vars == env_vars
+
+
+def test_register_log_level_env_vars_accepts_none() -> None:
+    """register_log_level_env_vars() should accept None and return early."""
+    # --- setup ---
+    mod_alogs.registerLogLevelEnvVars(["OLD_VAR"])
+    _registry = mod_registry.ApatheticLogging_Internal_RegistryData
+    original_value = _registry.registered_internal_log_level_env_vars
+
+    # --- execute ---
+    mod_alogs.registerLogLevelEnvVars(None)
+
+    # --- verify ---
+    # Should not have changed the value
+    assert _registry.registered_internal_log_level_env_vars == original_value

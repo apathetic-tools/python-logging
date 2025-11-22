@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import inspect
 import logging
+import sys
 from types import FrameType
 from typing import TypeVar
 
@@ -294,3 +295,74 @@ class ApatheticLogging_Internal_LoggingUtils:  # noqa: N801  # pyright: ignore[r
             "explicit logger name."
         )
         raise RuntimeError(error_msg)
+
+    @staticmethod
+    def checkPythonVersionRequirement(
+        required_version: tuple[int, int],
+        function_name: str,
+    ) -> None:
+        """Check if the target or runtime Python version meets the requirement.
+
+        This method validates that a function requiring a specific Python version
+        can be called safely. It checks:
+        1. Target version (if set via registerTargetPythonVersion), otherwise
+           falls back to MIN_PYTHON_VERSION from constants
+        2. Runtime version (as a safety net to catch actual runtime issues)
+
+        This allows developers to catch version incompatibilities during development
+        even when running on a newer Python version than their target.
+
+        Args:
+            required_version: Minimum Python version required (major, minor) tuple
+            function_name: Name of the function being checked (for error messages)
+
+        Raises:
+            NotImplementedError: If target version or runtime version doesn't meet
+                the requirement. Error message includes guidance on raising target
+                version if applicable.
+
+        Example:
+            >>> checkPythonVersionRequirement((3, 11), "get_level_names_mapping")
+            # Raises if target version < 3.11 or runtime version < 3.11
+        """
+        # Import locally to avoid circular imports
+        from .constants import (  # noqa: PLC0415
+            ApatheticLogging_Internal_Constants,
+        )
+        from .registry_data import (  # noqa: PLC0415
+            ApatheticLogging_Internal_RegistryData,
+        )
+
+        _constants = ApatheticLogging_Internal_Constants
+        _registry_data = ApatheticLogging_Internal_RegistryData
+
+        # Determine effective target version
+        # If target version is set, use it; otherwise fall back to MIN_PYTHON_VERSION
+        target_version = _registry_data.registered_internal_target_python_version
+        if target_version is None:
+            target_version = _constants.MIN_PYTHON_VERSION
+
+        # Check target version first (primary check)
+        if target_version < required_version:
+            req_major, req_minor = required_version
+            tgt_major, tgt_minor = target_version
+            msg = (
+                f"{function_name} requires Python {req_major}.{req_minor}+, "
+                f"but target version is {tgt_major}.{tgt_minor}. "
+                f"To use this function, call "
+                f"registerTargetPythonVersion(({req_major}, {req_minor})) "
+                f"or raise your target version to at least {req_major}.{req_minor}."
+            )
+            raise NotImplementedError(msg)
+
+        # Check runtime version as safety net
+        runtime_version = (sys.version_info.major, sys.version_info.minor)
+        if runtime_version < required_version:
+            req_major, req_minor = required_version
+            rt_major, rt_minor = runtime_version
+            msg = (
+                f"{function_name} requires Python {req_major}.{req_minor}+, "
+                f"but runtime version is {rt_major}.{rt_minor}. "
+                f"This function is not available in your Python version."
+            )
+            raise NotImplementedError(msg)

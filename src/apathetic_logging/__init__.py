@@ -92,6 +92,8 @@ makeSafeTrace = apathetic_logging.makeSafeTrace
 registerDefaultLogLevel = apathetic_logging.registerDefaultLogLevel
 registerLogLevelEnvVars = apathetic_logging.registerLogLevelEnvVars
 registerLogger = apathetic_logging.registerLogger
+registerPropagate = apathetic_logging.registerPropagate
+registerTargetPythonVersion = apathetic_logging.registerTargetPythonVersion
 removeLogger = apathetic_logging.removeLogger
 resolveLoggerName = apathetic_logging.resolveLoggerName
 safeLog = apathetic_logging.safeLog
@@ -131,6 +133,8 @@ make_safe_trace = apathetic_logging.make_safe_trace
 register_default_log_level = apathetic_logging.register_default_log_level
 register_log_level_env_vars = apathetic_logging.register_log_level_env_vars
 register_logger = apathetic_logging.register_logger
+register_propagate = apathetic_logging.register_propagate
+register_target_python_version = apathetic_logging.register_target_python_version
 remove_logger = apathetic_logging.remove_logger
 resolve_logger_name = apathetic_logging.resolve_logger_name
 safe_log = apathetic_logging.safe_log
@@ -196,9 +200,13 @@ __all__ = [
     "registerDefaultLogLevel",
     "registerLogLevelEnvVars",
     "registerLogger",
+    "registerPropagate",
+    "registerTargetPythonVersion",
     "register_default_log_level",
     "register_log_level_env_vars",
     "register_logger",
+    "register_propagate",
+    "register_target_python_version",
     "removeLogger",
     "remove_logger",
     "resolveLoggerName",

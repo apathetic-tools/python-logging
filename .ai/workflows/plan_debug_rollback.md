@@ -5,7 +5,7 @@ When troubleshooting becomes difficult and you need to isolate the problem, foll
 ## Workflow
 
 1. **Create implementation plan**
-   - Create a plan file in `.plans/` following the format in `.ai/templates/plan_debug_rollback.tmpl.md`
+   - Create a plan file in `.plan/` following the format in `.ai/templates/plan_debug_rollback.tmpl.md`
    - Name it something descriptive like `troubleshooting_YYYYMMDD_description.md`
    - Keep the plan updated as you progress
 

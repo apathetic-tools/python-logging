@@ -10,13 +10,13 @@ Planning/discussion session. Answer questions, summarize, recommend. **Do NOT im
 2. Summarize current situation when relevant
 3. Provide recommendations with reasoning
 4. **Do NOT implement** - planning only
-5. After each response, ask: "Move to implementation?" or "Proceed with implementing this?"
-6. Wait for explicit confirmation
+5. For complex features, suggest using plan format (`.ai/workflows/plan_feature.md`)
+6. After each response, ask: "Proceed with implementing?"
+7. Wait for explicit confirmation
 
 ## Notes
 
 - Discussion mode - no code changes, edits, or tool executions
 - May explore codebase, read files, search to answer
-- Always ask before moving to implementation
 - Only proceed when explicitly asked in future prompt
 
