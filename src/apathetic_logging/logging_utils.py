@@ -383,7 +383,12 @@ class ApatheticLogging_Internal_LoggingUtils:  # noqa: N801  # pyright: ignore[r
             raise NotImplementedError(msg)
 
         # Check runtime version as safety net
-        runtime_version = (sys.version_info.major, sys.version_info.minor)
+        # Handle both real sys.version_info object and when patched to a tuple
+        if hasattr(sys.version_info, "major") and hasattr(sys.version_info, "minor"):
+            runtime_version = (sys.version_info.major, sys.version_info.minor)
+        else:
+            # sys.version_info was patched to a tuple (e.g., in tests)
+            runtime_version = (sys.version_info[0], sys.version_info[1])
         if runtime_version < required_version:
             req_major, req_minor = required_version
             rt_major, rt_minor = runtime_version
