@@ -235,17 +235,25 @@ class ApatheticLogging_Internal_GetLogger:  # noqa: N801  # pyright: ignore[repo
         _logging_utils = ApatheticLogging_Internal_LoggingUtils
 
         # Resolve logger name (with inference if needed)
-        # Note: Empty string ("") is a special case - resolveLoggerName returns it
+        # Note: Empty string ("") is a special case - getDefaultLoggerName returns it
         # as-is (root logger, matching stdlib behavior). This is handled by the
-        # early return in resolveLoggerName when logger_name is not None.
-        # skip_frames+1 because: getLoggerOfType -> resolveLoggerName -> caller
+        # early return in getDefaultLoggerName when logger_name is not None.
+        # skip_frames+1 because: getLoggerOfType -> getDefaultLoggerName -> caller
         # check_registry=True because getLogger() should use a previously registered
         # name if available, which is the expected behavior for "get" operations.
-        register_name = _logging_utils.resolveLoggerName(
+        # raise_on_error=True because getLogger() requires a logger name.
+        # infer=True and register=True - getLogger() infers and stores (matches old
+        # resolveLoggerName behavior where inferred names were automatically stored)
+        register_name_raw = _logging_utils.getDefaultLoggerName(
             name,
             check_registry=True,
             skip_frames=skip_frames + 1,
+            raise_on_error=True,
+            infer=True,
+            register=True,
         )
+        # With raise_on_error=True, register_name is guaranteed to be str, not None
+        register_name: str = register_name_raw  # type: ignore[assignment]
 
         # extend logging module
         if extend:

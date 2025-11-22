@@ -37,7 +37,7 @@ class ApatheticLogging_Internal_RegistryData:  # noqa: N801  # pyright: ignore[r
     """Registered logger name to use for logger name inference.
 
     If None, logger names are inferred from the calling module's __package__
-    attribute. When set, this value is returned by resolveLoggerName() instead
+    attribute. When set, this value is returned by getDefaultLoggerName() instead
     of inferring from the call stack. Set via registerLogger() or register_logger().
     """
     registered_internal_target_python_version: tuple[int, int] | None = None

@@ -187,14 +187,19 @@ class ApatheticLogging_Internal_Registry:  # noqa: N801  # pyright: ignore[repor
         was_explicit = logger_name is not None
 
         # Resolve logger name (with inference if needed)
-        # skip_frames=1 because: registerLogger -> resolveLoggerName -> caller
+        # skip_frames=1 because: registerLogger -> getDefaultLoggerName -> caller
         # check_registry=False because registerLogger() should actively determine
         # the name from the current context, not return an old registered name. This
         # allows re-inferring from __package__ if the package context has changed.
-        resolved_name = _logging_utils.resolveLoggerName(
+        # raise_on_error=True because registerLogger() requires a logger name.
+        # register=True because registerLogger() should store the resolved name.
+        resolved_name = _logging_utils.getDefaultLoggerName(
             logger_name,
             check_registry=False,
             skip_frames=1,
+            raise_on_error=True,
+            infer=True,
+            register=True,
         )
 
         if logger_class is not None:
@@ -289,4 +294,158 @@ class ApatheticLogging_Internal_Registry:  # noqa: N801  # pyright: ignore[repor
         _safe_logging.safeTrace(
             "registerPropagate() called",
             f"propagate={propagate}",
+        )
+
+    @staticmethod
+    def getLogLevelEnvVars() -> list[str]:
+        """Get the environment variable names to check for log level.
+
+        Returns the registered environment variable names, or the default
+        environment variables if none are registered.
+
+        Returns:
+            List of environment variable names to check for log level.
+            Defaults to ["LOG_LEVEL"] if not registered.
+
+        Example:
+            >>> from apathetic_logging import getLogLevelEnvVars
+            >>> env_vars = getLogLevelEnvVars()
+            >>> print(env_vars)
+            ["LOG_LEVEL"]
+        """
+        from .constants import (  # noqa: PLC0415
+            ApatheticLogging_Internal_Constants,
+        )
+        from .registry_data import (  # noqa: PLC0415
+            ApatheticLogging_Internal_RegistryData,
+        )
+
+        _constants = ApatheticLogging_Internal_Constants
+        _registry_data = ApatheticLogging_Internal_RegistryData
+
+        return (
+            _registry_data.registered_internal_log_level_env_vars
+            or _constants.DEFAULT_APATHETIC_LOG_LEVEL_ENV_VARS
+        )
+
+    @staticmethod
+    def getDefaultLogLevel() -> str:
+        """Get the default log level.
+
+        Returns the registered default log level, or the module default
+        if none is registered.
+
+        Returns:
+            Default log level name (e.g., "detail", "info").
+            Defaults to "detail" if not registered.
+
+        Example:
+            >>> from apathetic_logging import getDefaultLogLevel
+            >>> level = getDefaultLogLevel()
+            >>> print(level)
+            "detail"
+        """
+        from .constants import (  # noqa: PLC0415
+            ApatheticLogging_Internal_Constants,
+        )
+        from .registry_data import (  # noqa: PLC0415
+            ApatheticLogging_Internal_RegistryData,
+        )
+
+        _constants = ApatheticLogging_Internal_Constants
+        _registry_data = ApatheticLogging_Internal_RegistryData
+
+        return (
+            _registry_data.registered_internal_default_log_level
+            or _constants.DEFAULT_APATHETIC_LOG_LEVEL
+        )
+
+    @staticmethod
+    def getRegisteredLoggerName() -> str | None:
+        """Get the registered logger name.
+
+        Returns the registered logger name, or None if no logger name
+        has been registered. Unlike getDefaultLoggerName(), this does not
+        perform inference - it only returns the explicitly registered value.
+
+        Returns:
+            Registered logger name, or None if not registered.
+
+        Example:
+            >>> from apathetic_logging import getRegisteredLoggerName
+            >>> name = getRegisteredLoggerName()
+            >>> if name is None:
+            ...     print("No logger name registered")
+        """
+        from .registry_data import (  # noqa: PLC0415
+            ApatheticLogging_Internal_RegistryData,
+        )
+
+        _registry_data = ApatheticLogging_Internal_RegistryData
+
+        return _registry_data.registered_internal_logger_name
+
+    @staticmethod
+    def getTargetPythonVersion() -> tuple[int, int]:
+        """Get the target Python version.
+
+        Returns the registered target Python version, or the minimum
+        supported version if none is registered.
+
+        Returns:
+            Target Python version as (major, minor) tuple.
+            Defaults to (3, 10) if not registered.
+
+        Example:
+            >>> from apathetic_logging import getTargetPythonVersion
+            >>> version = getTargetPythonVersion()
+            >>> print(version)
+            (3, 10)
+        """
+        from .constants import (  # noqa: PLC0415
+            ApatheticLogging_Internal_Constants,
+        )
+        from .registry_data import (  # noqa: PLC0415
+            ApatheticLogging_Internal_RegistryData,
+        )
+
+        _constants = ApatheticLogging_Internal_Constants
+        _registry_data = ApatheticLogging_Internal_RegistryData
+
+        return (
+            _registry_data.registered_internal_target_python_version
+            or _constants.MIN_PYTHON_VERSION
+        )
+
+    @staticmethod
+    def getDefaultPropagate() -> bool:
+        """Get the default propagate setting.
+
+        Returns the registered propagate setting, or the module default
+        if none is registered.
+
+        Returns:
+            Default propagate setting (True or False).
+            Defaults to False if not registered.
+
+        Example:
+            >>> from apathetic_logging import getDefaultPropagate
+            >>> propagate = getDefaultPropagate()
+            >>> print(propagate)
+            False
+        """
+        from .constants import (  # noqa: PLC0415
+            ApatheticLogging_Internal_Constants,
+        )
+        from .registry_data import (  # noqa: PLC0415
+            ApatheticLogging_Internal_RegistryData,
+        )
+
+        _constants = ApatheticLogging_Internal_Constants
+        _registry_data = ApatheticLogging_Internal_RegistryData
+
+        return (
+            _registry_data.registered_internal_propagate
+            if _registry_data.registered_internal_propagate is not None
+            else _constants.DEFAULT_PROPAGATE
         )

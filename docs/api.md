@@ -266,20 +266,68 @@ Remove a logger from the logging manager's registry.
 **Parameters:**
 - `logger_name` (str): The name of the logger to remove
 
-### `resolve_logger_name(logger_name: str | None, *, check_registry: bool = True, skip_frames: int = 1) -> str`
+### `get_default_logger_name(logger_name: str | None = None, *, check_registry: bool = True, skip_frames: int = 1, raise_on_error: bool = False, infer: bool = True, register: bool = False) -> str | None`
 
-Resolve logger name with optional inference from caller's frame.
+Get default logger name with optional inference from caller's frame.
 
 **Parameters:**
-- `logger_name` (str | None): Explicit logger name, or None to infer
+- `logger_name` (str | None): Explicit logger name, or None to infer (default: None)
 - `check_registry` (bool): If True, check registry before inferring (default: True)
 - `skip_frames` (int): Number of frames to skip (default: 1)
+- `raise_on_error` (bool): If True, raise RuntimeError if logger name cannot be resolved. If False (default), return None instead
+- `infer` (bool): If True (default), attempt to infer logger name from caller's frame when not found in registry. If False, skip inference
+- `register` (bool): If True, store inferred name in registry. If False (default), do not modify registry. Note: Explicit names are never stored regardless of this parameter
 
 **Returns:**
-- `str`: Resolved logger name (never None)
+- `str | None`: Resolved logger name, or None if cannot be resolved and raise_on_error=False
 
 **Raises:**
-- `RuntimeError`: If logger name cannot be resolved
+- `RuntimeError`: If logger name cannot be resolved and raise_on_error=True
+
+### `get_log_level_env_vars() -> list[str]`
+
+Get the environment variable names to check for log level.
+
+Returns the registered environment variable names, or the default environment variables if none are registered.
+
+**Returns:**
+- `list[str]`: List of environment variable names to check for log level. Defaults to `["LOG_LEVEL"]` if not registered
+
+### `get_default_log_level() -> str`
+
+Get the default log level.
+
+Returns the registered default log level, or the module default if none is registered.
+
+**Returns:**
+- `str`: Default log level name (e.g., "detail", "info"). Defaults to `"detail"` if not registered
+
+### `get_registered_logger_name() -> str | None`
+
+Get the registered logger name.
+
+Returns the registered logger name, or None if no logger name has been registered. Unlike `get_default_logger_name()`, this does not perform inference - it only returns the explicitly registered value.
+
+**Returns:**
+- `str | None`: Registered logger name, or None if not registered
+
+### `get_target_python_version() -> tuple[int, int]`
+
+Get the target Python version.
+
+Returns the registered target Python version, or the minimum supported version if none is registered.
+
+**Returns:**
+- `tuple[int, int]`: Target Python version as (major, minor) tuple. Defaults to `(3, 10)` if not registered
+
+### `get_default_propagate() -> bool`
+
+Get the default propagate setting.
+
+Returns the registered propagate setting, or the module default if none is registered.
+
+**Returns:**
+- `bool`: Default propagate setting (True or False). Defaults to `False` if not registered
 
 ## Wrapped stdlib Functions (snake_case)
 
@@ -778,7 +826,12 @@ The CamelCase API provides compatibility with existing codebases and follows the
 - `makeSafeTrace(icon: str = "🧪") -> Callable` — Same as `make_safe_trace()`
 - `hasLogger(logger_name: str) -> bool` — Same as `has_logger()`
 - `removeLogger(logger_name: str) -> None` — Same as `remove_logger()`
-- `resolveLoggerName(logger_name: str | None, *, check_registry: bool = True, skip_frames: int = 1) -> str` — Same as `resolve_logger_name()`
+- `getDefaultLoggerName(logger_name: str | None = None, *, check_registry: bool = True, skip_frames: int = 1, raise_on_error: bool = False, infer: bool = True, register: bool = False) -> str | None` — Same as `get_default_logger_name()`
+- `getLogLevelEnvVars() -> list[str]` — Same as `get_log_level_env_vars()`
+- `getDefaultLogLevel() -> str` — Same as `get_default_log_level()`
+- `getRegisteredLoggerName() -> str | None` — Same as `get_registered_logger_name()`
+- `getTargetPythonVersion() -> tuple[int, int]` — Same as `get_target_python_version()`
+- `getDefaultPropagate() -> bool` — Same as `get_default_propagate()`
 
 ### Wrapped stdlib Functions (CamelCase)
 

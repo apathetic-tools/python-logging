@@ -222,20 +222,23 @@ class ApatheticLogging_Internal_LoggingUtils:  # noqa: N801  # pyright: ignore[r
             del frame
 
     @staticmethod
-    def resolveLoggerName(
-        logger_name: str | None,
+    def getDefaultLoggerName(
+        logger_name: str | None = None,
         *,
         check_registry: bool = True,
         skip_frames: int = 1,
-    ) -> str:
-        """Resolve logger name with optional inference from caller's frame.
+        raise_on_error: bool = False,
+        infer: bool = True,
+        register: bool = False,
+    ) -> str | None:
+        """Get default logger name with optional inference from caller's frame.
 
-        This is a unified helper that handles the common pattern of:
+        This function handles the common pattern of:
         1. Using explicit name if provided
         2. Checking registry if requested
-        3. Inferring from caller's frame if needed
-        4. Storing inferred name in registry
-        5. Raising error if still unresolved
+        3. Inferring from caller's frame if needed (when infer=True)
+        4. Storing inferred name in registry (when register=True)
+        5. Returning None or raising error if still unresolved
 
         Args:
             logger_name: Explicit logger name, or None to infer.
@@ -247,12 +250,22 @@ class ApatheticLogging_Internal_LoggingUtils:  # noqa: N801  # pyright: ignore[r
                 which should use the registered name).
             skip_frames: Number of frames to skip from this function to get to
                 the actual caller. Default is 1 (skips this function's frame).
+            raise_on_error: If True, raise RuntimeError if logger name cannot be
+                resolved. If False (default), return None instead. Use True when
+                a logger name is required (e.g., when creating a logger).
+            infer: If True (default), attempt to infer logger name from caller's
+                frame when not found in registry. If False, skip inference and
+                return None if not found in registry.
+            register: If True, store inferred name in registry. If False (default),
+                do not modify registry. Note: Explicit names are never stored regardless
+                of this parameter.
 
         Returns:
-            Resolved logger name (never None).
+            Resolved logger name, or None if cannot be resolved and
+            raise_on_error=False.
 
         Raises:
-            RuntimeError: If logger name cannot be resolved.
+            RuntimeError: If logger name cannot be resolved and raise_on_error=True.
         """
         # Import locally to avoid circular import
         from .registry_data import (  # noqa: PLC0415
@@ -273,28 +286,42 @@ class ApatheticLogging_Internal_LoggingUtils:  # noqa: N801  # pyright: ignore[r
             if registered_name is not None:
                 return registered_name
 
-        # Try to infer from caller's frame
+        # Try to infer from caller's frame if inference is enabled
+        if not infer:
+            # Inference disabled - return None or raise error
+            if raise_on_error:
+                error_msg = (
+                    "Cannot resolve logger name: not in registry and inference "
+                    "is disabled. Please call registerLogger() with an "
+                    "explicit logger name or enable inference."
+                )
+                raise RuntimeError(error_msg)
+            return None
+
         # Get current frame (this function's frame) and skip to caller
         frame = inspect.currentframe()
         inferred_name = ApatheticLogging_Internal_LoggingUtils._infer_from_frame(
             skip_frames, frame
         )
 
-        # Store inferred name in registry
-        if inferred_name is not None:
+        # Store inferred name in registry if requested
+        if inferred_name is not None and register:
             _registry_data.registered_internal_logger_name = inferred_name
 
-        # Return inferred name or raise error
+        # Return inferred name or handle error
         if inferred_name is not None:
             return inferred_name
 
-        # Raise error with clear message
-        error_msg = (
-            "Cannot auto-infer logger name: __package__ is not set in the "
-            "calling module. Please call registerLogger() with an "
-            "explicit logger name."
-        )
-        raise RuntimeError(error_msg)
+        # Handle error case
+        if raise_on_error:
+            error_msg = (
+                "Cannot auto-infer logger name: __package__ is not set in the "
+                "calling module. Please call registerLogger() with an "
+                "explicit logger name."
+            )
+            raise RuntimeError(error_msg)
+
+        return None
 
     @staticmethod
     def checkPythonVersionRequirement(

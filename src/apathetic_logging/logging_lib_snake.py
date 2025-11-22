@@ -276,6 +276,86 @@ class ApatheticLogging_Internal_LibSnakeCase:  # noqa: N801  # pyright: ignore[r
         """
         ApatheticLogging_Internal_Registry.registerPropagate(propagate=propagate)
 
+    @staticmethod
+    def get_log_level_env_vars() -> list[str]:
+        """Get the environment variable names to check for log level.
+
+        Returns the registered environment variable names, or the default
+        environment variables if none are registered.
+
+        Returns:
+            List of environment variable names to check for log level.
+            Defaults to ["LOG_LEVEL"] if not registered.
+
+        Wrapper for ApatheticLogging_Internal_Registry.getLogLevelEnvVars
+        with snake_case naming.
+        """
+        return ApatheticLogging_Internal_Registry.getLogLevelEnvVars()
+
+    @staticmethod
+    def get_default_log_level() -> str:
+        """Get the default log level.
+
+        Returns the registered default log level, or the module default
+        if none is registered.
+
+        Returns:
+            Default log level name (e.g., "detail", "info").
+            Defaults to "detail" if not registered.
+
+        Wrapper for ApatheticLogging_Internal_Registry.getDefaultLogLevel
+        with snake_case naming.
+        """
+        return ApatheticLogging_Internal_Registry.getDefaultLogLevel()
+
+    @staticmethod
+    def get_registered_logger_name() -> str | None:
+        """Get the registered logger name.
+
+        Returns the registered logger name, or None if no logger name
+        has been registered. Unlike get_default_logger_name(), this does not
+        perform inference - it only returns the explicitly registered value.
+
+        Returns:
+            Registered logger name, or None if not registered.
+
+        Wrapper for ApatheticLogging_Internal_Registry.getRegisteredLoggerName
+        with snake_case naming.
+        """
+        return ApatheticLogging_Internal_Registry.getRegisteredLoggerName()
+
+    @staticmethod
+    def get_target_python_version() -> tuple[int, int]:
+        """Get the target Python version.
+
+        Returns the registered target Python version, or the minimum
+        supported version if none is registered.
+
+        Returns:
+            Target Python version as (major, minor) tuple.
+            Defaults to (3, 10) if not registered.
+
+        Wrapper for ApatheticLogging_Internal_Registry.getTargetPythonVersion
+        with snake_case naming.
+        """
+        return ApatheticLogging_Internal_Registry.getTargetPythonVersion()
+
+    @staticmethod
+    def get_default_propagate() -> bool:
+        """Get the default propagate setting.
+
+        Returns the registered propagate setting, or the module default
+        if none is registered.
+
+        Returns:
+            Default propagate setting (True or False).
+            Defaults to False if not registered.
+
+        Wrapper for ApatheticLogging_Internal_Registry.getDefaultPropagate
+        with snake_case naming.
+        """
+        return ApatheticLogging_Internal_Registry.getDefaultPropagate()
+
     # --- Safe Logging Functions ---
 
     @staticmethod
@@ -346,38 +426,53 @@ class ApatheticLogging_Internal_LibSnakeCase:  # noqa: N801  # pyright: ignore[r
         ApatheticLogging_Internal_LoggingUtils.removeLogger(logger_name)
 
     @staticmethod
-    def resolve_logger_name(
-        logger_name: str | None,
+    def get_default_logger_name(
+        logger_name: str | None = None,
         *,
         check_registry: bool = True,
         skip_frames: int = 1,
-    ) -> str:
-        """Resolve logger name with optional inference from caller's frame.
+        raise_on_error: bool = False,
+        infer: bool = True,
+        register: bool = False,
+    ) -> str | None:
+        """Get default logger name with optional inference from caller's frame.
 
-        This is a unified helper that handles the common pattern of:
+        This function handles the common pattern of:
         1. Using explicit name if provided
         2. Checking registry if requested
-        3. Inferring from caller's frame if needed
-        4. Storing inferred name in registry
-        5. Raising error if still unresolved
+        3. Inferring from caller's frame if needed (when infer=True)
+        4. Storing inferred name in registry (when register=True)
+        5. Returning None or raising error if still unresolved
 
         Args:
             logger_name: Explicit logger name, or None to infer.
             check_registry: If True, check registry before inferring.
             skip_frames: Number of frames to skip from this function to get to
                 the actual caller. Default is 1 (skips this function's frame).
+            raise_on_error: If True, raise RuntimeError if logger name cannot be
+                resolved. If False (default), return None instead.
+            infer: If True (default), attempt to infer logger name from caller's
+                frame when not found in registry. If False, skip inference.
+            register: If True, store inferred name in registry. If False (default),
+                do not modify registry.
 
         Returns:
-            Resolved logger name (never None).
+            Resolved logger name, or None if cannot be resolved and
+            raise_on_error=False.
 
         Raises:
-            RuntimeError: If logger name cannot be resolved.
+            RuntimeError: If logger name cannot be resolved and raise_on_error=True.
 
-        Wrapper for ApatheticLogging_Internal_LoggingUtils.resolveLoggerName
+        Wrapper for ApatheticLogging_Internal_LoggingUtils.getDefaultLoggerName
         with snake_case naming.
         """
-        return ApatheticLogging_Internal_LoggingUtils.resolveLoggerName(
-            logger_name, check_registry=check_registry, skip_frames=skip_frames
+        return ApatheticLogging_Internal_LoggingUtils.getDefaultLoggerName(
+            logger_name,
+            check_registry=check_registry,
+            skip_frames=skip_frames,
+            raise_on_error=raise_on_error,
+            infer=infer,
+            register=register,
         )
 
     @staticmethod
