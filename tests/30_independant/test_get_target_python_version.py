@@ -13,8 +13,8 @@ def test_get_target_python_version_returns_default_when_not_registered() -> None
     _registry = mod_registry.ApatheticLogging_Internal_RegistryData
     _registry.registered_internal_target_python_version = None
 
-    # Should return module default
-    assert mod_alogs.getTargetPythonVersion() == (3, 10)
+    # Should return None when MIN_PYTHON_VERSION is None (checks disabled)
+    assert mod_alogs.getTargetPythonVersion() is None
 
 
 def test_get_target_python_version_returns_registered_value() -> None:

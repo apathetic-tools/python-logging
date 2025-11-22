@@ -422,21 +422,22 @@ class ApatheticLogging_Internal_Registry:  # noqa: N801  # pyright: ignore[repor
         return _registry_data.registered_internal_logger_name
 
     @staticmethod
-    def getTargetPythonVersion() -> tuple[int, int]:
+    def getTargetPythonVersion() -> tuple[int, int] | None:
         """Get the target Python version.
 
         Returns the registered target Python version, or the minimum
         supported version if none is registered.
 
         Returns:
-            Target Python version as (major, minor) tuple.
-            Defaults to (3, 10) if not registered.
+            Target Python version as (major, minor) tuple, or None if
+            no version is registered and MIN_PYTHON_VERSION is None
+            (checks disabled).
 
         Example:
             >>> from apathetic_logging import getTargetPythonVersion
             >>> version = getTargetPythonVersion()
             >>> print(version)
-            (3, 10)
+            (3, 10)  # or None if checks are disabled
         """
         from .constants import (  # noqa: PLC0415
             ApatheticLogging_Internal_Constants,

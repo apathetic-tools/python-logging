@@ -370,7 +370,8 @@ class ApatheticLogging_Internal_LoggingUtils:  # noqa: N801  # pyright: ignore[r
             target_version = _constants.MIN_PYTHON_VERSION
 
         # Check target version first (primary check)
-        if target_version < required_version:
+        # Skip check if target_version is None (checks disabled)
+        if target_version is not None and target_version < required_version:
             req_major, req_minor = required_version
             tgt_major, tgt_minor = target_version
             msg = (

@@ -96,8 +96,11 @@ class ApatheticLogging_Internal_Constants:  # noqa: N801  # pyright: ignore[repo
     }
     """Mapping of level names to (color_code, tag_text) tuples."""
 
-    MIN_PYTHON_VERSION: tuple[int, int] = (3, 10)
-    """Minimum supported Python version (major, minor)."""
+    MIN_PYTHON_VERSION: tuple[int, int] | None = None
+    """Minimum supported Python version (major, minor).
+
+    If None, minimum version checks are disabled by default.
+    """
 
     DEFAULT_PROPAGATE: bool = False
     """Default propagate setting for loggers.
