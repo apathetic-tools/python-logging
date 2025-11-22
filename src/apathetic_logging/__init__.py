@@ -86,6 +86,7 @@ setLoggerClass = apathetic_logging.setLoggerClass
 
 # Functions (camelCase - library functions)
 getDefaultLogLevel = apathetic_logging.getDefaultLogLevel
+getCompatibilityMode = apathetic_logging.getCompatibilityMode
 getDefaultLoggerName = apathetic_logging.getDefaultLoggerName
 getDefaultPropagate = apathetic_logging.getDefaultPropagate
 getLevelNumber = apathetic_logging.getLevelNumber
@@ -98,6 +99,7 @@ makeSafeTrace = apathetic_logging.makeSafeTrace
 registerDefaultLogLevel = apathetic_logging.registerDefaultLogLevel
 registerLogLevelEnvVars = apathetic_logging.registerLogLevelEnvVars
 registerLogger = apathetic_logging.registerLogger
+registerCompatibilityMode = apathetic_logging.registerCompatibilityMode
 registerPropagate = apathetic_logging.registerPropagate
 registerTargetPythonVersion = apathetic_logging.registerTargetPythonVersion
 removeLogger = apathetic_logging.removeLogger
@@ -132,6 +134,7 @@ warning = apathetic_logging.warning
 
 # Functions (snake_case - library wrappers)
 get_default_log_level = apathetic_logging.get_default_log_level
+get_compatibility_mode = apathetic_logging.get_compatibility_mode
 get_default_logger_name = apathetic_logging.get_default_logger_name
 get_default_propagate = apathetic_logging.get_default_propagate
 get_level_number = apathetic_logging.get_level_number
@@ -144,6 +147,7 @@ make_safe_trace = apathetic_logging.make_safe_trace
 register_default_log_level = apathetic_logging.register_default_log_level
 register_log_level_env_vars = apathetic_logging.register_log_level_env_vars
 register_logger = apathetic_logging.register_logger
+register_compatibility_mode = apathetic_logging.register_compatibility_mode
 register_propagate = apathetic_logging.register_propagate
 register_target_python_version = apathetic_logging.register_target_python_version
 remove_logger = apathetic_logging.remove_logger
@@ -181,6 +185,7 @@ __all__ = [
     "error",
     "exception",
     "fatal",
+    "getCompatibilityMode",
     "getDefaultLogLevel",
     "getDefaultLoggerName",
     "getDefaultPropagate",
@@ -196,6 +201,7 @@ __all__ = [
     "getLoggerOfType",
     "getRegisteredLoggerName",
     "getTargetPythonVersion",
+    "get_compatibility_mode",
     "get_default_log_level",
     "get_default_logger_name",
     "get_default_propagate",
@@ -219,11 +225,13 @@ __all__ = [
     "makeSafeTrace",
     "make_log_record",
     "make_safe_trace",
+    "registerCompatibilityMode",
     "registerDefaultLogLevel",
     "registerLogLevelEnvVars",
     "registerLogger",
     "registerPropagate",
     "registerTargetPythonVersion",
+    "register_compatibility_mode",
     "register_default_log_level",
     "register_log_level_env_vars",
     "register_logger",

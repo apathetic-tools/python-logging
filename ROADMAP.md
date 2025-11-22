@@ -22,7 +22,14 @@ Exploring bundling options for generating the single-file release:
 - Deploy action when I tag a release should create a release and attach it to the tagged release.
 
 ## 🔌 API
-- **Compatibility mode for `getLevelNumber()` unknown level handling**
+- ✅ **Compatibility mode for stdlib drop-in replacement** (Plan 002 - COMPLETE)
+  - Added `registerCompatibilityMode()` / `register_compatibility_mode()` functions
+  - Added `getCompatibilityMode()` / `get_compatibility_mode()` getter functions
+  - Added `compatibility_mode` parameter to `registerLogger()` / `register_logger()`
+  - When enabled, `getLogger(None)` returns root logger (stdlib behavior) instead of auto-inferring
+  - Defaults to `False` (improved behavior)
+  - Best-effort approach: restores behaviors that don't pollute return types
+- **Compatibility mode for `getLevelNumber()` unknown level handling** (deferred)
   - it does really mess with our type system since the return type becomes ambiguous, may not be worth it?
   - Add a registration/configuration option for backwards-compatible behavior when `getLevelNumber()` encounters unknown levels
   - Default to off (current behavior: raises `ValueError`)

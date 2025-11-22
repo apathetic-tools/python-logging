@@ -189,6 +189,7 @@ class ApatheticLogging_Internal_LibSnakeCase:  # noqa: N801  # pyright: ignore[r
         log_level_env_vars: list[str] | None = None,
         default_log_level: str | None = None,
         propagate: bool | None = None,
+        compatibility_mode: bool | None = None,
     ) -> None:
         """Register a logger for use by getLogger().
 
@@ -219,6 +220,11 @@ class ApatheticLogging_Internal_LibSnakeCase:  # noqa: N801  # pyright: ignore[r
                 value in the registry permanently. If None, uses registered propagate
                 setting or falls back to DEFAULT_PROPAGATE from constants.py.
                 Defaults to None (no change).
+            compatibility_mode: Optional compatibility mode setting. If provided, sets
+                the compatibility mode in the registry permanently. When True, restores
+                stdlib-compatible behavior where possible (e.g., getLogger(None) returns
+                root logger). If None, uses registered compatibility mode setting or
+                defaults to False (improved behavior). Defaults to None (no change).
 
         Wrapper for ApatheticLogging_Internal_Registry.registerLogger
         with snake_case naming.
@@ -230,6 +236,7 @@ class ApatheticLogging_Internal_LibSnakeCase:  # noqa: N801  # pyright: ignore[r
             log_level_env_vars=log_level_env_vars,
             default_log_level=default_log_level,
             propagate=propagate,
+            compatibility_mode=compatibility_mode,
         )
 
     @staticmethod
@@ -275,6 +282,27 @@ class ApatheticLogging_Internal_LibSnakeCase:  # noqa: N801  # pyright: ignore[r
         with snake_case naming.
         """
         ApatheticLogging_Internal_Registry.registerPropagate(propagate=propagate)
+
+    @staticmethod
+    def register_compatibility_mode(*, compatibility_mode: bool | None) -> None:
+        """Register the compatibility mode setting for stdlib drop-in replacement.
+
+        This sets the compatibility mode that will be used when creating loggers.
+        If not set, the library defaults to False (improved behavior).
+
+        When compatibility_mode is True, restores stdlib-compatible behavior where
+        possible (e.g., getLogger(None) returns root logger instead of auto-inferring).
+
+        Args:
+            compatibility_mode: Compatibility mode setting (True or False). If None,
+                returns immediately without making any changes.
+
+        Wrapper for ApatheticLogging_Internal_Registry.registerCompatibilityMode
+        with snake_case naming.
+        """
+        ApatheticLogging_Internal_Registry.registerCompatibilityMode(
+            compatibility_mode=compatibility_mode
+        )
 
     @staticmethod
     def get_log_level_env_vars() -> list[str]:
@@ -355,6 +383,22 @@ class ApatheticLogging_Internal_LibSnakeCase:  # noqa: N801  # pyright: ignore[r
         with snake_case naming.
         """
         return ApatheticLogging_Internal_Registry.getDefaultPropagate()
+
+    @staticmethod
+    def get_compatibility_mode() -> bool:
+        """Get the compatibility mode setting.
+
+        Returns the registered compatibility mode setting, or False (improved
+        behavior) if not registered.
+
+        Returns:
+            Compatibility mode setting (True or False).
+            Defaults to False if not registered.
+
+        Wrapper for ApatheticLogging_Internal_Registry.getCompatibilityMode
+        with snake_case naming.
+        """
+        return ApatheticLogging_Internal_Registry.getCompatibilityMode()
 
     # --- Safe Logging Functions ---
 

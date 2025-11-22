@@ -51,6 +51,7 @@ def reset_logger_class_and_registry() -> Generator[None, None, None]:
     original_name = _registry.registered_internal_logger_name
     original_default = _registry.registered_internal_default_log_level
     original_env_vars = _registry.registered_internal_log_level_env_vars
+    original_compatibility_mode = _registry.registered_internal_compatibility_mode
 
     # Clear any existing loggers from the registry
     _logging_utils = mod_alogs.apathetic_logging
@@ -72,6 +73,7 @@ def reset_logger_class_and_registry() -> Generator[None, None, None]:
     _registry.registered_internal_logger_name = None
     _registry.registered_internal_default_log_level = None
     _registry.registered_internal_log_level_env_vars = None
+    _registry.registered_internal_compatibility_mode = None
 
     yield
 
@@ -93,6 +95,7 @@ def reset_logger_class_and_registry() -> Generator[None, None, None]:
     _registry.registered_internal_logger_name = original_name
     _registry.registered_internal_default_log_level = original_default
     _registry.registered_internal_log_level_env_vars = original_env_vars
+    _registry.registered_internal_compatibility_mode = original_compatibility_mode
 
 
 # ----------------------------------------------------------------------

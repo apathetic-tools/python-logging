@@ -92,7 +92,7 @@ logger = get_logger_of_type("my_app", AppLogger, level="debug")
 logger = get_logger_of_type("my_app", AppLogger, level="info", minimum=True)
 ```
 
-### `register_logger(logger_name: str | None = None, logger_class: type[Logger] | None = None, *, target_python_version: tuple[int, int] | None = None, log_level_env_vars: list[str] | None = None, default_log_level: str | None = None, propagate: bool | None = None) -> None`
+### `register_logger(logger_name: str | None = None, logger_class: type[Logger] | None = None, *, target_python_version: tuple[int, int] | None = None, log_level_env_vars: list[str] | None = None, default_log_level: str | None = None, propagate: bool | None = None, compatibility_mode: bool | None = None) -> None`
 
 Register a logger for use by `get_logger()`. This registers the logger name and extends the logging module with custom levels if needed.
 
@@ -107,6 +107,7 @@ If `logger_class` is provided and has an `extend_logging_module()` method, it wi
 - `log_level_env_vars` (list[str] | None): Optional list of environment variable names to check for log level. If provided, sets the log level environment variables in the registry permanently. Defaults to None (no change).
 - `default_log_level` (str | None): Optional default log level name. If provided, sets the default log level in the registry permanently. Defaults to None (no change).
 - `propagate` (bool | None): Optional propagate setting. If provided, sets the propagate value in the registry permanently. If None, uses registered propagate setting or falls back to DEFAULT_PROPAGATE from constants.py. Defaults to None (no change).
+- `compatibility_mode` (bool | None): Optional compatibility mode setting. If provided, sets the compatibility mode in the registry permanently. When True, restores stdlib-compatible behavior where possible (e.g., `getLogger(None)` returns root logger). If None, uses registered compatibility mode setting or defaults to False (improved behavior). Defaults to None (no change).
 
 **Example:**
 ```python
@@ -131,7 +132,44 @@ register_logger(
     log_level_env_vars=["MYAPP_LOG_LEVEL", "LOG_LEVEL"],
     default_log_level="info",
     propagate=False,
+    compatibility_mode=True,  # Enable stdlib compatibility
 )
+```
+
+### `register_compatibility_mode(compatibility_mode: bool) -> None`
+
+Register the compatibility mode setting for stdlib drop-in replacement.
+
+This sets the compatibility mode that will be used when creating loggers. If not set, the library defaults to False (improved behavior).
+
+When `compatibility_mode` is True, restores stdlib-compatible behavior where possible (e.g., `getLogger(None)` returns root logger instead of auto-inferring).
+
+**Parameters:**
+- `compatibility_mode` (bool): Compatibility mode setting (True or False). When True, enables stdlib-compatible behavior.
+
+**Example:**
+```python
+from apathetic_logging import register_compatibility_mode
+
+register_compatibility_mode(compatibility_mode=True)
+# Now getLogger(None) returns root logger (stdlib behavior)
+```
+
+### `get_compatibility_mode() -> bool`
+
+Get the compatibility mode setting.
+
+Returns the registered compatibility mode setting, or False (improved behavior) if not registered.
+
+**Returns:**
+- `bool`: Compatibility mode setting (True or False). Defaults to `False` if not registered.
+
+**Example:**
+```python
+from apathetic_logging import get_compatibility_mode
+
+compat_mode = get_compatibility_mode()
+print(compat_mode)  # False (default)
 ```
 
 ### `register_log_level_env_vars(env_vars: list[str]) -> None`
@@ -808,6 +846,17 @@ logger = get_logger("")  # Returns root logger
 
 **Why this change:** Auto-inference makes it easier to use the logger without explicitly registering a name, while still allowing explicit root logger access via `""`.
 
+**Compatibility Mode:** If you need stdlib-compatible behavior where `getLogger(None)` returns the root logger, you can enable compatibility mode:
+
+```python
+from apathetic_logging import register_compatibility_mode
+
+register_compatibility_mode(compatibility_mode=True)
+# Now getLogger(None) returns root logger (stdlib behavior)
+```
+
+See `register_compatibility_mode()` for more details.
+
 ## CamelCase API Reference
 
 The CamelCase API provides compatibility with existing codebases and follows the naming conventions of Python's standard library `logging` module. All functions behave identically to their snake_case counterparts.
@@ -816,10 +865,11 @@ The CamelCase API provides compatibility with existing codebases and follows the
 
 - `getLogger(name: str | None = None, *, level: str | int | None = None, minimum: bool | None = None) -> Logger` — Same as `get_logger()`
 - `getLoggerOfType(name: str | None, class_type: type[Logger], skip_frames: int = 1, *args: Any, level: str | int | None = None, minimum: bool | None = None, **kwargs: Any) -> Logger` — Same as `get_logger_of_type()`
-- `registerLogger(logger_name: str | None = None, logger_class: type[Logger] | None = None, *, target_python_version: tuple[int, int] | None = None, log_level_env_vars: list[str] | None = None, default_log_level: str | None = None, propagate: bool | None = None) -> None` — Same as `register_logger()`
+- `registerLogger(logger_name: str | None = None, logger_class: type[Logger] | None = None, *, target_python_version: tuple[int, int] | None = None, log_level_env_vars: list[str] | None = None, default_log_level: str | None = None, propagate: bool | None = None, compatibility_mode: bool | None = None) -> None` — Same as `register_logger()`
 - `registerLogLevelEnvVars(env_vars: list[str] | None) -> None` — Same as `register_log_level_env_vars()`
 - `registerDefaultLogLevel(default_level: str | None) -> None` — Same as `register_default_log_level()`
 - `registerTargetPythonVersion(version: tuple[int, int] | None) -> None` — Same as `register_target_python_version()`
+- `registerCompatibilityMode(*, compatibility_mode: bool | None) -> None` — Same as `register_compatibility_mode()`
 - `registerPropagate(*, propagate: bool | None) -> None` — Same as `register_propagate()`
 - `safeLog(msg: str) -> None` — Same as `safe_log()`
 - `safeTrace(label: str, *args: Any, icon: str = "🧪") -> None` — Same as `safe_trace()`
@@ -831,6 +881,7 @@ The CamelCase API provides compatibility with existing codebases and follows the
 - `getDefaultLogLevel() -> str` — Same as `get_default_log_level()`
 - `getRegisteredLoggerName() -> str | None` — Same as `get_registered_logger_name()`
 - `getTargetPythonVersion() -> tuple[int, int]` — Same as `get_target_python_version()`
+- `getCompatibilityMode() -> bool` — Same as `get_compatibility_mode()`
 - `getDefaultPropagate() -> bool` — Same as `get_default_propagate()`
 
 ### Wrapped stdlib Functions (CamelCase)
