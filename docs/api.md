@@ -92,7 +92,7 @@ logger = getLoggerOfType("my_app", AppLogger, level="debug")
 logger = getLoggerOfType("my_app", AppLogger, level="info", minimum=True)
 ```
 
-### `registerLogger(logger_name: str | None = None, logger_class: type[Logger] | None = None, *, target_python_version: tuple[int, int] | None = None, log_level_env_vars: list[str] | None = None, default_log_level: str | None = None, propagate: bool | None = None, compatibility_mode: bool | None = None) -> None`
+### `registerLogger(logger_name: str | None = None, logger_class: type[Logger] | None = None, *, target_python_version: tuple[int, int] | None = None, log_level_env_vars: list[str] | None = None, default_log_level: str | None = None, propagate: bool | None = None, compat_mode: bool | None = None) -> None`
 
 Register a logger for use by `getLogger()`. This registers the logger name and extends the logging module with custom levels if needed.
 
@@ -107,7 +107,7 @@ If `logger_class` is provided and has an `extendLoggingModule()` method, it will
 - `log_level_env_vars` (list[str] | None): Optional list of environment variable names to check for log level. If provided, sets the log level environment variables in the registry permanently. Defaults to None (no change).
 - `default_log_level` (str | None): Optional default log level name. If provided, sets the default log level in the registry permanently. Defaults to None (no change).
 - `propagate` (bool | None): Optional propagate setting. If provided, sets the propagate value in the registry permanently. If None, uses registered propagate setting or falls back to DEFAULT_PROPAGATE from constants.py. Defaults to None (no change).
-- `compatibility_mode` (bool | None): Optional compatibility mode setting. If provided, sets the compatibility mode in the registry permanently. When True, restores stdlib-compatible behavior where possible (e.g., `getLogger(None)` returns root logger). If None, uses registered compatibility mode setting or defaults to False (improved behavior). Defaults to None (no change).
+- `compat_mode` (bool | None): Optional compatibility mode setting. If provided, sets the compatibility mode in the registry permanently. When True, restores stdlib-compatible behavior where possible (e.g., `getLogger(None)` returns root logger). If None, uses registered compatibility mode setting or defaults to False (improved behavior). Defaults to None (no change).
 
 **Example:**
 ```python
@@ -132,26 +132,26 @@ registerLogger(
     log_level_env_vars=["MYAPP_LOG_LEVEL", "LOG_LEVEL"],
     default_log_level="info",
     propagate=False,
-    compatibility_mode=True,  # Enable stdlib compatibility
+    compat_mode=True,  # Enable stdlib compatibility
 )
 ```
 
-### `registerCompatibilityMode(compatibility_mode: bool) -> None`
+### `registerCompatibilityMode(compat_mode: bool) -> None`
 
 Register the compatibility mode setting for stdlib drop-in replacement.
 
 This sets the compatibility mode that will be used when creating loggers. If not set, the library defaults to False (improved behavior).
 
-When `compatibility_mode` is True, restores stdlib-compatible behavior where possible (e.g., `getLogger(None)` returns root logger instead of auto-inferring).
+When `compat_mode` is True, restores stdlib-compatible behavior where possible (e.g., `getLogger(None)` returns root logger instead of auto-inferring).
 
 **Parameters:**
-- `compatibility_mode` (bool): Compatibility mode setting (True or False). When True, enables stdlib-compatible behavior.
+- `compat_mode` (bool): Compatibility mode setting (True or False). When True, enables stdlib-compatible behavior.
 
 **Example:**
 ```python
 from apathetic_logging import registerCompatibilityMode
 
-registerCompatibilityMode(compatibility_mode=True)
+registerCompatibilityMode(compat_mode=True)
 # Now getLogger(None) returns root logger (stdlib behavior)
 ```
 
@@ -851,7 +851,7 @@ logger = getLogger("")  # Returns root logger
 ```python
 from apathetic_logging import registerCompatibilityMode
 
-registerCompatibilityMode(compatibility_mode=True)
+registerCompatibilityMode(compat_mode=True)
 # Now getLogger(None) returns root logger (stdlib behavior)
 ```
 

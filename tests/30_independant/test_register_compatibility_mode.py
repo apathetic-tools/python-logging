@@ -13,7 +13,7 @@ def test_register_compatibility_mode_stores_value() -> None:
     compatibility_mode = True
 
     # --- execute ---
-    mod_alogs.registerCompatibilityMode(compatibility_mode=compatibility_mode)
+    mod_alogs.registerCompatibilityMode(compat_mode=compatibility_mode)
 
     # --- verify ---
     _registry = mod_registry.ApatheticLogging_Internal_RegistryData
@@ -23,10 +23,10 @@ def test_register_compatibility_mode_stores_value() -> None:
 def test_register_compatibility_mode_overwrites_previous() -> None:
     """register_compatibility_mode() should overwrite previous value."""
     # --- setup ---
-    mod_alogs.registerCompatibilityMode(compatibility_mode=True)
+    mod_alogs.registerCompatibilityMode(compat_mode=True)
 
     # --- execute ---
-    mod_alogs.registerCompatibilityMode(compatibility_mode=False)
+    mod_alogs.registerCompatibilityMode(compat_mode=False)
 
     # --- verify ---
     _registry = mod_registry.ApatheticLogging_Internal_RegistryData
@@ -36,12 +36,12 @@ def test_register_compatibility_mode_overwrites_previous() -> None:
 def test_register_compatibility_mode_accepts_none() -> None:
     """register_compatibility_mode() should accept None and return early."""
     # --- setup ---
-    mod_alogs.registerCompatibilityMode(compatibility_mode=True)
+    mod_alogs.registerCompatibilityMode(compat_mode=True)
     _registry = mod_registry.ApatheticLogging_Internal_RegistryData
     original_value = _registry.registered_internal_compatibility_mode
 
     # --- execute ---
-    mod_alogs.registerCompatibilityMode(compatibility_mode=None)
+    mod_alogs.registerCompatibilityMode(compat_mode=None)
 
     # --- verify ---
     # Should not have changed the value
@@ -54,7 +54,7 @@ def test_register_compatibility_mode_accepts_boolean_values(
 ) -> None:
     """register_compatibility_mode() should accept True and False."""
     # --- execute ---
-    mod_alogs.registerCompatibilityMode(compatibility_mode=compatibility_mode)
+    mod_alogs.registerCompatibilityMode(compat_mode=compatibility_mode)
 
     # --- verify ---
     _registry = mod_registry.ApatheticLogging_Internal_RegistryData
@@ -67,7 +67,7 @@ def test_register_compatibility_mode_snake_case() -> None:
     compatibility_mode = True
 
     # --- execute ---
-    mod_alogs.registerCompatibilityMode(compatibility_mode=compatibility_mode)
+    mod_alogs.registerCompatibilityMode(compat_mode=compatibility_mode)
 
     # --- verify ---
     _registry = mod_registry.ApatheticLogging_Internal_RegistryData

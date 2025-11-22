@@ -80,13 +80,13 @@ def test_register_logger_with_compatibility_mode() -> None:
 
     try:
         # --- execute ---
-        mod_alogs.registerLogger("test_package", compatibility_mode=True)
+        mod_alogs.registerLogger("test_package", compat_mode=True)
 
         # --- verify ---
         assert _registry.registered_internal_compatibility_mode is True
 
         # Change via registerLogger
-        mod_alogs.registerLogger("test_package", compatibility_mode=False)
+        mod_alogs.registerLogger("test_package", compat_mode=False)
         assert _registry.registered_internal_compatibility_mode is False
     finally:
         # Reset
@@ -102,7 +102,7 @@ def test_register_logger_snake_case_with_compatibility_mode() -> None:
 
     try:
         # --- execute ---
-        mod_alogs.registerLogger("test_package", compatibility_mode=True)
+        mod_alogs.registerLogger("test_package", compat_mode=True)
 
         # --- verify ---
         assert _registry.registered_internal_compatibility_mode is True

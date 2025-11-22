@@ -24,11 +24,11 @@ def test_get_compatibility_mode_returns_registered_value() -> None:
     _registry.registered_internal_compatibility_mode = None
 
     # Register True
-    mod_alogs.registerCompatibilityMode(compatibility_mode=True)
+    mod_alogs.registerCompatibilityMode(compat_mode=True)
     assert mod_alogs.getCompatibilityMode() is True
 
     # Change to False
-    mod_alogs.registerCompatibilityMode(compatibility_mode=False)
+    mod_alogs.registerCompatibilityMode(compat_mode=False)
     assert mod_alogs.getCompatibilityMode() is False
 
     # Reset

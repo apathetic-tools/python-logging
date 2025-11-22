@@ -102,7 +102,7 @@ class ApatheticLogging_Internal_Registry:  # noqa: N801  # pyright: ignore[repor
         log_level_env_vars: list[str] | None = None,
         default_log_level: str | None = None,
         propagate: bool | None = None,
-        compatibility_mode: bool | None = None,
+        compat_mode: bool | None = None,
     ) -> None:
         """Register a logger for use by getLogger().
 
@@ -148,7 +148,7 @@ class ApatheticLogging_Internal_Registry:  # noqa: N801  # pyright: ignore[repor
                 value in the registry permanently. If None, uses registered propagate
                 setting or falls back to DEFAULT_PROPAGATE from constants.py.
                 Defaults to None (no change).
-            compatibility_mode: Optional compatibility mode setting. If provided, sets
+            compat_mode: Optional compatibility mode setting. If provided, sets
                 the compatibility mode in the registry permanently. When True, restores
                 stdlib-compatible behavior where possible (e.g., getLogger(None) returns
                 root logger). If None, uses registered compatibility mode setting or
@@ -187,7 +187,7 @@ class ApatheticLogging_Internal_Registry:  # noqa: N801  # pyright: ignore[repor
         _registry.registerLogLevelEnvVars(log_level_env_vars)
         _registry.registerDefaultLogLevel(default_log_level)
         _registry.registerPropagate(propagate=propagate)
-        _registry.registerCompatibilityMode(compatibility_mode=compatibility_mode)
+        _registry.registerCompatibilityMode(compat_mode=compat_mode)
 
         # Import Logger locally to avoid circular import
 
@@ -302,34 +302,34 @@ class ApatheticLogging_Internal_Registry:  # noqa: N801  # pyright: ignore[repor
         )
 
     @staticmethod
-    def registerCompatibilityMode(*, compatibility_mode: bool | None) -> None:
+    def registerCompatibilityMode(*, compat_mode: bool | None) -> None:
         """Register the compatibility mode setting for stdlib drop-in replacement.
 
         This sets the compatibility mode that will be used when creating loggers.
         If not set, the library defaults to False (improved behavior).
 
-        When compatibility_mode is True, restores stdlib-compatible behavior where
+        When compat_mode is True, restores stdlib-compatible behavior where
         possible (e.g., getLogger(None) returns root logger instead of auto-inferring).
 
         Args:
-            compatibility_mode: Compatibility mode setting (True or False). If None,
+            compat_mode: Compatibility mode setting (True or False). If None,
                 returns immediately without making any changes.
 
         Example:
             >>> from apathetic_logging import registerCompatibilityMode
-            >>> registerCompatibilityMode(compatibility_mode=True)
+            >>> registerCompatibilityMode(compat_mode=True)
             >>> # Now getLogger(None) returns root logger (stdlib behavior)
         """
-        if compatibility_mode is None:
+        if compat_mode is None:
             return
 
         _registry_data = ApatheticLogging_Internal_RegistryData
         _safe_logging = ApatheticLogging_Internal_SafeLogging
 
-        _registry_data.registered_internal_compatibility_mode = compatibility_mode
+        _registry_data.registered_internal_compatibility_mode = compat_mode
         _safe_logging.safeTrace(
             "registerCompatibilityMode() called",
-            f"compatibility_mode={compatibility_mode}",
+            f"compat_mode={compat_mode}",
         )
 
     @staticmethod
