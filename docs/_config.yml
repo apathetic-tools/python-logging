@@ -29,7 +29,7 @@ remote_theme: jekyll/minima
 
 # Minima theme settings
 minima:
-  skin: auto  # Auto-detects system preference, defaults to dark
+  skin: solarized
 
   # Navigation
   nav_pages:

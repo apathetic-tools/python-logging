@@ -1,4 +1,4 @@
-/* Sticky header styles */
+/* Sticky header styles - only override positioning and background */
 .site-header {
   position: fixed;
   top: 0;
@@ -6,16 +6,16 @@
   right: 0;
   width: 100%;
   z-index: 1000;
-  /* Background color adapts to theme */
-  background-color: var(--bg-color, #fff);
+  /* Background color adapts to theme (solarized provides --bg-color) */
+  background-color: var(--bg-color, #fdf6e3); /* Solarized light base3 fallback */
   /* Add subtle shadow for depth */
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-/* Dark mode support */
+/* Dark mode support - solarized is adaptive, but keep for fallback */
 @media (prefers-color-scheme: dark) {
   .site-header {
-    background-color: var(--bg-color, #1a1a1a);
+    background-color: var(--bg-color, #002b36); /* Solarized dark base03 fallback */
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
   }
 }
