@@ -1,4 +1,4 @@
-# Apathetic Python Logger 📝
+# Apathetic Python Logging 📝
 
 [![CI](https://github.com/apathetic-tools/python-logs/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/goldilocks/python-logs/actions/workflows/ci.yml)
 [![License: MIT-a-NOAI](https://img.shields.io/badge/License-MIT--a--NOAI-blueviolet.svg)](LICENSE)

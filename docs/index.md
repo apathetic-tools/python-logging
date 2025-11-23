@@ -4,7 +4,7 @@ title: Home
 permalink: /
 ---
 
-# Apathetic Python Logger
+# Apathetic Python Logging
 
 **Minimal wrapper for the Python standard library logger.**  
 *Because consistent logging shouldn't require large dependencies.*

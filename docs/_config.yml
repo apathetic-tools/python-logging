@@ -1,7 +1,7 @@
 # Jekyll configuration for GitHub Pages
 # general config reference: https://jekyllrb.com/docs/configuration/
 
-title: Apathetic Python Logger 📝
+title: Apathetic Python Logging 📝
 description: Because consistent logging shouldn’t require large dependencies
 url: https://apathetic-tools.github.io
 baseurl: /python-logging
@@ -76,7 +76,7 @@ license:
 # Build settings
 lsi: false  # GHP locked value
 safe: true  # GHP locked value
-source: ["docs"]  # GHP locked value
+source: ["docs"]  # GHP locked value  # may need to to comment for local dev
 incremental: false  # GHP locked value
 highlighter: rouge  # GHP locked value
 gist:  # GHP locked value

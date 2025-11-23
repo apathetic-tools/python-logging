@@ -260,3 +260,6 @@ Desktop.ini
 .claude/settings.local.json
 .plans/*
 .plan/*
+
+# Jenkyl documentation
+docs/_site/
