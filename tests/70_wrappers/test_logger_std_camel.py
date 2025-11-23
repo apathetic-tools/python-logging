@@ -23,8 +23,9 @@ TEST_LEVEL_VALUE = 26
 validate_test_level(TEST_LEVEL_VALUE)
 
 # List of all stdlib module-level camelCase functions and their test parameters
-# Format: (function_name, args, kwargs, mock_target, min_python_version)
-# min_python_version is (major, minor) tuple or None if available in MIN_PYTHON_VERSION+
+# Format: (function_name, args, kwargs, mock_target, target_python_version)
+# target_python_version is (major, minor) tuple or None if available in
+# TARGET_PYTHON_VERSION+
 MODULE_STD_CAMEL_TESTS: list[
     tuple[str, tuple[object, ...], dict[str, object], str, tuple[int, int] | None]
 ] = [
@@ -63,7 +64,7 @@ MODULE_STD_CAMEL_TESTS: list[
 
 
 @pytest.mark.parametrize(
-    ("func_name", "args", "kwargs", "mock_target", "min_version"),
+    ("func_name", "args", "kwargs", "mock_target", "targ_version"),
     MODULE_STD_CAMEL_TESTS,
 )
 def test_module_std_camel_function(  # noqa: PLR0915
@@ -71,7 +72,7 @@ def test_module_std_camel_function(  # noqa: PLR0915
     args: tuple[object, ...],
     kwargs: dict[str, object],
     mock_target: str,
-    min_version: tuple[int, int] | None,
+    targ_version: tuple[int, int] | None,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Test module-level stdlib camelCase functions call camelCase function.
@@ -79,7 +80,7 @@ def test_module_std_camel_function(  # noqa: PLR0915
     This is a "happy path" test that verifies each camelCase wrapper function
     exists and calls the underlying stdlib function correctly.
 
-    For functions with min_version > MIN_PYTHON_VERSION, also tests that they raise
+    For functions with targ_version > TARGET_PYTHON_VERSION, also tests that they raise
     NotImplementedError on older versions by mocking sys.version_info.
     """
     # Get the camelCase function
@@ -89,10 +90,10 @@ def test_module_std_camel_function(  # noqa: PLR0915
     )
 
     # For functions with version requirements, test exception case
-    if min_version is not None:
+    if targ_version is not None:
         # Mock an older target version to test that NotImplementedError is raised
         # Also mock sys.version_info in logging_utils for runtime check
-        older_version = (min_version[0], min_version[1] - 1)
+        older_version = (targ_version[0], targ_version[1] - 1)
         _registry = mod_registry_data.ApatheticLogging_Internal_RegistryData
         original_target = _registry.registered_internal_target_python_version
         _registry.registered_internal_target_python_version = older_version
@@ -110,16 +111,16 @@ def test_module_std_camel_function(  # noqa: PLR0915
             monkeypatch.undo()
 
     # Test the success case (either naturally or by mocking to sufficient version)
-    if min_version is not None and sys.version_info < min_version:
+    if targ_version is not None and sys.version_info < targ_version:
         # If we're actually on an older version, mock to a sufficient version
         # Set target version and mock runtime version
         _registry = mod_registry_data.ApatheticLogging_Internal_RegistryData
         original_target = _registry.registered_internal_target_python_version
-        _registry.registered_internal_target_python_version = min_version
+        _registry.registered_internal_target_python_version = targ_version
         monkeypatch.setattr(
             mod_logging_utils.sys,  # type: ignore[attr-defined]
             "version_info",
-            create_version_info(min_version[0], min_version[1], 0),
+            create_version_info(targ_version[0], targ_version[1], 0),
         )
         try:
             # Use patch_everywhere with create_if_missing=True for missing functions
@@ -147,11 +148,11 @@ def test_module_std_camel_function(  # noqa: PLR0915
         # Ensure target version is set appropriately if this function has a min version
         _registry = mod_registry_data.ApatheticLogging_Internal_RegistryData
         original_target = _registry.registered_internal_target_python_version
-        if min_version is not None and (
-            original_target is None or original_target < min_version
+        if targ_version is not None and (
+            original_target is None or original_target < targ_version
         ):
-            # Set target version to at least min_version to allow the function to work
-            _registry.registered_internal_target_python_version = min_version
+            # Set target version to at least targ_version to allow the function to work
+            _registry.registered_internal_target_python_version = targ_version
         try:
             # Use patch_everywhere with create_if_missing=True for missing functions
             module_name, func_name_in_module = mock_target.rsplit(".", 1)
@@ -176,7 +177,7 @@ def test_module_std_camel_function(  # noqa: PLR0915
             # Verify the underlying function was called
             mock_func.assert_called_once_with(*args, **kwargs)
         finally:
-            if min_version is not None:
+            if targ_version is not None:
                 _registry.registered_internal_target_python_version = original_target
             monkeypatch.undo()
 

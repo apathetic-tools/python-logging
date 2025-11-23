@@ -43,7 +43,7 @@ class ApatheticLogging_Internal_RegistryData:  # noqa: N801  # pyright: ignore[r
     registered_internal_target_python_version: tuple[int, int] | None = None
     """Target Python version (major, minor) for compatibility checking.
 
-    If None, falls back to MIN_PYTHON_VERSION from constants.py.
+    If None, falls back to TARGET_PYTHON_VERSION from constants.py.
     Used to validate function calls against target version, not just runtime version.
     """
     registered_internal_propagate: bool | None = None

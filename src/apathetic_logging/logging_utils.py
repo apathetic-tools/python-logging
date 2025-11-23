@@ -333,14 +333,14 @@ class ApatheticLogging_Internal_LoggingUtils:  # noqa: N801  # pyright: ignore[r
         This method validates that a function requiring a specific Python version
         can be called safely. It checks:
         1. Target version (if set via registerTargetPythonVersion), otherwise
-           falls back to MIN_PYTHON_VERSION from constants
+           falls back to TARGET_PYTHON_VERSION from constants
         2. Runtime version (as a safety net to catch actual runtime issues)
 
         This allows developers to catch version incompatibilities during development
         even when running on a newer Python version than their target.
 
         Args:
-            required_version: Minimum Python version required (major, minor) tuple
+            required_version: Target Python version required (major, minor) tuple
             function_name: Name of the function being checked (for error messages)
 
         Raises:
@@ -364,10 +364,10 @@ class ApatheticLogging_Internal_LoggingUtils:  # noqa: N801  # pyright: ignore[r
         _registry_data = ApatheticLogging_Internal_RegistryData
 
         # Determine effective target version
-        # If target version is set, use it; otherwise fall back to MIN_PYTHON_VERSION
+        # If target version is set, use it; otherwise fall back to TARGET_PYTHON_VERSION
         target_version = _registry_data.registered_internal_target_python_version
         if target_version is None:
-            target_version = _constants.MIN_PYTHON_VERSION
+            target_version = _constants.TARGET_PYTHON_VERSION
 
         # Check target version first (primary check)
         # Skip check if target_version is None (checks disabled)

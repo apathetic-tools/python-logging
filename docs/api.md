@@ -208,7 +208,7 @@ Register the target Python version for compatibility checking.
 
 This sets the global target Python version that the library will use when checking for feature availability. Functions requiring a newer Python version than the registered target will raise a `NotImplementedError`, even if the runtime Python version is sufficient.
 
-If not set, the library defaults to `MIN_PYTHON_VERSION` (3.10) from constants.py.
+If not set, the library defaults to `TARGET_PYTHON_VERSION` (3.10) from constants.py.
 
 **Parameters:**
 - `version` (tuple[int, int] | None): A tuple (major, minor) representing the target Python version (e.g., `(3, 10)` for Python 3.10). If None, the registration is skipped.

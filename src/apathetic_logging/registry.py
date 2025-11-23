@@ -237,7 +237,7 @@ class ApatheticLogging_Internal_Registry:  # noqa: N801  # pyright: ignore[repor
         the target version, it will raise a NotImplementedError even if
         the runtime version is sufficient.
 
-        If not set, the library defaults to MIN_PYTHON_VERSION (3, 10) from
+        If not set, the library defaults to TARGET_PYTHON_VERSION (3, 10) from
         constants.py. This allows developers to catch version incompatibilities
         during development even when running on a newer Python version than
         their target.
@@ -430,7 +430,7 @@ class ApatheticLogging_Internal_Registry:  # noqa: N801  # pyright: ignore[repor
 
         Returns:
             Target Python version as (major, minor) tuple, or None if
-            no version is registered and MIN_PYTHON_VERSION is None
+            no version is registered and TARGET_PYTHON_VERSION is None
             (checks disabled).
 
         Example:
@@ -451,7 +451,7 @@ class ApatheticLogging_Internal_Registry:  # noqa: N801  # pyright: ignore[repor
 
         return (
             _registry_data.registered_internal_target_python_version
-            or _constants.MIN_PYTHON_VERSION
+            or _constants.TARGET_PYTHON_VERSION
         )
 
     @staticmethod
