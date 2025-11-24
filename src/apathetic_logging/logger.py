@@ -625,13 +625,16 @@ class ApatheticLogging_Internal_LoggerCore(logging.Logger):  # noqa: N801  # pyr
         Args:
             level: Log level to use (string name or numeric value)
             minimum: If True, only set the level if it's more verbose (lower
-                numeric value) than the current level. This prevents downgrading
-                from a more verbose level (e.g., TRACE) to a less verbose one
-                (e.g., DEBUG). Defaults to False.
+                numeric value) than the current effective level. This prevents
+                downgrading from a more verbose level (e.g., TRACE) to a less
+                verbose one (e.g., DEBUG). Compares against effective level
+                (considering parent inheritance), matching setLevel(minimum=True)
+                behavior. Defaults to False.
 
         Yields:
             None: Context manager yields control to the with block
         """
+        # Save explicit level for restoration (not effective level)
         prev_level = self.level
 
         # Resolve level
@@ -656,9 +659,12 @@ class ApatheticLogging_Internal_LoggerCore(logging.Logger):  # noqa: N801  # pyr
 
         # Apply new level (only if more verbose when minimum=True)
         if minimum:
-            # Only set if requested level is more verbose
-            # (lower number) than current
-            if level_no < prev_level:
+            # Compare against effective level (not explicit level) to match
+            # setLevel(minimum=True) behavior. This ensures consistent behavior
+            # when logger inherits level from parent.
+            current_effective_level = self.getEffectiveLevel()
+            # Lower number = more verbose, so only set if new level is more verbose
+            if level_no < current_effective_level:
                 self.setLevel(level_no)
             # Otherwise keep current level (don't downgrade)
         else:

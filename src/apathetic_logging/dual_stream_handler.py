@@ -91,7 +91,10 @@ class ApatheticLogging_Internal_DualStreamHandler:  # noqa: N801  # pyright: ign
             has_test_method = hasattr(logger_instance, "test") and callable(
                 getattr(logger_instance, "test", None)
             )
-            is_test_mode = has_test_method and logger_instance.level == (
+            # Use effective level (not explicit level) to detect TEST mode,
+            # so child loggers that inherit TEST level from parent are correctly
+            # detected
+            is_test_mode = has_test_method and logger_instance.getEffectiveLevel() == (
                 _constants.TEST_LEVEL
             )
 

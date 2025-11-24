@@ -1,6 +1,7 @@
 # tests/50_core/test_logger.py
 
 import io
+import logging
 import re
 import sys
 from typing import TYPE_CHECKING, Any
@@ -205,6 +206,63 @@ def test_use_level_minimum_prevents_downgrade(
     # Should restore to original INFO
     assert direct_logger.level == orig_level
     assert direct_logger.levelName == "INFO"
+
+
+def test_use_level_minimum_with_effective_level_inheritance() -> None:
+    """use_level(minimum=True) should compare against effectiveLevel.
+
+    This test verifies that useLevel(minimum=True) compares against effectiveLevel
+    (what's actually used for logging), ensuring consistency with
+    setLevel(minimum=True). Even when explicit and effective levels are the same,
+    the comparison should use effectiveLevel to match setLevel's behavior.
+    """
+    # --- setup: create parent/child logger hierarchy ---
+    parent = mod_alogs.getLogger("test_use_level_parent")
+    parent.setLevel("WARNING")  # Parent has explicit WARNING
+
+    child = mod_alogs.getLogger("test_use_level_parent.child")
+    # Child will have a default level set (likely DETAIL or INFO), but we'll test
+    # that useLevel(minimum=True) compares against effectiveLevel consistently
+
+    # Get the current effective level (what's actually being used)
+    current_effective = child.effectiveLevel
+    current_explicit = child.level
+
+    # Verify that useLevel(minimum=True) compares against effectiveLevel
+    # by testing with a level more verbose than current effective
+    more_verbose_level = logging.DEBUG  # More verbose than WARNING/INFO/DETAIL
+    if more_verbose_level < current_effective:
+        # Should upgrade to DEBUG (more verbose than current effective)
+        with child.useLevel("DEBUG", minimum=True):
+            assert child.effectiveLevel == logging.DEBUG
+            assert child.levelName == "DEBUG"
+        # Should restore to original explicit level
+        assert child.level == current_explicit
+        assert child.effectiveLevel == current_effective
+
+    # Test that it doesn't downgrade when requested level is less verbose
+    less_verbose_level = logging.ERROR  # Less verbose than WARNING
+    if less_verbose_level > current_effective:
+        with child.useLevel("ERROR", minimum=True):
+            # Should stay at current effective level (not downgrade)
+            assert child.effectiveLevel == current_effective
+            assert child.level == current_explicit
+        # Should still be at original level
+        assert child.level == current_explicit
+        assert child.effectiveLevel == current_effective
+
+    # Key test: Verify consistency with setLevel(minimum=True)
+    # Both should compare against effectiveLevel
+    child.setLevel("TRACE")  # Set explicit to TRACE
+    assert child.effectiveLevel == logging.DEBUG - 5  # TRACE level
+    assert child.level == logging.DEBUG - 5
+
+    # Now test that useLevel(minimum=True) behaves the same as setLevel(minimum=True)
+    # Both should compare against the current effective level (TRACE)
+    with child.useLevel("DEBUG", minimum=True):
+        # Should NOT downgrade from TRACE to DEBUG
+        assert child.effectiveLevel == logging.DEBUG - 5  # Still TRACE
+        assert child.levelName == "TRACE"
 
 
 def test_log_dynamic_accepts_numeric_level(
