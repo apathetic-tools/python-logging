@@ -1,9 +1,9 @@
 # pyproject.toml
 
 [project]
-name = "apathetic-logger"
+name = "apathetic-logging"
 version = "0.1.0"
-description = "Minimal wrapper for the Stdlib Logger"
+description = "Because consistent logging shouldn't require large dependencies. "
 authors = [
     {name = "Apathetic Tools"}
 ]
