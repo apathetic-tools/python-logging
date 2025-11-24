@@ -117,6 +117,9 @@ Complete API documentation for Apathetic Python Logger.
 
 All other methods from `logging.Logger` are inherited unchanged. See the [Python logging.Logger documentation](https://docs.python.org/3/library/logging.html#logging.Logger) for the complete list.
 
+**Version-specific methods:**
+- [`getChildren()`](#getchildren) - 3.12+: Return a set of loggers that are immediate children of this logger
+
 ## `apathetic_logging` Function Reference
 
 ### getLogger
@@ -1529,6 +1532,42 @@ parent.setLevel("info")
 child = getLogger("parent.child")
 print(child.getEffectiveLevelName())  # "INFO" (from parent)
 ```
+
+### getChildren
+
+```python
+getChildren() -> set[logging.Logger]
+```
+
+**Requires Python 3.12+**
+
+Return a set of loggers that are immediate children of this logger.
+
+This method returns only the direct children of the logger (loggers whose names are one level deeper in the hierarchy). For example, if you have loggers named `foo`, `foo.bar`, and `foo.bar.baz`, calling `getLogger("foo").getChildren()` will return a set containing only the `foo.bar` logger, not `foo.bar.baz`.
+
+**Returns:**
+- `set[logging.Logger]`: A set of Logger instances that are immediate children of this logger
+
+**Example:**
+```python
+from apathetic_logging import getLogger
+
+root = getLogger("")
+foo = getLogger("foo")
+bar = getLogger("foo.bar")
+baz = getLogger("foo.bar.baz")
+
+# Get immediate children of root logger
+children = root.getChildren()  # {foo logger}
+
+# Get immediate children of foo logger
+children = foo.getChildren()  # {bar logger}
+
+# Get immediate children of bar logger
+children = bar.getChildren()  # {baz logger}
+```
+
+For detailed documentation, see the [Python logging.Logger.getChildren() documentation](https://docs.python.org/3.12/library/logging.html#logging.Logger.getChildren).
 
 ### ensureHandlers
 

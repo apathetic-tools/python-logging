@@ -345,6 +345,7 @@ def test_stdlib_logger_method_coverage() -> None:
         # Utility methods that work fine as-is:
         "findCaller",
         "getChild",
+        "getChildren",
         "getEffectiveLevel",
         "hasHandlers",
         "isEnabledFor",
