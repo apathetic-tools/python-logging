@@ -166,14 +166,54 @@ Apathetic Python Logger ships in two forms:
 | **Single-file script** | `poetry run poe build:script` | Creates `dist/apathetic_logging.py` |
 | **PyPI package** | `poetry build && poetry publish` | Builds and uploads wheel & sdist |
 
-To publish to PyPI:
+### Release Process (CLI)
 
-```bash
-poetry build
-poetry publish --username __token__ --password <your-pypi-token>
-```
+To create a new release:
 
-> Verify the package on [Test PyPI](https://test.pypi.org/) before publishing live.
+1. **Bump version** in `pyproject.toml`:
+   ```bash
+   # Edit pyproject.toml and update: version = "X.Y.Z"
+   ```
+
+2. **Update RELEASES.md** with the new version section:
+   ```bash
+   # Add a new section at the top with version, date, and changes
+   ```
+
+3. **Commit the changes**:
+   ```bash
+   git add pyproject.toml RELEASES.md
+   git commit -m "chore: bump version to X.Y.Z"
+   ```
+
+4. **Create and push the git tag**:
+   ```bash
+   git tag -a vX.Y.Z -m "Release vX.Y.Z - Description"
+   git push origin main
+   git push origin vX.Y.Z
+   ```
+
+5. **Build the single-file script**:
+   ```bash
+   poetry run poe build:script
+   ```
+   This creates `dist/apathetic_logging.py` which should be attached to the GitHub release.
+
+6. **Build and publish to PyPI** (if needed):
+   ```bash
+   poetry build
+   poetry publish --username __token__ --password <your-pypi-token>
+   ```
+
+7. **Create GitHub release** (if not automated):
+   - Go to GitHub Releases page
+   - Click "Draft a new release"
+   - Select the tag you just pushed
+   - Copy the release notes from `RELEASES.md`
+   - Attach `dist/apathetic_logging.py` (single-file build)
+   - Publish the release
+
+> **Note:** Verify the package on [Test PyPI](https://test.pypi.org/) before publishing live.
 
 The single-file version should be attached to GitHub releases for direct download.
 

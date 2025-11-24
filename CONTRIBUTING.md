@@ -33,123 +33,18 @@ poetry run poe check:fix
 
 ---
 
-## 🐍 Supported Python Versions
+## 📦 Publishing (for maintainers)
 
-Apathetic Python Logger targets **Python 3.10+**.  
-That keeps compatibility with Ubuntu 22.04 (the baseline CI OS) while staying modern.  
-See the [decision record #11](DECISIONS.md#dec11) for background on this choice.
+**Release Process:**
+1. Bump version in `pyproject.toml`
+2. Update `RELEASES.md` with new version section
+3. Commit: `git commit -m "chore: bump version to X.Y.Z"`
+4. Tag: `git tag -a vX.Y.Z -m "Release vX.Y.Z - Description"`
+5. Push: `git push origin main && git push origin vX.Y.Z`
+6. Build: `poetry run poe build:script` (for single-file) or `poetry build` (for PyPI)
+7. Publish: `poetry publish` (if needed) and create GitHub release with `dist/apathetic_logging.py`
 
-> The library itself has **no runtime dependencies** — only dev tools use Poetry.
-
----
-
-## 🧰 Setting Up the Environment
-
-We use **[Poetry](https://python-poetry.org/)** for dependency and task management.
-
-### 1️⃣ Install Poetry
-
-```bash
-curl -sSL https://install.python-poetry.org | python3 -
-poetry --version
-```
-
-If Poetry isn't on your `PATH`, add it to your shell configuration (usually `~/.bashrc` or `~/.zshrc`):
-
-```bash
-export PATH="$HOME/.local/bin:$PATH"
-```
-
-### 2️⃣ Install Dependencies
-
-```bash
-poetry install --with dev
-```
-
-This creates an isolated virtual environment with Ruff, Mypy, pytest, and Poe tasks.
-
----
-
----
-
-## 🔗 Pre-commit Hook
-
-Pre-commit is configured to run **`poe fix`** on each commit,  
-and **`poe check`** before every push.  
-This keeps your local commits tidy and ensures CI stays green.
-
-Install the hook once:
-
-```bash
-poetry run pre-commit install --install-hooks
-poetry run pre-commit install --hook-type pre-push
-```
-
-If any linter, type check, or test fails, the commit is blocked. It may have auto-fixed the problem, try commiting again before troubleshooting.
-
-### 🧩 Fixing the `setlocale` Warning
-
-If your terminal or Git log shows:
-
-```
-bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
-```
-
-it means your system doesn't have the `en_US.UTF-8` locale generated.
-
-Run the following commands in your terminal:
-
-```bash
-sudo locale-gen en_US.UTF-8
-sudo update-locale LANG=en_US.UTF-8
-```
-
-Then restart your shell or VS Code terminal.
-
----
-
-## 🧪 Testing
-
-Run the test suite directly:
-
-```bash
-poetry run poe test
-```
-
-Pytest will discover all files in `tests/` automatically.
-
----
-
-## 📦 Building and Publishing (for maintainers)
-
-Apathetic Python Logger ships in two forms:
-
-| Target | Command | Output |
-|---------|----------|--------|
-| **Single-file script** | `poetry run poe build:script` | Creates `dist/apathetic_logging.py` |
-| **PyPI package** | `poetry build && poetry publish` | Builds and uploads wheel & sdist |
-
-To publish to PyPI:
-
-```bash
-poetry build
-poetry publish --username __token__ --password <your-pypi-token>
-```
-
-> Verify the package on [Test PyPI](https://test.pypi.org/) before publishing live.
-
-The single-file version should be attached to GitHub releases for direct download.
-
----
-
-## 🧩 Integration with Apathetic Tools
-
-When contributing, keep in mind that this library is designed to integrate strongly with:
-
-- **[serger](https://github.com/apathetic-tools/serger)** — the module stitching tool
-- Other Apathetic Tools projects
-
-Changes should maintain compatibility with the broader Apathetic Tools ecosystem and work seamlessly in both modular and single-file distributions.
+See [docs/contributing.md](docs/contributing.md) for detailed publishing instructions.
 
 ---
 
