@@ -22,7 +22,6 @@ Exploring bundling options for generating the single-file release:
 - Deploy action when I tag a release should create a release and attach it to the tagged release.
 
 - look into ignores of this one https://docs.astral.sh/ruff/rules/builtin-argument-shadowing/
-- look into if we can make ruff enforce camelcase for function names and method names
 
 ## 🔌 API
 - **Compatibility mode for `getLevelNumber()` unknown level handling** (deferred)
