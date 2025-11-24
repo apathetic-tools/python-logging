@@ -15,6 +15,182 @@ For formatting guidelines, see the [DECISIONS.md Style Guide](./DECISIONS_STYLE_
 ---
 
 
+## 🚀 Adopt `python-semantic-release` for PyPI and GitHub Releases
+<a id="dec12"></a>*DEC 12 — 2025-11-24*
+
+### Context
+
+Managing releases involves coordinating multiple steps: version bumping, changelog generation, PyPI publishing, and GitHub release creation.  
+Manual release workflows are error-prone and time-consuming — especially when maintaining consistency across version numbers, release notes, and distribution artifacts.  
+The project needed an **automated, convention-driven approach** that reduces manual steps while ensuring reliable, reproducible releases.
+
+### Options Considered
+
+| Option | Pros | Cons |
+|--------|------|------|
+| **`python-semantic-release`** | ✅ Automated versioning from conventional commits<br>✅ Generates changelogs automatically<br>✅ Handles PyPI and GitHub releases in one workflow<br>✅ Integrates with CI/CD pipelines<br>✅ Reduces human error in version management | ⚠️ Requires adopting conventional commit format<br>⚠️ Less control over exact release timing |
+| **Manual versioning + `twine`** | ✅ Full control over version and release timing<br>✅ Simple and transparent | ❌ Error-prone manual coordination<br>❌ Time-consuming for each release<br>❌ Risk of version mismatches between files |
+| **`bump2version` + manual releases** | ✅ Automated version bumping<br>✅ Works with existing workflows | ❌ Still requires manual changelog and release creation<br>❌ Doesn't integrate PyPI and GitHub releases |
+| **GitHub Actions only** | ✅ Native GitHub integration | ❌ Requires custom scripting for versioning and changelogs<br>❌ More maintenance overhead |
+
+### Decision
+
+Adopt **`python-semantic-release`** to streamline the release process.  
+It automates version management, changelog generation, PyPI publishing, and GitHub release creation from a single workflow — reducing manual coordination and the risk of version mismatches.  
+By using [Conventional Commits](https://www.conventionalcommits.org/), the tool determines version bumps automatically and generates consistent release notes, making the release process predictable and maintainable.
+
+This aligns with the project's principle of *automation over manual steps* while maintaining transparency through conventional commit messages that document changes clearly.
+
+
+<br/><br/>
+
+---
+
+---
+
+<br/><br/>
+
+## 🔧 Adopt `mise` for Environment Management
+<a id="dec13"></a>*DEC 13 — 2025-11-24*
+
+### Context
+
+The project requires **multiple runtime environments** — Python 3.10+ for the main codebase and Ruby 3.3 for Jekyll documentation.  
+As the Apathetic Tools ecosystem expands, developers need a **unified tool** that can manage both Python and Ruby versions consistently across projects, including Node.js projects.  
+Traditional version managers (e.g., `pyenv`, `rbenv`, `nvm`) require separate installations and configurations, creating friction when working across different language ecosystems.
+
+### Options Considered
+
+| Option | Pros | Cons |
+|--------|------|------|
+| **`mise`** | ✅ Single tool for Python, Ruby, and Node.js<br>✅ Automatic version activation via `.tool-versions`<br>✅ Fast and lightweight<br>✅ Works across all Apathetic Tools projects<br>✅ Simple fallback to system tools | ⚠️ Additional tool to install<br>⚠️ Less familiar than language-specific managers |
+| **`pyenv` + `rbenv` + `nvm`** | ✅ Language-specific, mature tools<br>✅ Widely known and documented | ❌ Three separate tools to install and configure<br>❌ Inconsistent interfaces and workflows<br>❌ No unified project-level configuration |
+| **System package managers only** | ✅ No additional tools required<br>✅ Works out of the box | ❌ Limited version flexibility<br>❌ Inconsistent across platforms<br>❌ Difficult to test multiple versions |
+| **Docker containers** | ✅ Complete isolation<br>✅ Reproducible environments | ❌ Heavyweight for local development<br>❌ Slower iteration cycles<br>❌ More complex setup |
+
+### Decision
+
+Adopt **`mise`** for environment management across the project and Apathetic Tools ecosystem.  
+It provides a **single, consistent interface** for managing Python, Ruby, and Node.js versions — reducing setup complexity and enabling seamless collaboration across projects.  
+The `.tool-versions` file automatically activates the correct versions when entering the project directory, while the tool gracefully falls back to system-installed versions when available.
+
+This choice supports the project's goal of **minimizing friction** for contributors while maintaining flexibility for developers who prefer system tools or other version managers.
+
+
+<br/><br/>
+
+---
+
+---
+
+<br/><br/>
+
+## 📦 Enable PyPI Releases for Package Distribution
+<a id="dec14"></a>*DEC 14 — 2025-11-24*
+
+### Context
+
+Users need a **simple, standard way** to install and manage the library across different environments.  
+While single-file scripts and zipapps provide portability, they don't integrate with Python's standard dependency management ecosystem.  
+The project needed a **canonical distribution format** that works seamlessly with `pip`, `poetry`, and other package managers — making it easy for users to specify version constraints, track updates, and manage dependencies.
+
+### Options Considered
+
+| Option | Pros | Cons |
+|--------|------|------|
+| **PyPI releases** | ✅ Standard Python package distribution<br>✅ Works with `pip`, `poetry`, `pipenv`<br>✅ Easy version management for users<br>✅ Integrates with dependency resolvers<br>✅ Familiar workflow for Python developers | ⚠️ Requires PyPI account and publishing setup<br>⚠️ Users need internet connection to install |
+| **GitHub Releases only** | ✅ Simple distribution via GitHub<br>✅ No external service dependencies | ❌ Doesn't integrate with package managers<br>❌ Manual installation steps required<br>❌ No automatic dependency resolution |
+| **Git submodules or direct Git installs** | ✅ Version control integration<br>✅ Easy to track source | ❌ Not standard for Python packages<br>❌ Complex dependency management<br>❌ Poor user experience |
+| **No formal distribution** | ✅ No publishing overhead | ❌ Difficult for users to install and update<br>❌ No version management<br>❌ Poor discoverability |
+
+### Decision
+
+Enable **PyPI releases** as the primary distribution method for the package.  
+This provides a **standard, familiar installation path** that integrates with Python's ecosystem — allowing users to install via `pip install apathetic-logging` or add it as a dependency in `pyproject.toml` with version constraints.  
+PyPI releases complement the single-file and zipapp distributions by offering the canonical importable package format that works seamlessly with dependency management tools.
+
+This decision prioritizes **user convenience and ecosystem integration** while maintaining the project's other distribution formats for specialized use cases.
+
+
+<br/><br/>
+
+---
+
+---
+
+<br/><br/>
+
+## 📦 Choose `shiv` for Zipapp Support
+<a id="dec15"></a>*DEC 15 — 2025-11-24*
+
+### Context
+
+As part of the three-tier distribution strategy *(see [DEC 10](#dec10))*, the project needed a tool to create **portable zipapp (`.pyz`) distributions** that bundle dependencies and maintain import semantics.  
+Python's standard library `zipapp` module provides basic functionality but requires manual dependency management and doesn't handle entry points or dependency resolution automatically.  
+The project needed a tool that **automatically bundles dependencies** while producing a single, executable archive file.
+
+### Options Considered
+
+| Option | Pros | Cons |
+|--------|------|------|
+| **`shiv`** | ✅ Automatic dependency resolution and bundling<br>✅ Handles entry points and console scripts<br>✅ Produces executable `.pyz` files<br>✅ Integrates with `pyproject.toml`<br>✅ Active maintenance and Python 3.10+ support | ⚠️ Additional dependency for build process |
+| **Standard library `zipapp`** | ✅ No external dependencies<br>✅ Built into Python | ❌ Manual dependency management required<br>❌ No automatic entry point handling<br>❌ More complex build scripts needed |
+| **`pex`** | ✅ Similar functionality to shiv<br>✅ Mature tool with good documentation | ⚠️ Slightly more complex configuration<br>⚠️ Less Python-native feel |
+| **Custom build script** | ✅ Full control over bundling process | ❌ Significant development and maintenance overhead<br>❌ Risk of missing edge cases in dependency resolution |
+
+### Decision
+
+Choose **`shiv`** for zipapp creation.  
+It provides **automatic dependency resolution and bundling** — reading dependencies from `pyproject.toml` and creating a self-contained `.pyz` file that includes all required packages.  
+Shiv's integration with Python packaging standards and its straightforward CLI make it ideal for the project's goal of **minimizing build complexity** while maintaining portability.
+
+This choice supports the three-tier distribution model by providing a reliable, automated way to produce zipapp distributions without manual dependency management or complex build scripts.
+
+
+<br/><br/>
+
+---
+
+---
+
+<br/><br/>
+
+## 📚 Use Jekyll with Minima Theme for Documentation
+<a id="dec16"></a>*DEC 16 — 2025-11-13*
+
+### Context
+
+The project needed a **documentation site** that could be hosted on GitHub Pages with minimal configuration and maintenance overhead.  
+GitHub Pages provides built-in support for Jekyll, making it the most straightforward option for hosting documentation without additional CI/CD setup or external hosting services.  
+The documentation should be **easy to maintain, visually consistent, and automatically deployed** when changes are pushed to the repository.
+
+### Options Considered
+
+| Option | Pros | Cons |
+|--------|------|------|
+| **Jekyll with Minima theme** | ✅ Native GitHub Pages support<br>✅ Automatic deployment on push<br>✅ Minimal configuration required<br>✅ Large ecosystem of plugins<br>✅ Markdown-based content | ⚠️ Requires Ruby for local development<br>⚠️ Less flexible than custom static site generators |
+| **MkDocs** | ✅ Python-based (matches project language)<br>✅ Good documentation tools<br>✅ Easy theme customization | ❌ Requires GitHub Actions for deployment<br>❌ Additional CI/CD configuration |
+| **Sphinx** | ✅ Powerful documentation generation<br>✅ Excellent for API documentation | ❌ More complex setup<br>❌ Requires build step for GitHub Pages<br>❌ Heavier configuration |
+| **Custom static site** | ✅ Full control over design and features | ❌ Significant development overhead<br>❌ Requires custom build and deployment setup |
+| **GitHub Wiki** | ✅ Built into GitHub<br>✅ No setup required | ❌ Limited formatting options<br>❌ No custom domain or branding<br>❌ Less professional appearance |
+
+### Decision
+
+Use **Jekyll with the Minima theme** (configured with the solarized skin) for the documentation site.  
+GitHub Pages' **native Jekyll support** enables automatic deployment without additional CI/CD configuration — documentation updates are published automatically when changes are pushed to the repository.  
+The Minima theme provides a clean, professional appearance with minimal configuration, while Jekyll's plugin ecosystem offers flexibility for future enhancements.
+
+This choice prioritizes **simplicity and zero-maintenance deployment** while providing a solid foundation for documentation that can evolve as the project grows.
+
+
+<br/><br/>
+
+---
+
+---
+
+<br/><br/>
+
 ## 🪵 Adopt Standard Library `logging`
 <a id="dec11"></a>*DEC 11 — 2025-10-15 → revised 2025-10-31*  
 

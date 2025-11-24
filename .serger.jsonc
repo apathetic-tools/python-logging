@@ -6,10 +6,10 @@
   "package": "apathetic_logging",
 
   // Repository URL (appears in generated header)
-  "repo": "https://github.com/apathetic-tools/python-logger",
+  "repo": "https://github.com/apathetic-tools/python-logging",
 
   // License text for stitched output
-  "license": "License: MIT-a-NOAI\nFull text: https://github.com/apathetic-tools/python-logger/blob/main/LICENSE",      
+  "license": "License: MIT-a-NOAI\nFull text: https://github.com/apathetic-tools/python-logging/blob/main/LICENSE",      
 
   // Source modules to include in the stitch
   // These are glob patterns relative to the source directory
