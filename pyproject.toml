@@ -5,10 +5,10 @@ name = "apathetic-logging"
 version = "0.1.0"
 description = "Because consistent logging shouldn't require large dependencies. "
 authors = [
-    {name = "Apathetic Tools"}
+    { name = "Apathetic Tools" }
 ]
 readme = "README.md"
-license = { file = "LICENSE" }
+license-files = ["LICENSE"]
 requires-python = ">=3.10"
 dependencies = [
 ]
@@ -298,7 +298,3 @@ build-backend = "poetry.core.masonry.api"
 [tool.poetry]
 package-mode = true
 packages = [{ include = "apathetic_logging", from = "src" }]
-
-[[tool.poetry.source]]
-name = "testpypi"
-url = "https://test.pypi.org/simple/"
