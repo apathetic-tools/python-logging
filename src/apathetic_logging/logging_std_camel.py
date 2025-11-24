@@ -110,7 +110,7 @@ class ApatheticLogging_Internal_StdCamelCase:  # noqa: N801  # pyright: ignore[r
         logging.addLevelName(level, level_name, *args, **kwargs)
 
     @staticmethod
-    def getLevelName(level: int, *args: Any, **kwargs: Any) -> str:
+    def getLevelName(level: int, *args: Any, **kwargs: Any) -> str | int:
         """Return the textual or numeric representation of a logging level.
 
         If the level is one of the predefined levels (CRITICAL, ERROR, WARNING,

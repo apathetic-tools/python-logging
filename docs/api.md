@@ -37,12 +37,15 @@ Complete API documentation for Apathetic Python Logger.
 | [`getRegisteredLoggerName()`](#getregisteredloggername) | | Get the registered logger name |
 | [`getTargetPythonVersion()`](#gettargetpythonversion) | | Get the target Python version |
 | [`getDefaultPropagate()`](#getdefaultpropagate) | | Get the default propagate setting |
+| [`getLevelNumber()`](#getlevelnumber) | | Convert a log level name to its numeric value |
+| [`getLevelNameStr()`](#getlevelnamestr) | | Convert a log level to its string name (always returns string) |
 
 ### Changed Functions
 
 | Function | Ver | Summary |
 |-----------|-----|---------|
 | [`getLogger()`](#getlogger) | | Return the registered logger instance (auto-infers name when None) |
+| [`getLevelName()`](#getlevelname) | | Get the level name for a numeric level (extended version that always returns string) |
 
 ### Unchanged Functions
 
@@ -50,7 +53,6 @@ Complete API documentation for Apathetic Python Logger.
 |-----------|-----|---------|
 | [`basicConfig()`](#basicconfig) | | Configure logging system |
 | [`addLevelName()`](#addlevelname) | | Associate a level name with a numeric level |
-| [`getLevelName()`](#getlevelname) | | Get the level name for a numeric level |
 | [`getLevelNamesMapping()`](#getlevelnamesmapping) | 3.11+ | Get mapping of level names to numeric values |
 | [`getLoggerClass()`](#getloggerclass) | | Return the class to be used when instantiating a logger |
 | [`setLoggerClass()`](#setloggerclass) | | Set the class to be used when instantiating a logger |
@@ -579,12 +581,148 @@ For detailed documentation, see the [Python logging.addLevelName() documentation
 ### `getLevelName`
 
 ```python
-getLevelName(level: int) -> str
+getLevelName(level: int | str, *, strict: bool = False) -> str | int
 ```
 
-Wrapper for `logging.getLevelName()`. Get the level name for a numeric level.
+Return the textual or numeric representation of a logging level.
 
-For detailed documentation, see the [Python logging.getLevelName() documentation](https://docs.python.org/3/library/logging.html#logging.getLevelName).
+Behavior depends on compatibility mode (set via `registerCompatibilityMode()`):
+
+**Compatibility mode enabled (`compat_mode=True`):**
+- Behaves like stdlib `logging.getLevelName()` (bidirectional)
+- Returns `str` for integer input, `int` for string input (known levels)
+- Returns `"Level {level}"` string for unknown levels
+- Value-add: Uppercases string inputs before processing (case-insensitive)
+
+**Compatibility mode disabled (`compat_mode=False`, default):**
+- Accepts both integer and string input
+- For string input: uppercases and returns the string (value-add, no conversion)
+- For integer input: returns level name as string (never returns `int`)
+- Optional strict mode to raise `ValueError` for unknown integer levels
+
+**Parameters:**
+- `level` (int | str): Log level as integer or string name
+- `strict` (bool): If True, raise ValueError for unknown levels. If False (default), returns "Level {level}" format for unknown integer levels (matching stdlib behavior). Only used when compatibility mode is disabled and level is an integer.
+
+**Returns:**
+- Compatibility mode enabled: `str | int` (bidirectional like stdlib)
+- Compatibility mode disabled: `str` (always string; string input is uppercased and returned, int input is converted to name)
+
+**Raises:**
+- `ValueError`: If strict=True and level is an integer that cannot be resolved to a known level name
+
+**Example:**
+```python
+from apathetic_logging import getLevelName, getLevelNumber, registerCompatibilityMode
+
+# Compatibility mode enabled (stdlib-like behavior):
+registerCompatibilityMode(compat_mode=True)
+getLevelName(10)  # "DEBUG" (str)
+getLevelName("DEBUG")  # 10 (int)
+getLevelName("debug")  # 10 (int, case-insensitive)
+
+# Compatibility mode disabled (improved behavior):
+registerCompatibilityMode(compat_mode=False)
+getLevelName(10)  # "DEBUG"
+getLevelName("DEBUG")  # "DEBUG" (uppercased and returned)
+getLevelName("debug")  # "DEBUG" (uppercased)
+getLevelName(999, strict=True)  # ValueError: Unknown log level: 999
+
+# For string→int conversion when compat mode disabled, use getLevelNumber()
+getLevelNumber("DEBUG")  # 10
+```
+
+### `getLevelNumber`
+
+```python
+getLevelNumber(level: str | int) -> int
+```
+
+Convert a log level name to its numeric value.
+
+Recommended way to convert string level names to integers. This function explicitly performs string→int conversion, unlike `getLevelName()` which has bidirectional behavior for backward compatibility.
+
+Handles all levels registered via `logging.addLevelName()` (including standard library levels, custom apathetic levels, and user-registered levels).
+
+**Parameters:**
+- `level` (str | int): Log level as string name (case-insensitive) or integer
+
+**Returns:**
+- `int`: Integer level value
+
+**Raises:**
+- `ValueError`: If level cannot be resolved to a known level
+
+**Example:**
+```python
+from apathetic_logging import getLevelNumber
+
+# Known levels return int
+getLevelNumber("DEBUG")  # 10
+getLevelNumber("TRACE")  # 5
+getLevelNumber(20)       # 20
+
+# Unknown level raises ValueError
+getLevelNumber("UNKNOWN")  # ValueError: Unknown log level: 'UNKNOWN'
+```
+
+**See Also:**
+- `getLevelName()` - Bidirectional conversion with compatibility mode
+- `getLevelNameStr()` - Unidirectional conversion (always returns string)
+
+### `getLevelNameStr`
+
+```python
+getLevelNameStr(level: int | str, *, strict: bool = False) -> str
+```
+
+Convert a log level to its string name representation.
+
+Unidirectional function that always returns a string. This is the recommended way to convert log levels to strings when you want guaranteed string output without compatibility mode behavior.
+
+Unlike `getLevelName()` which has compatibility mode and bidirectional behavior, this function always returns a string:
+- Integer input: converts to level name string (returns "Level {level}" for unknown levels unless strict=True)
+- String input: validates level exists, then returns uppercased string
+
+Handles all levels registered via `logging.addLevelName()` (including standard library levels, custom apathetic levels, and user-registered levels).
+
+**Parameters:**
+- `level` (int | str): Log level as integer or string name (case-insensitive)
+- `strict` (bool): If True, raise ValueError for unknown integer levels. If False (default), returns "Level {level}" format for unknown integer levels (matching stdlib behavior).
+
+**Returns:**
+- `str`: Level name as uppercase string
+
+**Raises:**
+- `ValueError`: If string level cannot be resolved to a known level, or if strict=True and integer level cannot be resolved to a known level
+
+**Example:**
+```python
+from apathetic_logging import getLevelNameStr
+
+# Integer input converts to level name
+getLevelNameStr(10)  # "DEBUG"
+getLevelNameStr(5)   # "TRACE"
+getLevelNameStr(20)  # "INFO"
+
+# String input validates and returns uppercased string
+getLevelNameStr("DEBUG")  # "DEBUG"
+getLevelNameStr("debug")  # "DEBUG"
+getLevelNameStr("Info")  # "INFO"
+
+# Unknown integer levels return "Level {level}" format (strict=False, default)
+getLevelNameStr(999)  # "Level 999"
+
+# Unknown integer levels raise ValueError when strict=True
+getLevelNameStr(999, strict=True)  # ValueError: Unknown log level: 999
+
+# Unknown string input raises ValueError
+getLevelNameStr("UNKNOWN")  # ValueError: Unknown log level: 'UNKNOWN'
+```
+
+**See Also:**
+- `getLevelNumber()` - Convert string to int (complementary function)
+- `getLevelName()` - Bidirectional conversion with compatibility mode
 
 ### `getLevelNamesMapping`
 

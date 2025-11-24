@@ -29,81 +29,108 @@ class ApatheticLogging_Internal_LoggingUtils:  # noqa: N801  # pyright: ignore[r
     _LoggerType = TypeVar("_LoggerType", bound=logging.Logger)
 
     @staticmethod
-    def getLevelName(level: int | str, *, strict: bool = False) -> str:
-        """Return the textual representation of a logging level.
+    def _getCompatibilityMode() -> bool:
+        """Get the compatibility mode setting from registry.
 
-        Extended version of logging.getLevelName that always returns a string.
+        Returns the registered compatibility mode setting, or False (improved
+        behavior) if not registered. This is an internal helper to avoid
+        circular imports (registry.py imports from logging_utils.py).
 
-        **Breaking change from stdlib**: Unlike `logging.getLevelName` which is
-        bidirectional (returns str for int input, int for str input), this function
-        always returns a string. The stdlib's string->int behavior was considered
-        an undocumented mistake and removed in Python 3.4, but reinstated in 3.4.2
-        for backward compatibility. While not deprecated, this behavior is not endorsed.
-        This function provides the cleaner, intended API.
+        Returns:
+            Compatibility mode setting (True or False).
+            Defaults to False if not registered.
+        """
+        from .registry_data import (  # noqa: PLC0415
+            ApatheticLogging_Internal_RegistryData,
+        )
 
-        For string->int conversion, use `getLevelNumber()` instead.
+        _registry_data = ApatheticLogging_Internal_RegistryData
+        return (
+            _registry_data.registered_internal_compatibility_mode
+            if _registry_data.registered_internal_compatibility_mode is not None
+            else False
+        )
 
-        Extended features:
-        - Always returns a string (unlike stdlib which returns int for string input)
-        - Accepts both int and str inputs (returns str uppercased if already str)
-        - Optional strict mode to raise ValueError for unknown levels
-        - Supports all levels registered via logging.addLevelName() (including
-          custom apathetic levels and user-registered levels)
+    @staticmethod
+    def getLevelName(level: int | str, *, strict: bool = False) -> str | int:
+        """Return the textual or numeric representation of a logging level.
+
+        Behavior depends on compatibility mode (set via `registerCompatibilityMode()`):
+
+        - Value-add: Uppercases string inputs before processing
+
+        **Compatibility mode disabled (`compat_mode=False`, default):**
+        - Accepts both integer and string input
+        - For string input: validates level exists and returns canonical
+          level name string
+        - For integer input: returns level name as string (never returns `int`)
+        - Optional strict mode to raise `ValueError` for unknown integer levels
+
+        For string→int conversion, use `getLevelNumber()` instead.
+
+        **Compatibility mode enabled (`compat_mode=True`):**
+        - Behaves like stdlib `logging.getLevelName()` (bidirectional)
+        - Returns `str` for integer input, `int` for string input (known levels)
+        - Returns `"Level {level}"` string for unknown levels
 
         Args:
             level: Log level as integer or string name
             strict: If True, raise ValueError for unknown levels. If False (default),
                 returns "Level {level}" format for unknown integer levels (matching
-                stdlib behavior).
+                stdlib behavior). Only used when compatibility mode is disabled and
+                level is an integer.
 
         Returns:
-            Level name (uppercase string). If level is already a string,
-            returns it as-is (uppercased). For unknown integer levels (when
-            strict=False), returns "Level {level}" format (e.g., "Level 999").
+            - Compatibility mode enabled: `str | int` (bidirectional like stdlib)
+            - Compatibility mode disabled: `str` (always string; string input
+              is validated and returns canonical name, int input is converted
+              to name)
 
         Raises:
-            ValueError: If strict=True and level cannot be resolved to a known
-                level name.
+            ValueError: If string level cannot be resolved to a known level
+                (non-compat mode), or if strict=True and level is an integer
+                that cannot be resolved to a known level name
 
         Example:
-            >>> getLevelName(10)
+            >>> # Compatibility mode enabled (stdlib-like behavior):
+            >>> from apathetic_logging import registerCompatibilityMode
+            >>> registerCompatibilityMode(compat_mode=True)
+            >>> getLevelName(10)  # int input
             "DEBUG"
-            >>> getLevelName(5)
-            "TRACE"
-            >>> getLevelName("DEBUG")
-            "DEBUG"
-            >>> getLevelName(999)
-            "Level 999"
-            >>> getLevelName(999, strict=True)
-            ValueError: Unknown log level: 999
-            >>> getLevelNumber("DEBUG")  # For string->int conversion
+            >>> getLevelName("DEBUG")  # string input
+            10
+            >>> getLevelName("debug")  # case-insensitive, uppercased
             10
 
-        Wrapper for logging.getLevelName with extensions.
+            >>> # Compatibility mode disabled (improved behavior):
+            >>> registerCompatibilityMode(compat_mode=False)
+            >>> getLevelName(10)
+            "DEBUG"
+            >>> getLevelName("DEBUG")  # Validates and returns canonical name
+            "DEBUG"
+            >>> getLevelName("debug")  # Validates and returns canonical name
+            "DEBUG"
+            >>> getLevelName("UNKNOWN")  # Unknown string raises ValueError
+            ValueError: Unknown log level: 'UNKNOWN'
+
+        See Also:
+            getLevelNumber() - Convert string to int (when compat mode disabled)
+            registerCompatibilityMode() - Enable/disable compatibility mode
 
         https://docs.python.org/3.10/library/logging.html#logging.getLevelName
         """
-        # If already a string, return it uppercased
-        if isinstance(level, str):
-            return level.upper()
+        # Check compatibility mode from registry
+        compat_mode = ApatheticLogging_Internal_LoggingUtils._getCompatibilityMode()
 
-        # Use logging.getLevelName() which handles all registered levels:
-        # - Standard library levels (DEBUG, INFO, etc.)
-        # - Custom apathetic levels (TEST, TRACE, etc.)
-        #   registered via extendLoggingModule()
-        # - User-registered levels via logging.addLevelName()
-        level_name = logging.getLevelName(level)
-        # getLevelName returns "Level {level}" format for unknown levels
-        # Check if this is a known level (not in "Level {number}" format)
-        if level_name.startswith("Level "):
-            # Unknown level: raise if strict, otherwise return stdlib format
-            if strict:
-                msg = f"Unknown log level: {level}"
-                raise ValueError(msg)
-            return level_name
+        # Use unidirectional functions to avoid duplication
+        if compat_mode and isinstance(level, str):
+            # Compatibility mode with string input → return int (like stdlib)
+            return ApatheticLogging_Internal_LoggingUtils.getLevelNumber(level)
 
-        # Known level (from stdlib, our custom levels, or user-registered levels)
-        return level_name
+        # All other cases: return string (compat mode with int, or non-compat mode)
+        return ApatheticLogging_Internal_LoggingUtils.getLevelNameStr(
+            level, strict=strict
+        )
 
     @staticmethod
     def getLevelNumber(level: str | int) -> int:
@@ -123,7 +150,7 @@ class ApatheticLogging_Internal_LoggingUtils:  # noqa: N801  # pyright: ignore[r
             Integer level value
 
         Raises:
-            ValueError: If level cannot be resolved
+            ValueError: If level cannot be resolved to a known level
 
         Example:
             >>> getLevelNumber("DEBUG")
@@ -132,6 +159,8 @@ class ApatheticLogging_Internal_LoggingUtils:  # noqa: N801  # pyright: ignore[r
             5
             >>> getLevelNumber(20)
             20
+            >>> getLevelNumber("UNKNOWN")
+            ValueError: Unknown log level: 'UNKNOWN'
 
         See Also:
             getLevelName() - Convert int to string (intended use)
@@ -152,8 +181,78 @@ class ApatheticLogging_Internal_LoggingUtils:  # noqa: N801  # pyright: ignore[r
         if isinstance(resolved, int):
             return resolved
 
-        msg = f"Unknown log level: {level!r}"
+        # Unknown level: always raise
+        msg = f"Unknown log level: {level_str!r}"
         raise ValueError(msg)
+
+    @staticmethod
+    def getLevelNameStr(level: int | str, *, strict: bool = False) -> str:
+        """Convert a log level to its string name representation.
+
+        Unidirectional function that always returns a string. This is the recommended
+        way to convert log levels to strings when you want guaranteed string output
+        without compatibility mode behavior.
+
+        Unlike `getLevelName()` which has compatibility mode and bidirectional
+        behavior, this function always returns a string:
+        - Integer input: converts to level name string (returns "Level {level}"
+          for unknown levels unless strict=True)
+        - String input: validates level exists, then returns uppercased string
+
+        Handles all levels registered via logging.addLevelName() (including
+        standard library levels, custom apathetic levels, and user-registered levels).
+
+        Args:
+            level: Log level as integer or string name (case-insensitive)
+            strict: If True, raise ValueError for unknown integer levels.
+                If False (default), returns "Level {level}" format for unknown
+                integer levels (matching stdlib behavior).
+
+        Returns:
+            Level name as uppercase string
+
+        Raises:
+            ValueError: If string level cannot be resolved to a known level,
+                or if strict=True and integer level cannot be resolved to a
+                known level
+
+        Example:
+            >>> getLevelNameStr(10)
+            "DEBUG"
+            >>> getLevelNameStr(5)
+            "TRACE"
+            >>> getLevelNameStr("DEBUG")
+            "DEBUG"
+            >>> getLevelNameStr("debug")
+            "DEBUG"
+            >>> getLevelNameStr(999)  # Unknown integer, strict=False (default)
+            "Level 999"
+            >>> getLevelNameStr(999, strict=True)  # Unknown integer, strict=True
+            ValueError: Unknown log level: 999
+            >>> getLevelNameStr("UNKNOWN")
+            ValueError: Unknown log level: 'UNKNOWN'
+
+        See Also:
+            getLevelNumber() - Convert string to int (complementary function)
+            getLevelName() - Bidirectional conversion with compatibility mode
+        """
+        # If string input, validate it exists and return canonical name
+        if isinstance(level, str):
+            # Validate level exists (raises ValueError if not)
+            ApatheticLogging_Internal_LoggingUtils.getLevelNumber(level)
+            return level.upper()
+
+        # Integer input: convert to level name string
+        result = logging.getLevelName(level)
+        # logging.getLevelName always returns str for int input
+
+        # If input was int and result is "Level {level}" format and strict is on, raise
+        if result.startswith("Level ") and strict:
+            msg = f"Unknown log level: {level}"
+            raise ValueError(msg)
+
+        # level name or (strict=False) "Level {int}"
+        return result
 
     @staticmethod
     def hasLogger(logger_name: str) -> bool:

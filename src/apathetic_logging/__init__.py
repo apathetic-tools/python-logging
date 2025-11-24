@@ -104,6 +104,7 @@ getCompatibilityMode = apathetic_logging.getCompatibilityMode
 getDefaultLoggerName = apathetic_logging.getDefaultLoggerName
 getDefaultPropagate = apathetic_logging.getDefaultPropagate
 getLevelNumber = apathetic_logging.getLevelNumber
+getLevelNameStr = apathetic_logging.getLevelNameStr
 getLogLevelEnvVars = apathetic_logging.getLogLevelEnvVars
 getLoggerOfType = apathetic_logging.getLoggerOfType
 getRegisteredLoggerName = apathetic_logging.getRegisteredLoggerName
@@ -155,6 +156,7 @@ __all__ = [
     "getHandlerByName",
     "getHandlerNames",
     "getLevelName",
+    "getLevelNameStr",
     "getLevelNamesMapping",
     "getLevelNumber",
     "getLogLevelEnvVars",

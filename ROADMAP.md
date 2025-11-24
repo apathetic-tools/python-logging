@@ -22,12 +22,6 @@ Exploring bundling options for generating the single-file release:
 - Deploy action when I tag a release should create a release and attach it to the tagged release.
 
 ## 🔌 API
-- **Compatibility mode for `getLevelNumber()` unknown level handling** (deferred)
-  - it does really mess with our type system since the return type becomes ambiguous, may not be worth it?
-  - Add a registration/configuration option for backwards-compatible behavior when `getLevelNumber()` encounters unknown levels
-  - Default to off (current behavior: raises `ValueError`)
-  - When enabled, could return `None` instead of raising
-  - Allows legacy code to opt-in to lenient behavior while maintaining strict defaults
 - consider differentiation between "level" and "effectiveLevel" in our functions (which we don't do much of)
 
 

@@ -37,12 +37,30 @@ def test_get_level_name_custom_levels() -> None:
     assert mod_alogs.getLevelName(mod_alogs.SILENT_LEVEL) == "SILENT"
 
 
-def test_get_level_name_string_input() -> None:
-    """getLevelName() should return uppercased string for string input."""
+def test_get_level_name_string_input_default_mode() -> None:
+    """getLevelName() returns uppercased string for string input in default mode."""
+    # Default mode: string input should be uppercased and returned
     assert mod_alogs.getLevelName("DEBUG") == "DEBUG"
     assert mod_alogs.getLevelName("debug") == "DEBUG"
     assert mod_alogs.getLevelName("Info") == "INFO"
     assert mod_alogs.getLevelName("trace") == "TRACE"
+
+
+def test_get_level_name_string_input_compat_mode() -> None:
+    """getLevelName() should behave like stdlib for string input in compat mode."""
+    # Enable compatibility mode
+    mod_alogs.registerCompatibilityMode(compat_mode=True)
+    try:
+        # In compat mode, string input returns int (like stdlib)
+        assert mod_alogs.getLevelName("DEBUG") == logging.DEBUG
+        assert isinstance(mod_alogs.getLevelName("DEBUG"), int)
+        # Case-insensitive (uppercased as value-add)
+        assert mod_alogs.getLevelName("debug") == logging.DEBUG
+        assert mod_alogs.getLevelName("Info") == logging.INFO
+        assert mod_alogs.getLevelName("trace") == mod_alogs.TRACE_LEVEL
+    finally:
+        # Reset compatibility mode
+        mod_alogs.registerCompatibilityMode(compat_mode=False)
 
 
 def test_get_level_name_unknown_level_lenient() -> None:
@@ -60,11 +78,18 @@ def test_get_level_name_unknown_level_strict() -> None:
         mod_alogs.getLevelName(UNKNOWN_LEVEL, strict=True)
 
 
-def test_get_level_name_unknown_level_strict_string() -> None:
-    """getLevelName() should not raise for string input even in strict mode."""
-    # String input is always returned uppercased, even in strict mode
-    assert mod_alogs.getLevelName("UNKNOWN", strict=True) == "UNKNOWN"
-    assert mod_alogs.getLevelName("custom", strict=True) == "CUSTOM"
+def test_get_level_name_string_input_validated_in_default_mode() -> None:
+    """getLevelName() validates string input and raises ValueError for unknown."""
+    # String input should be validated - known levels return canonical name
+    assert mod_alogs.getLevelName("DEBUG", strict=True) == "DEBUG"
+    assert mod_alogs.getLevelName("INFO", strict=False) == "INFO"
+    assert mod_alogs.getLevelName("trace", strict=False) == "TRACE"
+
+    # Unknown string levels raise ValueError (validation regardless of strict)
+    with pytest.raises(ValueError, match=r"Unknown log level: 'UNKNOWN'"):
+        mod_alogs.getLevelName("UNKNOWN", strict=True)
+    with pytest.raises(ValueError, match=r"Unknown log level: 'UNKNOWN'"):
+        mod_alogs.getLevelName("UNKNOWN", strict=False)
 
 
 # ---------------------------------------------------------------------------
@@ -107,12 +132,60 @@ def test_get_level_number_integer_input() -> None:
 
 
 def test_get_level_number_unknown_level_raises() -> None:
-    """getLevelNumber() should raise ValueError for unknown level names."""
+    """getLevelNumber() raises ValueError for unknown level names (default)."""
     with pytest.raises(ValueError, match=r"Unknown log level: 'UNKNOWN'"):
         mod_alogs.getLevelNumber("UNKNOWN")
 
     with pytest.raises(ValueError, match=r"Unknown log level: 'INVALID'"):
         mod_alogs.getLevelNumber("INVALID")
+
+
+# ---------------------------------------------------------------------------
+# Tests for getLevelNameStr()
+# ---------------------------------------------------------------------------
+
+
+def test_get_level_name_str_integer_input() -> None:
+    """getLevelNameStr() should return level name strings for integer input."""
+    assert mod_alogs.getLevelNameStr(logging.DEBUG) == "DEBUG"
+    assert mod_alogs.getLevelNameStr(logging.INFO) == "INFO"
+    assert mod_alogs.getLevelNameStr(logging.WARNING) == "WARNING"
+    assert mod_alogs.getLevelNameStr(logging.ERROR) == "ERROR"
+    assert mod_alogs.getLevelNameStr(logging.CRITICAL) == "CRITICAL"
+
+
+def test_get_level_name_str_custom_levels() -> None:
+    """getLevelNameStr() should return custom apathetic level names."""
+    assert mod_alogs.getLevelNameStr(mod_alogs.TEST_LEVEL) == "TEST"
+    assert mod_alogs.getLevelNameStr(mod_alogs.TRACE_LEVEL) == "TRACE"
+    assert mod_alogs.getLevelNameStr(mod_alogs.DETAIL_LEVEL) == "DETAIL"
+    assert mod_alogs.getLevelNameStr(mod_alogs.MINIMAL_LEVEL) == "MINIMAL"
+    assert mod_alogs.getLevelNameStr(mod_alogs.SILENT_LEVEL) == "SILENT"
+
+
+def test_get_level_name_str_string_input() -> None:
+    """getLevelNameStr() should return uppercased string for string input."""
+    assert mod_alogs.getLevelNameStr("DEBUG") == "DEBUG"
+    assert mod_alogs.getLevelNameStr("debug") == "DEBUG"
+    assert mod_alogs.getLevelNameStr("Info") == "INFO"
+    assert mod_alogs.getLevelNameStr("trace") == "TRACE"
+
+
+def test_get_level_name_str_unknown_level() -> None:
+    """getLevelNameStr() returns 'Level {level}' format for unknown integer levels."""
+    result = mod_alogs.getLevelNameStr(UNKNOWN_LEVEL)
+    assert result == f"Level {UNKNOWN_LEVEL}"
+    assert isinstance(result, str)
+
+
+def test_get_level_name_str_unknown_string() -> None:
+    """getLevelNameStr() should raise ValueError for unknown string input."""
+    with pytest.raises(ValueError, match=r"Unknown log level: 'UNKNOWN'"):
+        mod_alogs.getLevelNameStr("UNKNOWN")
+
+    # getLevelNumber uppercases before raising, so error message is uppercased
+    with pytest.raises(ValueError, match=r"Unknown log level: 'UNKNOWN'"):
+        mod_alogs.getLevelNameStr("unknown")
 
 
 # ---------------------------------------------------------------------------

@@ -188,7 +188,7 @@ class ApatheticLogging_Internal_LoggerCore(logging.Logger):  # noqa: N801  # pyr
         # Built-in levels (DEBUG=10, INFO=20, etc.) are all > 0, so they pass
         # validateLevelPositive() will raise if level <= 0
         # At this point, level is guaranteed to be int (resolved above)
-        level_name = _logging_utils.getLevelName(level)
+        level_name = _logging_utils.getLevelNameStr(level)
         self.validateLevelPositive(level, level_name=level_name)
 
         super().setLevel(level)
@@ -231,7 +231,9 @@ class ApatheticLogging_Internal_LoggerCore(logging.Logger):  # noqa: N801  # pyr
                     ApatheticLogging_Internal_LoggingUtils,
                 )
 
-                level_name = ApatheticLogging_Internal_LoggingUtils.getLevelName(level)
+                level_name = ApatheticLogging_Internal_LoggingUtils.getLevelNameStr(
+                    level
+                )
             msg = (
                 f"Level '{level_name}' has value {level}, "
                 "which is <= 0. This causes NOTSET inheritance from root logger. "
@@ -485,7 +487,7 @@ class ApatheticLogging_Internal_LoggerCore(logging.Logger):  # noqa: N801  # pyr
             ApatheticLogging_Internal_LoggingUtils,
         )
 
-        return ApatheticLogging_Internal_LoggingUtils.getLevelName(self.level)
+        return ApatheticLogging_Internal_LoggingUtils.getLevelNameStr(self.level)
 
     def getEffectiveLevelName(self) -> str:
         """Return the effective level name (what's actually used).
@@ -504,7 +506,7 @@ class ApatheticLogging_Internal_LoggerCore(logging.Logger):  # noqa: N801  # pyr
             ApatheticLogging_Internal_LoggingUtils,
         )
 
-        return ApatheticLogging_Internal_LoggingUtils.getLevelName(
+        return ApatheticLogging_Internal_LoggingUtils.getLevelNameStr(
             self.getEffectiveLevel()
         )
 
