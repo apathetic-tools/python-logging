@@ -89,6 +89,7 @@ fix = ["sync:ai:guidance", "fix:ruff:installed", "fix:format:installed"]
 # 🧩 Build and license
 "sync:ai:guidance" = "python dev/sync_ai_guidance.py --quiet"
 "build:script" = "python dev/serger.py"
+"build:zipapp" = "shiv -c apathetic_logging -o dist/apathetic_logging.pyz ."
 
 # 🔧 Setup and installation
 "pre-commit:install" = { shell = "if [ ! -f .git/hooks/pre-commit ] || ! grep -q 'pre-commit' .git/hooks/pre-commit 2>/dev/null; then poetry run pre-commit install --install-hooks && poetry run pre-commit install --hook-type pre-push; fi" }
@@ -139,6 +140,7 @@ dev = [
     "pytest-benchmark (>=5.1.0,<6.0.0)",
     "pytest-cov (>=7.0.0,<8.0.0)",
     "pyright (>=1.1.407,<2.0.0)",
+    "shiv (>=1.0.0,<2.0.0)",
 ]
 
 # --- Ruff: formatter and linter ---

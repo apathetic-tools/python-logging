@@ -51,6 +51,7 @@ All key workflows are defined in **`[tool.poe.tasks]`** inside `pyproject.toml`.
 | `poetry run poe check` | Run linting (`ruff`), type checks (`mypy`), and tests (`pytest`). |
 | `poetry run poe fix` | Run all auto-fixers (`ruff`). |
 | `poetry run poe build:script` | Bundle the project into a single portable script in `dist/`. |
+| `poetry run poe build:zipapp` | Create a cross-platform zipapp (`.pyz`) with dependency support. |
 
 Example workflow:
 
@@ -259,11 +260,12 @@ The server will automatically rebuild when you make changes to the documentation
 
 ## Building and Publishing (for maintainers)
 
-Apathetic Python Logger ships in two forms:
+Apathetic Python Logger ships in three forms:
 
 | Target | Command | Output |
 |--------|---------|--------|
-| **Single-file script** | `poetry run poe build:script` | Creates `dist/apathetic_logging.py` |
+| **Single-file script** | `poetry run poe build:script` | Creates `dist/apathetic_logging.py` (human-readable, stitched source) |
+| **Zipapp** | `poetry run poe build:zipapp` | Creates `dist/apathetic_logging.pyz` (dependency-aware, importable) |
 | **PyPI package** | `poetry build && poetry publish` | Builds and uploads wheel & sdist |
 
 ### Release Process (CLI)
@@ -293,11 +295,17 @@ To create a new release:
    git push origin vX.Y.Z
    ```
 
-5. **Build the single-file script**:
+5. **Build distribution files**:
    ```bash
+   # Build single-file script (human-readable)
    poetry run poe build:script
+   
+   # Build zipapp (dependency-aware, importable)
+   poetry run poe build:zipapp
    ```
-   This creates `dist/apathetic_logging.py` which should be attached to the GitHub release.
+   This creates:
+   - `dist/apathetic_logging.py` — single-file script (required, must be attached to GitHub release)
+   - `dist/apathetic_logging.pyz` — zipapp format (required, must be attached to GitHub release)
 
 6. **Build and publish to PyPI** (if needed):
    ```bash
@@ -310,12 +318,15 @@ To create a new release:
    - Click "Draft a new release"
    - Select the tag you just pushed
    - Copy the release notes from `RELEASES.md`
-   - Attach `dist/apathetic_logging.py` (single-file build)
+   - Attach `dist/apathetic_logging.py` (single-file script)
+   - Attach `dist/apathetic_logging.pyz` (zipapp format)
    - Publish the release
 
 > **Note:** Verify the package on [Test PyPI](https://test.pypi.org/) before publishing live.
 
-The single-file version should be attached to GitHub releases for direct download.
+Both distribution files should be attached to GitHub releases:
+- `dist/apathetic_logging.py` — single-file script (human-readable, stitched source)
+- `dist/apathetic_logging.pyz` — zipapp format (dependency-aware, importable)
 
 ## Integration with Apathetic Tools
 

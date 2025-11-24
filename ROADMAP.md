@@ -7,7 +7,6 @@ Some of these we just want to consider, and may not want to implement.
 
 
 ## 🧩 Joiner Scripts (Build System)
-- zip file: zipapp / shiv / pyinstaller --onefile
 
 
 ## 🧪 Tests

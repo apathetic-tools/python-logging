@@ -1,5 +1,6 @@
 # tests/utils/__init__.py
 
+from .build_tools import find_shiv
 from .ci import if_ci, is_ci
 from .constants import (
     BUNDLER_SCRIPT,
@@ -18,6 +19,8 @@ from .strip_common_prefix import strip_common_prefix
 
 
 __all__ = [  # noqa: RUF022
+    # build_tools
+    "find_shiv",
     # ci
     "if_ci",
     "is_ci",
