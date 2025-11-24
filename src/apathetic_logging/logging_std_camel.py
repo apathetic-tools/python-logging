@@ -257,7 +257,7 @@ class ApatheticLogging_Internal_StdCamelCase:  # noqa: N801  # pyright: ignore[r
 
     @staticmethod
     def makeLogRecord(
-        dict: dict[str, Any],  # noqa: A002
+        dict: dict[str, Any],  # noqa: A002  # Required to match stdlib logging.makeLogRecord signature
         *args: Any,
         **kwargs: Any,
     ) -> logging.LogRecord:

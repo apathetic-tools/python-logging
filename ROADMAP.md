@@ -21,7 +21,7 @@ Exploring bundling options for generating the single-file release:
 ## 🚀 Deployment
 - Deploy action when I tag a release should create a release and attach it to the tagged release.
 
-- look into ignores of this one https://docs.astral.sh/ruff/rules/builtin-argument-shadowing/
+- does apathetic_logging need functions for our custom levels?
 
 ## 🔌 API
 - **Compatibility mode for `getLevelNumber()` unknown level handling** (deferred)
