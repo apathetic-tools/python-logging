@@ -17,7 +17,7 @@ jobs:
   publish:
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      contents: write  # Required to create releases and upload assets
     
     steps:
       - name: Checkout code
@@ -43,6 +43,29 @@ jobs:
 
       - name: Build package
         run: poetry build
+
+      - name: Build single-file script
+        run: poetry run poe build:script
+
+      - name: Extract version from tag
+        if: startsWith(github.ref, 'refs/tags/')
+        id: tag_version
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/v}
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "tag=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+
+      - name: Create or Update GitHub Release
+        if: startsWith(github.ref, 'refs/tags/') && github.event.inputs.testpypi_only != 'true'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/apathetic_logging.py
+          generate_release_notes: false
+          draft: false
+          prerelease: false
+          make_latest: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Publish to TestPyPI (test only)
         if: github.event.inputs.testpypi_only == 'true'
