@@ -177,7 +177,7 @@ class ApatheticLogging_Internal_LoggingUtils:  # noqa: N801  # pyright: ignore[r
         logging.Logger.manager.loggerDict.pop(logger_name, None)
 
     @staticmethod
-    def _extract_top_level_package(package: str | None) -> str | None:
+    def _extractTopLevelPackage(package: str | None) -> str | None:
         """Extract top-level package name from package string.
 
         Args:
@@ -193,7 +193,7 @@ class ApatheticLogging_Internal_LoggingUtils:  # noqa: N801  # pyright: ignore[r
         return package
 
     @staticmethod
-    def _infer_from_frame(skip_frames: int, frame: FrameType | None) -> str | None:
+    def _inferFromFrame(skip_frames: int, frame: FrameType | None) -> str | None:
         """Infer logger name from caller's frame.
 
         Args:
@@ -215,7 +215,7 @@ class ApatheticLogging_Internal_LoggingUtils:  # noqa: N801  # pyright: ignore[r
             if caller_frame is None:
                 return None
             caller_package = caller_frame.f_globals.get("__package__")
-            return ApatheticLogging_Internal_LoggingUtils._extract_top_level_package(
+            return ApatheticLogging_Internal_LoggingUtils._extractTopLevelPackage(
                 caller_package
             )
         finally:
@@ -300,7 +300,7 @@ class ApatheticLogging_Internal_LoggingUtils:  # noqa: N801  # pyright: ignore[r
 
         # Get current frame (this function's frame) and skip to caller
         frame = inspect.currentframe()
-        inferred_name = ApatheticLogging_Internal_LoggingUtils._infer_from_frame(
+        inferred_name = ApatheticLogging_Internal_LoggingUtils._inferFromFrame(
             skip_frames, frame
         )
 
