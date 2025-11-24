@@ -4,8 +4,9 @@
 Each pytest run now targets a single runtime mode:
 - Normal mode (default): uses src/apathetic_logging
 - Standalone mode: uses dist/apathetic_logging.py when RUNTIME_MODE=singlefile
+- Zipapp mode: uses dist/apathetic_logging.pyz when RUNTIME_MODE=zipapp
 
-Switch mode with: RUNTIME_MODE=singlefile pytest
+Switch mode with: RUNTIME_MODE=singlefile pytest or RUNTIME_MODE=zipapp pytest
 """
 
 import logging

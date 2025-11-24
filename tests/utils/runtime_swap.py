@@ -4,10 +4,12 @@
 Each pytest run now targets a single runtime mode:
 - Normal mode (default): uses src/apathetic_logging
 - standalone mode: uses dist/apathetic_logging.py when RUNTIME_MODE=singlefile
+- zipapp mode: uses dist/apathetic_logging.pyz when RUNTIME_MODE=zipapp
 
-Switch mode with: RUNTIME_MODE=singlefile pytest
+Switch mode with: RUNTIME_MODE=singlefile pytest or RUNTIME_MODE=zipapp pytest
 """
 
+import importlib
 import importlib.util
 import os
 import subprocess
@@ -24,6 +26,7 @@ from tests.utils.constants import (
     PROJ_ROOT,
 )
 
+from .build_tools import find_shiv
 from .package_detection import find_all_packages_under_path
 from .safe_trace import make_safe_trace
 
@@ -42,7 +45,7 @@ def _mode() -> str:
 
 
 # ------------------------------------------------------------
-# ⚙️ Auto-build helper for standalone script
+# ⚙️ Auto-build helpers
 # ------------------------------------------------------------
 def ensure_standalone_script_up_to_date(root: Path) -> Path:
     """Rebuild `dist/apathetic_logging.py` if missing or outdated."""
@@ -69,28 +72,58 @@ def ensure_standalone_script_up_to_date(root: Path) -> Path:
     return bin_path
 
 
+def ensure_zipapp_up_to_date(root: Path) -> Path:
+    """Rebuild `dist/apathetic_logging.pyz` if missing or outdated."""
+    zipapp_path = root / "dist" / f"{PROGRAM_SCRIPT}.pyz"
+    src_dir = root / "src" / PROGRAM_PACKAGE
+
+    # If the output file doesn't exist or is older than any source file → rebuild.
+    needs_rebuild = not zipapp_path.exists()
+    if not needs_rebuild:
+        zipapp_mtime_ns = zipapp_path.stat().st_mtime_ns
+        for src_file in src_dir.rglob("*.py"):
+            if src_file.stat().st_mtime_ns > zipapp_mtime_ns:
+                needs_rebuild = True
+                break
+
+    if needs_rebuild:
+        shiv_cmd = find_shiv()
+        print("⚙️  Rebuilding zipapp (shiv)...")
+        subprocess.run(  # noqa: S603
+            [
+                shiv_cmd,
+                "-c",
+                PROGRAM_PACKAGE,
+                "-o",
+                str(zipapp_path),
+                ".",
+            ],
+            cwd=root,
+            check=True,
+        )
+        # force mtime update in case contents identical
+        zipapp_path.touch()
+        assert zipapp_path.exists(), "❌ Failed to generate zipapp."
+
+    return zipapp_path
+
+
 # --- runtime_swap() ------------------------------------------------------------------
 
 
 def runtime_swap() -> bool:
     """Pre-import hook — runs before any tests or plugins are imported.
 
-    This is the right place
-    to swap in the standalone single-file module if requested.
+    Swaps in the appropriate runtime module based on RUNTIME_MODE:
+    - installed (default): uses src/apathetic_logging (no swap needed)
+    - singlefile: uses dist/apathetic_logging.py (serger-built single file)
+    - zipapp: uses dist/apathetic_logging.pyz (shiv-built zipapp)
+
+    This ensures all test imports work transparently regardless of runtime mode.
     """
     mode = _mode()
-    if mode != "singlefile":
+    if mode == "installed":
         return False  # Normal installed mode; nothing to do.
-
-    bin_path = ensure_standalone_script_up_to_date(PROJ_ROOT)
-
-    if not bin_path.exists():
-        xmsg = (
-            f"RUNTIME_MODE=singlefile but standalone script not found at {bin_path}.\n"
-            f"Hint: run the bundler (e.g. `python {BUNDLER_SCRIPT}` "
-            f"or `poetry run poe build:script`)."
-        )
-        raise pytest.UsageError(xmsg)
 
     # Nuke any already-imported modules from src/ to avoid stale refs.
     # Dynamically detect all packages under src/ instead of hardcoding names.
@@ -103,6 +136,28 @@ def runtime_swap() -> bool:
             if name == pkg_name or name.startswith(f"{pkg_name}."):
                 del sys.modules[name]
                 break
+
+    if mode == "singlefile":
+        return _load_singlefile_mode()
+    if mode == "zipapp":
+        return _load_zipapp_mode()
+
+    # Unknown mode
+    xmsg = f"Unknown RUNTIME_MODE={mode!r}. Valid modes: installed, singlefile, zipapp"
+    raise pytest.UsageError(xmsg)
+
+
+def _load_singlefile_mode() -> bool:
+    """Load standalone single-file script mode."""
+    bin_path = ensure_standalone_script_up_to_date(PROJ_ROOT)
+
+    if not bin_path.exists():
+        xmsg = (
+            f"RUNTIME_MODE=singlefile but standalone script not found at {bin_path}.\n"
+            f"Hint: run the bundler (e.g. `python {BUNDLER_SCRIPT}` "
+            f"or `poetry run poe build:script`)."
+        )
+        raise pytest.UsageError(xmsg)
 
     # Load standalone script as the apathetic_logging package.
     spec = importlib.util.spec_from_file_location(PROGRAM_PACKAGE, bin_path)
@@ -126,5 +181,38 @@ def runtime_swap() -> bool:
         raise pytest.UsageError(xmsg) from e
 
     safe_trace(f"✅ Loaded standalone runtime early from {bin_path}")
+    return True
 
+
+def _load_zipapp_mode() -> bool:
+    """Load zipapp mode."""
+    zipapp_path = ensure_zipapp_up_to_date(PROJ_ROOT)
+
+    if not zipapp_path.exists():
+        xmsg = (
+            f"RUNTIME_MODE=zipapp but zipapp not found at {zipapp_path}.\n"
+            f"Hint: run `poetry run poe build:zipapp`."
+        )
+        raise pytest.UsageError(xmsg)
+
+    # Add zipapp to sys.path so Python can import from it
+    zipapp_str = str(zipapp_path)
+    if zipapp_str not in sys.path:
+        sys.path.insert(0, zipapp_str)
+
+    try:
+        # Import the module normally - Python's zipapp support handles this
+        importlib.import_module(PROGRAM_PACKAGE)
+        safe_trace(f"Loaded zipapp module from {zipapp_path}")
+    except Exception as e:
+        # Fail fast with context; this is a config/runtime problem.
+        error_name = type(e).__name__
+        xmsg = (
+            f"Failed to import zipapp module from {zipapp_path}.\n"
+            f"Original error: {error_name}: {e}\n"
+            f"Tip: rebuild the zipapp and re-run."
+        )
+        raise pytest.UsageError(xmsg) from e
+
+    safe_trace(f"✅ Loaded zipapp runtime early from {zipapp_path}")
     return True
