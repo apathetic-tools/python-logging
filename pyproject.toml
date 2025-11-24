@@ -98,6 +98,11 @@ fix = ["sync:ai:guidance", "fix:ruff:installed", "fix:format:installed"]
 "build:script" = "python dev/serger.py"
 "build:zipapp" = "shiv -c apathetic_logging -o dist/apathetic_logging.pyz ."
 
+# 🚀 Release management (semantic-release)
+"release:version" = "semantic-release version --noop"
+"release:publish" = "semantic-release publish"
+"release:changelog" = "semantic-release changelog"
+
 # 🔧 Setup and installation
 "pre-commit:install" = { shell = "if [ ! -f .git/hooks/pre-commit ] || ! grep -q 'pre-commit' .git/hooks/pre-commit 2>/dev/null; then poetry run pre-commit install --install-hooks && poetry run pre-commit install --hook-type pre-push; fi" }
 
@@ -148,6 +153,7 @@ dev = [
     "pytest-cov (>=7.0.0,<8.0.0)",
     "pyright (>=1.1.407,<2.0.0)",
     "shiv (>=1.0.0,<2.0.0)",
+    "python-semantic-release (>=9.0.0,<10.0.0)",
 ]
 
 # --- Ruff: formatter and linter ---
@@ -316,6 +322,52 @@ directory = "htmlcov"
 line-length = 88
 skip-string-normalization = false
 
+# --- python-semantic-release: automated versioning and releases ---
+[tool.semantic_release]
+version_toml = ["pyproject.toml:project.version"]
+build_command = "poetry build"
+dist_path = "dist"
+version_variable = []
+changelog_file = "RELEASES.md"
+changelog_encoding = "utf-8"
+commit_author = "github-actions[bot] <github-actions[bot]@users.noreply.github.com>"
+commit_message = "chore: release v{version} [skip ci]"
+major_on_zero = false
+upload_to_pypi = false  # We handle PyPI publishing in GitHub Actions
+upload_to_release = true
+hvcs = "github"
+remote = "origin"
+tag_commit = true
+prerelease_tag = "rc"
+build_commit_message = "chore: build release v{version} [skip ci]"
+
+[tool.semantic_release.changelog]
+sections = [
+    ["breaking", "💥 Breaking Changes"],
+    ["feature", "🎉 What's New"],
+    ["fix", "🐛 Bug Fixes"],
+    ["documentation", "📚 Documentation"],
+    ["refactor", "♻️ Refactoring"],
+    ["style", "💄 Style"],
+    ["test", "🧪 Tests"],
+    ["chore", "🔧 Chores"],
+    ["build", "🔨 Build"],
+    ["ci", "👷 CI"],
+    ["perf", "⚡ Performance"],
+    ["security", "🔒 Security"],
+]
+
+[tool.semantic_release.changelog.environment]
+block_start_string = "{%"
+block_end_string = "%}"
+variable_start_string = "{{"
+variable_end_string = "}}"
+comment_start_string = "{#"
+comment_end_string = "#}"
+trim_blocks = false
+lstrip_blocks = false
+newline_sequence = "\n"
+keep_trailing_newline = false
 
 # --- Poetry Build System ---
 [project.scripts]

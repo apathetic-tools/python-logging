@@ -4,31 +4,30 @@
 Some of these we just want to consider, and may not want to implement.
 
 ## 🎯 Core Features
-
-
-## 🧩 Joiner Scripts (Build System)
-
+- None currently
 
 ## 🧪 Tests
+- Tests are slow, when to run what?
 
 
 ## 🧑‍💻 Development
+- Beta phase, we need to use the library more to identify further improvements or problems
 
-## 🚀 Deployment
-- Streamline deployment process
 
 ## 🔌 API
+- None currently
 
 
 ## 📚 Documentation
-- header is not stickied
-- the navbar styling was lost when we customized it for the current page
-- home is not bolded when on it
+- sticky the header
+- bold the navbar link when on current page
 - Where do we document the structure of the project? What do we document inside it vs here?
 - Logo? Images? Icon? README banner?
 - should we generate API docs? replace the ones in our docs?
 
+
 ## 💡 Ideas & Experiments
+- None currently
 
 
 > See [REJECTED.md](REJECTED.md) for experiments and ideas that were explored but intentionally not pursued.

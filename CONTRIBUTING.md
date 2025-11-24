@@ -35,16 +35,9 @@ poetry run poe check:fix
 
 ## 📦 Publishing (for maintainers)
 
-**Release Process:**
-1. Bump version in `pyproject.toml`
-2. Update `RELEASES.md` with new version section
-3. Commit: `git commit -m "chore: bump version to X.Y.Z"`
-4. Tag: `git tag -a vX.Y.Z -m "Release vX.Y.Z - Description"`
-5. Push: `git push origin main && git push origin vX.Y.Z`
-6. Build: `poetry run poe build:script` (for single-file) or `poetry build` (for PyPI)
-7. Publish: `poetry publish` (if needed) and create GitHub release with `dist/apathetic_logging.py`
+**Automated Releases:** Use [Conventional Commits](https://www.conventionalcommits.org/) — releases are automated via semantic-release when pushing to `main`.
 
-See [docs/contributing.md](docs/contributing.md) for detailed publishing instructions.
+**Manual Release:** See [docs/contributing.md](docs/contributing.md) for detailed instructions.
 
 ---
 

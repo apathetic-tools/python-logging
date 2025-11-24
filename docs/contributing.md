@@ -52,6 +52,9 @@ All key workflows are defined in **`[tool.poe.tasks]`** inside `pyproject.toml`.
 | `poetry run poe fix` | Run all auto-fixers (`ruff`). |
 | `poetry run poe build:script` | Bundle the project into a single portable script in `dist/`. |
 | `poetry run poe build:zipapp` | Create a cross-platform zipapp (`.pyz`) with dependency support. |
+| `poetry run poe release:version` | Check what version would be released (dry run). |
+| `poetry run poe release:publish` | Publish a release (creates tag, GitHub release, etc.). |
+| `poetry run poe release:changelog` | Generate changelog without releasing. |
 
 Example workflow:
 
@@ -268,9 +271,62 @@ Apathetic Python Logger ships in three forms:
 | **Zipapp** | `poetry run poe build:zipapp` | Creates `dist/apathetic_logging.pyz` (dependency-aware, importable) |
 | **PyPI package** | `poetry build && poetry publish` | Builds and uploads wheel & sdist |
 
-### Release Process (CLI)
+### Automated Release Process (Recommended)
 
-To create a new release:
+Releases are automated using **[python-semantic-release](https://python-semantic-release.readthedocs.io/)**. Simply use [Conventional Commits](https://www.conventionalcommits.org/) in your commit messages, and releases happen automatically when you push to `main`.
+
+#### Commit Message Format
+
+Use conventional commit prefixes to trigger version bumps:
+
+- **`feat:`** → Minor version bump (e.g., `0.1.0` → `0.2.0`)
+- **`fix:`** → Patch version bump (e.g., `0.1.0` → `0.1.1`)
+- **`feat!:`** or **`BREAKING CHANGE:`** → Major version bump (e.g., `0.1.0` → `1.0.0`)
+
+Examples:
+```bash
+git commit -m "feat: add new logging utility function"
+git commit -m "fix: resolve issue with error handling"
+git commit -m "feat!: change API signature for getLogger"
+```
+
+#### Automated Release Workflow
+
+When you push commits to `main`:
+
+1. **Semantic-release analyzes commits** — Determines if a release is needed based on commit messages
+2. **If a release is needed:**
+   - Bumps version in `pyproject.toml`
+   - Updates `RELEASES.md` with changelog from commits
+   - Creates a git tag (e.g., `v0.2.0`)
+   - Creates a GitHub release with notes from `RELEASES.md`
+   - Uploads Poetry build artifacts (wheel & sdist) to the release
+   - Uploads custom assets (`apathetic_logging.py` and `apathetic_logging.pyz`)
+3. **Tag triggers PyPI publish** — The publish workflow automatically publishes to PyPI
+
+#### Testing Releases Locally
+
+You can test what semantic-release would do without actually creating a release:
+
+```bash
+# Check what version would be released (dry run)
+poetry run poe release:version
+
+# Generate changelog without releasing
+poetry run poe release:changelog
+```
+
+#### Release Tasks
+
+| Command | Description |
+|---------|-------------|
+| `poetry run poe release:version` | Check what version would be released (dry run) |
+| `poetry run poe release:publish` | Actually publish a release (creates tag, GitHub release, etc.) |
+| `poetry run poe release:changelog` | Generate changelog without releasing |
+
+### Manual Release Process (Fallback)
+
+If you need to create a release manually (e.g., for hotfixes or special cases):
 
 1. **Bump version** in `pyproject.toml`:
    ```bash
@@ -295,36 +351,14 @@ To create a new release:
    git push origin vX.Y.Z
    ```
 
-5. **Build distribution files**:
-   ```bash
-   # Build single-file script (human-readable)
-   poetry run poe build:script
-   
-   # Build zipapp (dependency-aware, importable)
-   poetry run poe build:zipapp
-   ```
-   This creates:
-   - `dist/apathetic_logging.py` — single-file script (required, must be attached to GitHub release)
-   - `dist/apathetic_logging.pyz` — zipapp format (required, must be attached to GitHub release)
+5. **Publishing happens automatically** — The publish workflow will:
+   - Build the package
+   - Publish to PyPI (when tag is pushed)
+   - Upload custom assets to the GitHub release (if it exists)
 
-6. **Build and publish to PyPI** (if needed):
-   ```bash
-   poetry build
-   poetry publish --username __token__ --password <your-pypi-token>
-   ```
+> **Note:** For testing, you can use the `testpypi_only` option in the publish workflow to publish to TestPyPI first.
 
-7. **Create GitHub release** (if not automated):
-   - Go to GitHub Releases page
-   - Click "Draft a new release"
-   - Select the tag you just pushed
-   - Copy the release notes from `RELEASES.md`
-   - Attach `dist/apathetic_logging.py` (single-file script)
-   - Attach `dist/apathetic_logging.pyz` (zipapp format)
-   - Publish the release
-
-> **Note:** Verify the package on [Test PyPI](https://test.pypi.org/) before publishing live.
-
-Both distribution files should be attached to GitHub releases:
+Both distribution files are automatically attached to GitHub releases:
 - `dist/apathetic_logging.py` — single-file script (human-readable, stitched source)
 - `dist/apathetic_logging.pyz` — zipapp format (dependency-aware, importable)
 
@@ -340,6 +374,7 @@ Changes should maintain compatibility with the broader Apathetic Tools ecosystem
 ## Contribution Rules
 
 - Follow [PEP 8](https://peps.python.org/pep-0008/) (enforced via Ruff).  
+- Use [Conventional Commits](https://www.conventionalcommits.org/) for commit messages — this enables automated releases.  
 - Keep the **core library dependency-free** — dev tooling lives only in `pyproject.toml`'s `dev` group.  
 - Run `poetry run poe check` before committing.  
 - Open PRs against the **`main`** branch.  
