@@ -16,7 +16,7 @@ For formatting guidelines, see the [DECISIONS.md Style Guide](./DECISIONS_STYLE_
 
 
 ## 🚀 Adopt `python-semantic-release` for PyPI and GitHub Releases
-<a id="dec12"></a>*DEC 12 — 2025-11-24*
+<a id="dec16"></a>*DEC 16 — 2025-11-24*
 
 ### Context
 
@@ -51,7 +51,7 @@ This aligns with the project's principle of *automation over manual steps* while
 <br/><br/>
 
 ## 🔧 Adopt `mise` for Environment Management
-<a id="dec13"></a>*DEC 13 — 2025-11-24*
+<a id="dec15"></a>*DEC 15 — 2025-11-24*
 
 ### Context
 
@@ -121,7 +121,7 @@ This decision prioritizes **user convenience and ecosystem integration** while m
 <br/><br/>
 
 ## 📦 Choose `shiv` for Zipapp Support
-<a id="dec15"></a>*DEC 15 — 2025-11-24*
+<a id="dec13"></a>*DEC 13 — 2025-11-24*
 
 ### Context
 
@@ -156,7 +156,7 @@ This choice supports the three-tier distribution model by providing a reliable, 
 <br/><br/>
 
 ## 📚 Use Jekyll with Minima Theme for Documentation
-<a id="dec16"></a>*DEC 16 — 2025-11-13*
+<a id="dec12"></a>*DEC 12 — 2025-11-13*
 
 ### Context
 
