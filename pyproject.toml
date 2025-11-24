@@ -12,6 +12,24 @@ license-files = ["LICENSE"]
 requires-python = ">=3.10"
 dependencies = [
 ]
+keywords = ["logging", "logger", "cli", "colorized", "logging-library"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: System :: Logging",
+]
+
+[project.urls]
+Homepage = "https://github.com/apathetic-tools/python-logging"
+Documentation = "https://apathetic-tools.github.io/python-logging/"
+Repository = "https://github.com/apathetic-tools/python-logging"
+Issues = "https://github.com/apathetic-tools/python-logging/issues"
+Changelog = "https://github.com/apathetic-tools/python-logging/releases"
 
 # --- Development tasks ---
 [tool.poe.tasks]
