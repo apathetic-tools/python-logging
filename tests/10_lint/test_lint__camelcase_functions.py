@@ -2,10 +2,11 @@
 """Custom lint rule: Enforce camelCase naming for functions and methods.
 
 This test acts as a "lazy person's linter" since ruff doesn't support enforcing
-camelCase for function and method names. It enforces that all public functions
-and methods in the source code use camelCase naming convention.
+camelCase for function and method names. It enforces that all functions and
+methods (including private and nested) in the source code use camelCase naming
+convention.
 
-Rule: All public function and method names must be camelCase:
+Rule: All function and method names must be camelCase:
   - First letter must be lowercase
   - Subsequent words must be capitalized
   - No underscores between words
@@ -21,9 +22,8 @@ Examples:
   ❌ get_logger_of_type (snake_case)
 
 Exceptions:
-  - Private functions/methods (starting with `_`) are excluded
   - Special methods (starting and ending with `__`) are excluded
-  - Test functions (in test files) are excluded
+  - Only checks `src/` directory (not tests, dist, etc.)
 """
 
 import ast
@@ -37,10 +37,12 @@ def _is_camelcase(name: str) -> bool:
     """Check if a name follows camelCase convention.
 
     camelCase means:
-    - First character is lowercase
+    - First character is lowercase (or `_` for private functions)
     - Subsequent words start with uppercase
-    - No underscores
+    - No underscores (except leading `_` for private functions)
     - No consecutive uppercase letters (except at start of words)
+
+    For private functions (starting with `_`), the part after `_` must be camelCase.
 
     Args:
         name: The name to check
@@ -48,30 +50,24 @@ def _is_camelcase(name: str) -> bool:
     Returns:
         True if the name is camelCase, False otherwise
     """
-    # Empty string is not valid
-    if not name:
+    # Empty string or special methods are not valid
+    if not name or (name.startswith("__") and name.endswith("__")):
         return False
 
-    # Must start with lowercase letter
-    if not name[0].islower():
+    # Extract the part to check (strip leading `_` for private functions)
+    name_without_prefix = name.removeprefix("_")
+
+    # Validate: must have content after stripping, no underscores, starts lowercase
+    if (
+        not name_without_prefix
+        or "_" in name_without_prefix
+        or not name_without_prefix[0].islower()
+    ):
         return False
 
-    # No underscores allowed
-    if "_" in name:
-        return False
-
-    # Check for valid camelCase pattern:
-    # - Starts with lowercase letter
-    # - Then any lowercase letters/numbers
-    # - Then zero or more groups of (uppercase letter + lowercase letters/numbers)
-    # This allows: getLogger, getLoggerOfType, ensureHandlers, format, emit, etc.
+    # Check camelCase pattern: lowercase start, then (uppercase + lowercase)*
     pattern = r"^[a-z][a-z0-9]*([A-Z][a-z0-9]*)*$"
-    return bool(re.match(pattern, name))
-
-
-def _is_private(name: str) -> bool:
-    """Check if a name is private (starts with underscore)."""
-    return name.startswith("_")
+    return bool(re.match(pattern, name_without_prefix))
 
 
 def _is_special_method(name: str) -> bool:
@@ -83,7 +79,6 @@ def _should_check_name(name: str) -> bool:
     """Determine if a function/method name should be checked.
 
     We skip:
-    - Private names (starting with `_`)
     - Special methods (starting and ending with `__`)
 
     Args:
@@ -92,8 +87,6 @@ def _should_check_name(name: str) -> bool:
     Returns:
         True if the name should be checked for camelCase, False otherwise
     """
-    if _is_private(name):
-        return False
     return not _is_special_method(name)
 
 
@@ -108,43 +101,26 @@ class CamelCaseChecker(ast.NodeVisitor):
         """
         self.file_path = file_path
         self.violations: list[tuple[int, str, str]] = []  # (line, name, type)
-        self.function_depth = 0  # Track nesting depth to skip nested functions
         self._class_depth = 0  # Track class nesting depth
 
     def visit_FunctionDef(self, node: ast.FunctionDef) -> None:
         """Visit a function definition."""
-        # Only check top-level functions and class methods, not nested functions
-        is_top_level_or_method = self.function_depth == 0
-        if (
-            is_top_level_or_method
-            and _should_check_name(node.name)
-            and not _is_camelcase(node.name)
-        ):
-            # Determine if it's a method (inside a class) or top-level function
+        # Check all functions (including nested and private)
+        if _should_check_name(node.name) and not _is_camelcase(node.name):
+            # Determine if it's a method (inside a class) or function
             func_type = "method" if self._is_inside_class() else "function"
             self.violations.append((node.lineno, node.name, func_type))
-        # Track nesting and visit children
-        self.function_depth += 1
         self.generic_visit(node)
-        self.function_depth -= 1
 
     def visit_AsyncFunctionDef(self, node: ast.AsyncFunctionDef) -> None:
         """Visit an async function definition."""
-        # Only check top-level functions and class methods, not nested functions
-        is_top_level_or_method = self.function_depth == 0
-        if (
-            is_top_level_or_method
-            and _should_check_name(node.name)
-            and not _is_camelcase(node.name)
-        ):
-            # Determine if it's a method (inside a class) or top-level function
+        # Check all async functions (including nested and private)
+        if _should_check_name(node.name) and not _is_camelcase(node.name):
+            # Determine if it's a method (inside a class) or function
             is_inside_class = self._is_inside_class()
             func_type = "async method" if is_inside_class else "async function"
             self.violations.append((node.lineno, node.name, func_type))
-        # Track nesting and visit children
-        self.function_depth += 1
         self.generic_visit(node)
-        self.function_depth -= 1
 
     def visit_ClassDef(self, node: ast.ClassDef) -> None:
         """Visit a class definition."""
@@ -206,9 +182,12 @@ def test_camelcase_functions_and_methods() -> None:
       ❌ get_logger_of_type (snake_case)
 
     Exceptions:
-      - Private functions/methods (starting with `_`) are excluded
       - Special methods (starting and ending with `__`) are excluded
       - Only checks `src/` directory (not tests, dist, etc.)
+
+    Note: This rule applies to all functions and methods including:
+      - Private functions/methods (starting with `_`)
+      - Nested functions/methods
     """
     src_dir = PROJ_ROOT / "src"
     if not src_dir.exists():
@@ -244,8 +223,12 @@ def test_camelcase_functions_and_methods() -> None:
         )
         print(
             "\nExceptions (not checked):"
-            "\n  - Private functions/methods (starting with `_`)"
             "\n  - Special methods (starting and ending with `__`)"
+        )
+        print(
+            "\nNote: This rule applies to all functions and methods including:"
+            "\n  - Private functions/methods (starting with `_`)"
+            "\n  - Nested functions/methods"
         )
         print("\nViolations found:")
         for file_path, line_num, name, func_type in all_violations:
@@ -255,9 +238,9 @@ def test_camelcase_functions_and_methods() -> None:
             print(f"    Fix: Rename to camelCase (e.g., `{_suggest_camelcase(name)}`)")
         xmsg = (
             f"{len(all_violations)} function/method name(s) violate camelCase"
-            " convention. All public functions and methods must use camelCase"
-            " naming (first letter lowercase, subsequent words capitalized,"
-            " no underscores)."
+            " convention. All functions and methods (including private and"
+            " nested) must use camelCase naming (first letter lowercase,"
+            " subsequent words capitalized, no underscores)."
         )
         raise AssertionError(xmsg)
 
@@ -272,10 +255,16 @@ def _suggest_camelcase(name: str) -> str:
         name: The original name
 
     Returns:
-        A suggested camelCase version
+        A suggested camelCase version (preserves leading `_` for private functions)
     """
+    # Handle private functions (preserve leading `_`)
+    is_special = name.startswith("__") and name.endswith("__")
+    is_private = name.startswith("_") and not is_special
+    prefix = "_" if is_private else ""
+    name_to_convert = name[1:] if is_private else name
+
     # Split on underscores and capitalize appropriately
-    parts = name.split("_")
+    parts = name_to_convert.split("_")
     if not parts:
         return name
 
@@ -285,4 +274,4 @@ def _suggest_camelcase(name: str) -> str:
         if part:
             result += part.capitalize()
 
-    return result
+    return prefix + result

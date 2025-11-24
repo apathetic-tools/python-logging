@@ -53,10 +53,10 @@ class ApatheticLogging_Internal_SafeLogging:  # noqa: N801  # pyright: ignore[re
         """
         _safe_logging = ApatheticLogging_Internal_SafeLogging
 
-        def local_trace(label: str, *args: Any) -> Any:
+        def localTrace(label: str, *args: Any) -> Any:
             return _safe_logging.safeTrace(label, *args, icon=icon)
 
-        return local_trace
+        return localTrace
 
     @staticmethod
     def safeTrace(label: str, *args: Any, icon: str = "🧪") -> None:
