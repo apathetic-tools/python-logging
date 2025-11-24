@@ -1,0 +1,65 @@
+# .github/workflows/publish.yml
+name: Publish to PyPI
+
+on:
+  push:
+    tags:
+      - "v*"  # Triggers on tags like v0.1.0, v1.2.3, etc.
+  workflow_dispatch:
+    inputs:
+      testpypi_only:
+        description: 'Publish to TestPyPI only (for testing)'
+        required: false
+        default: false
+        type: boolean
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.10"
+
+      - name: Install Poetry
+        uses: abatilo/actions-poetry@v4
+        with:
+          poetry-version: "latest"
+
+      - name: Install dependencies
+        run: poetry install --no-interaction --no-root
+
+      - name: Run checks
+        run: poetry run poe check
+
+      - name: Build package
+        run: poetry build
+
+      - name: Publish to TestPyPI (test only)
+        if: github.event.inputs.testpypi_only == 'true'
+        env:
+          POETRY_PYPI_TOKEN_TESTPYPI: ${{ secrets.TESTPYPI_API_TOKEN }}
+        run: |
+          poetry publish \
+            --repository testpypi \
+            --username __token__ \
+            --password ${{ secrets.TESTPYPI_API_TOKEN }}
+
+      - name: Publish to PyPI
+        if: github.event.inputs.testpypi_only != 'true'
+        env:
+          POETRY_PYPI_TOKEN_PYPI: ${{ secrets.PYPI_API_TOKEN }}
+        run: |
+          poetry publish \
+            --username __token__ \
+            --password ${{ secrets.PYPI_API_TOKEN }}
+
