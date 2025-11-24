@@ -336,7 +336,7 @@ major_on_zero = false
 upload_to_pypi = false  # We handle PyPI publishing in GitHub Actions
 upload_to_release = true
 hvcs = "github"
-remote = "origin"
+remote = { name = "origin" }
 tag_commit = true
 prerelease_tag = "rc"
 build_commit_message = "chore: build release v{version} [skip ci]"
