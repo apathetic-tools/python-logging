@@ -516,9 +516,11 @@ class ApatheticLogging_Internal_LoggerCore(logging.Logger):  # noqa: N801  # pyr
         exc_info = kwargs.pop("exc_info", True)
         stacklevel = kwargs.pop("stacklevel", self.DEFAULT_STACKLEVEL)
         if self.isEnabledFor(logging.DEBUG):
-            self.exception(msg, *args, exc_info=exc_info, stacklevel=stacklevel)
+            self.exception(
+                msg, *args, exc_info=exc_info, stacklevel=stacklevel, **kwargs
+            )
         else:
-            self.error(msg, *args)
+            self.error(msg, *args, **kwargs)
 
     def criticalIfNotDebug(self, msg: str, *args: Any, **kwargs: Any) -> None:
         """Logs an exception with the real traceback starting from the caller.
@@ -526,9 +528,11 @@ class ApatheticLogging_Internal_LoggerCore(logging.Logger):  # noqa: N801  # pyr
         exc_info = kwargs.pop("exc_info", True)
         stacklevel = kwargs.pop("stacklevel", self.DEFAULT_STACKLEVEL)
         if self.isEnabledFor(logging.DEBUG):
-            self.exception(msg, *args, exc_info=exc_info, stacklevel=stacklevel)
+            self.exception(
+                msg, *args, exc_info=exc_info, stacklevel=stacklevel, **kwargs
+            )
         else:
-            self.critical(msg, *args)
+            self.critical(msg, *args, **kwargs)
 
     def colorize(
         self, text: str, color: str, *, enable_color: bool | None = None

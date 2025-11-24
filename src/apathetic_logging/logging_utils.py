@@ -11,7 +11,7 @@ import inspect
 import logging
 import sys
 from types import FrameType
-from typing import TypeVar
+from typing import Any, TypeVar
 
 
 class ApatheticLogging_Internal_LoggingUtils:  # noqa: N801  # pyright: ignore[reportUnusedClass]
@@ -52,7 +52,9 @@ class ApatheticLogging_Internal_LoggingUtils:  # noqa: N801  # pyright: ignore[r
         )
 
     @staticmethod
-    def getLevelName(level: int | str, *, strict: bool = False) -> str | int:
+    def getLevelName(
+        level: int | str, *args: Any, strict: bool = False, **kwargs: Any
+    ) -> str | int:
         """Return the textual or numeric representation of a logging level.
 
         Behavior depends on compatibility mode (set via `registerCompatibilityMode()`):
@@ -75,10 +77,12 @@ class ApatheticLogging_Internal_LoggingUtils:  # noqa: N801  # pyright: ignore[r
 
         Args:
             level: Log level as integer or string name
+            *args: Additional positional arguments (for future-proofing)
             strict: If True, raise ValueError for unknown levels. If False (default),
                 returns "Level {level}" format for unknown integer levels (matching
                 stdlib behavior). Only used when compatibility mode is disabled and
                 level is an integer.
+            **kwargs: Additional keyword arguments (for future-proofing)
 
         Returns:
             - Compatibility mode enabled: `str | int` (bidirectional like stdlib)
@@ -129,7 +133,7 @@ class ApatheticLogging_Internal_LoggingUtils:  # noqa: N801  # pyright: ignore[r
 
         # All other cases: return string (compat mode with int, or non-compat mode)
         return ApatheticLogging_Internal_LoggingUtils.getLevelNameStr(
-            level, strict=strict
+            level, *args, strict=strict, **kwargs
         )
 
     @staticmethod
@@ -186,7 +190,9 @@ class ApatheticLogging_Internal_LoggingUtils:  # noqa: N801  # pyright: ignore[r
         raise ValueError(msg)
 
     @staticmethod
-    def getLevelNameStr(level: int | str, *, strict: bool = False) -> str:
+    def getLevelNameStr(
+        level: int | str, *args: Any, strict: bool = False, **kwargs: Any
+    ) -> str:
         """Convert a log level to its string name representation.
 
         Unidirectional function that always returns a string. This is the recommended
@@ -204,9 +210,11 @@ class ApatheticLogging_Internal_LoggingUtils:  # noqa: N801  # pyright: ignore[r
 
         Args:
             level: Log level as integer or string name (case-insensitive)
+            *args: Additional positional arguments (for future-proofing)
             strict: If True, raise ValueError for unknown integer levels.
                 If False (default), returns "Level {level}" format for unknown
                 integer levels (matching stdlib behavior).
+            **kwargs: Additional keyword arguments (for future-proofing)
 
         Returns:
             Level name as uppercase string
@@ -243,7 +251,7 @@ class ApatheticLogging_Internal_LoggingUtils:  # noqa: N801  # pyright: ignore[r
             return level.upper()
 
         # Integer input: convert to level name string
-        result = logging.getLevelName(level)
+        result = logging.getLevelName(level, *args, **kwargs)
         # logging.getLevelName always returns str for int input
 
         # If input was int and result is "Level {level}" format and strict is on, raise
