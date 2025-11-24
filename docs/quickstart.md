@@ -182,7 +182,7 @@ logger.debug("Debug message")
 logger.warning("Warning message")
 ```
 
-> **Note:** When using `getLogger(None)`, the logger name is now auto-inferred from the calling module instead of returning the root logger. To get the root logger, use `getLogger("")` instead. See [Breaking Changes]({{ '/api' | relative_url }}#breaking-changes) for details.
+> **Note:** When using `getLogger(None)`, the logger name is auto-inferred from the calling module (improved behavior). To get the root logger, use `getLogger("")` instead. For stdlib-compatible behavior where `getLogger(None)` returns the root logger, enable [Compatibility Mode]({{ '/api' | relative_url }}#compatibility-mode).
 
 ## Next Steps
 

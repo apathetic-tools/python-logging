@@ -10,19 +10,121 @@ Complete API documentation for Apathetic Python Logger.
 
 > **Note:** This library uses **camelCase** naming to match Python's standard library `logging` module conventions.
 >
-> For information about breaking changes, see the [Breaking Changes](#breaking-changes) section.
+> By default, this library provides improved behavior with enhancements over the standard library. For stdlib-compatible behavior with no breaking changes, enable [Compatibility Mode](#compatibility-mode).
 
-## New and Modified Functions
+## Quick Reference: `apathetic_logging` Module Functions
 
-These functions are new to Apathetic Python Logger or have modified behavior compared to stdlib logging.
+### New Functions
 
-### `getLogger(logger_name: str | None = None, *, level: str | int | None = None, minimum: bool | None = None) -> Logger`
+| Function | Ver | Summary |
+|-----------|-----|---------|
+| [`getLoggerOfType()`](#getloggeroftype) | | Get a logger of the specified type, creating it if necessary |
+| [`registerLogger()`](#registerlogger) | | Register a logger for use by `getLogger()` |
+| [`registerCompatibilityMode()`](#registercompatibilitymode) | | Register the compatibility mode setting for stdlib drop-in replacement |
+| [`getCompatibilityMode()`](#getcompatibilitymode) | | Get the compatibility mode setting |
+| [`registerLogLevelEnvVars()`](#registerloglevelenvvars) | | Register environment variable names to check for log level |
+| [`registerDefaultLogLevel()`](#registerdefaultloglevel) | | Register the default log level to use when no other source is found |
+| [`registerTargetPythonVersion()`](#registertargetpythonversion) | | Register the target Python version for compatibility checking |
+| [`registerPropagate()`](#registerpropagate) | | Register the propagate setting for loggers |
+| [`safeLog()`](#safelog) | | Emergency logger that never fails |
+| [`safeTrace()`](#safetrace) | | Debug tracing function for test development |
+| [`makeSafeTrace()`](#makesafetrace) | | Create a test trace function with a custom icon |
+| [`hasLogger()`](#haslogger) | | Check if a logger exists in the logging manager's registry |
+| [`removeLogger()`](#removelogger) | | Remove a logger from the logging manager's registry |
+| [`getDefaultLoggerName()`](#getdefaultloggername) | | Get default logger name with optional inference from caller's frame |
+| [`getLogLevelEnvVars()`](#getloglevelenvvars) | | Get the environment variable names to check for log level |
+| [`getDefaultLogLevel()`](#getdefaultloglevel) | | Get the default log level |
+| [`getRegisteredLoggerName()`](#getregisteredloggername) | | Get the registered logger name |
+| [`getTargetPythonVersion()`](#gettargetpythonversion) | | Get the target Python version |
+| [`getDefaultPropagate()`](#getdefaultpropagate) | | Get the default propagate setting |
+
+### Changed Functions
+
+| Function | Ver | Summary |
+|-----------|-----|---------|
+| [`getLogger()`](#getlogger) | | Return the registered logger instance (auto-infers name when None) |
+
+### Unchanged Functions
+
+| Function | Ver | Summary |
+|-----------|-----|---------|
+| [`basicConfig()`](#basicconfig) | | Configure logging system |
+| [`addLevelName()`](#addlevelname) | | Associate a level name with a numeric level |
+| [`getLevelName()`](#getlevelname) | | Get the level name for a numeric level |
+| [`getLevelNamesMapping()`](#getlevelnamesmapping) | 3.11+ | Get mapping of level names to numeric values |
+| [`getLoggerClass()`](#getloggerclass) | | Return the class to be used when instantiating a logger |
+| [`setLoggerClass()`](#setloggerclass) | | Set the class to be used when instantiating a logger |
+| [`getLogRecordFactory()`](#getlogrecordfactory) | | Return the factory function used to create LogRecords |
+| [`setLogRecordFactory()`](#setlogrecordfactory) | | Set the factory function used to create LogRecords |
+| [`shutdown()`](#shutdown) | | Perform an orderly shutdown of the logging system |
+| [`disable()`](#disable) | | Disable all logging calls of severity 'level' and below |
+| [`captureWarnings()`](#capturewarnings) | | Capture warnings issued by the warnings module |
+| [`critical()`](#critical) | | Log a message with severity CRITICAL |
+| [`debug()`](#debug) | | Log a message with severity DEBUG |
+| [`error()`](#error) | | Log a message with severity ERROR |
+| [`exception()`](#exception) | | Log a message with severity ERROR with exception info |
+| [`fatal()`](#fatal) | | Log a message with severity CRITICAL |
+| [`info()`](#info) | | Log a message with severity INFO |
+| [`log()`](#log) | | Log a message with an explicit level |
+| [`warn()`](#warn) | | Log a message with severity WARNING |
+| [`warning()`](#warning) | | Log a message with severity WARNING |
+| [`getHandlerByName()`](#gethandlerbyname) | 3.12+ | Get a handler with the specified name |
+| [`getHandlerNames()`](#gethandlernames) | 3.12+ | Return all known handler names |
+| [`makeLogRecord()`](#makelogrecord) | | Create a LogRecord from the given parameters |
+| [`currentframe()`](#currentframe) | | Return the frame object for the caller's stack frame |
+
+## Quick Reference: `apathetic_logging.Logger` Class Methods
+
+### New Methods
+
+| Method | Ver | Summary |
+|--------|-----|---------|
+| [`determineLogLevel()`](#determineloglevel) | | Resolve log level from CLI → env → root config → default |
+| [`determineColorEnabled()`](#determinecolorenabled) | | Return True if colored output should be enabled (classmethod) |
+| [`extendLoggingModule()`](#extendloggingmodule) | | Extend Python's logging module with TRACE and SILENT levels (classmethod) |
+| [`trace()`](#trace) | | Log a message at TRACE level |
+| [`detail()`](#detail) | | Log a message at DETAIL level |
+| [`minimal()`](#minimal) | | Log a message at MINIMAL level |
+| [`test()`](#test) | | Log a message at TEST level |
+| [`errorIfNotDebug()`](#errorifnotdebug) | | Log an error with full traceback only if debug/trace is enabled |
+| [`criticalIfNotDebug()`](#criticalifnotdebug) | | Log a critical error with full traceback only if debug/trace is enabled |
+| [`colorize()`](#colorize) | | Apply ANSI color codes to text |
+| [`logDynamic()`](#logdynamic) | | Log a message at a dynamically specified level |
+| [`useLevel()`](#uselevel) | | Context manager to temporarily change log level |
+| [`levelName`](#levelname) | | Return the explicit level name set on this logger (property) |
+| [`effectiveLevel`](#effectivelevel) | | Return the effective level (what's actually used) (property) |
+| [`effectiveLevelName`](#effectivelevelname) | | Return the effective level name (what's actually used) (property) |
+| [`getLevel()`](#getlevel) | | Return the explicit level set on this logger |
+| [`getLevelName()`](#getlevelname) | | Return the explicit level name set on this logger |
+| [`getEffectiveLevelName()`](#geteffectivelevelname) | | Return the effective level name (what's actually used) |
+| [`ensureHandlers()`](#ensurehandlers) | | Ensure handlers are attached to this logger |
+| [`validateLevelPositive()`](#validatelevelpositive) | | Validate that a level value is positive (> 0) (staticmethod) | |
+
+### Changed Methods
+
+| Method | Ver | Summary |
+|--------|-----|---------|
+| [`setLevel()`](#setlevel) | | Set the logging level (accepts string names and has minimum parameter) |
+| [`_log()`](#_log) | | Log a message with the specified level (automatically ensures handlers) |
+| [`addLevelName()`](#addlevelname) | | Associate a level name with a numeric level (validates level > 0) (staticmethod) |
+
+### Unchanged Methods
+
+All other methods from `logging.Logger` are inherited unchanged. See the [Python logging.Logger documentation](https://docs.python.org/3/library/logging.html#logging.Logger) for the complete list.
+
+## `apathetic_logging` Function Reference
+
+### `getLogger`
+
+```python
+getLogger(logger_name: str | None = None, *, level: str | int | None = None, minimum: bool | None = None) -> Logger
+```
 
 Return the registered logger instance.
 
 Uses Python's built-in logging registry (`logging.getLogger()`) to retrieve the logger. If no logger name is provided, uses the registered logger name or attempts to auto-infer the logger name from the calling module's top-level package.
 
-> **Breaking Change:** When `logger_name` is `None`, the logger name is now **auto-inferred** from the calling module instead of returning the root logger. To get the root logger, use `getLogger("")` instead. See [Breaking Changes](#breaking-changes) for details.
+> **Behavior:** When `logger_name` is `None`, the logger name is **auto-inferred** from the calling module (improved behavior). To get the root logger, use `getLogger("")` instead. In [Compatibility Mode](#compatibility-mode), `getLogger(None)` returns the root logger (stdlib behavior).
 
 **Parameters:**
 - `logger_name` (str | None): Optional logger name. If not provided, uses the registered logger name or auto-infers from the calling module. Use `""` to get the root logger.
@@ -57,7 +159,11 @@ logger = getLogger("my_app", level="info", minimum=True)  # At least INFO
 logger = getLogger("")  # Returns root logger
 ```
 
-### `getLoggerOfType(name: str | None, class_type: type[Logger], skip_frames: int = 1, *args: Any, level: str | int | None = None, minimum: bool | None = None, **kwargs: Any) -> Logger`
+### `getLoggerOfType`
+
+```python
+getLoggerOfType(name: str | None, class_type: type[Logger], skip_frames: int = 1, *args: Any, level: str | int | None = None, minimum: bool | None = None, **kwargs: Any) -> Logger
+```
 
 Get a logger of the specified type, creating it if necessary.
 
@@ -92,7 +198,11 @@ logger = getLoggerOfType("my_app", AppLogger, level="debug")
 logger = getLoggerOfType("my_app", AppLogger, level="info", minimum=True)
 ```
 
-### `registerLogger(logger_name: str | None = None, logger_class: type[Logger] | None = None, *, target_python_version: tuple[int, int] | None = None, log_level_env_vars: list[str] | None = None, default_log_level: str | None = None, propagate: bool | None = None, compat_mode: bool | None = None) -> None`
+### `registerLogger`
+
+```python
+registerLogger(logger_name: str | None = None, logger_class: type[Logger] | None = None, *, target_python_version: tuple[int, int] | None = None, log_level_env_vars: list[str] | None = None, default_log_level: str | None = None, propagate: bool | None = None, compat_mode: bool | None = None) -> None
+```
 
 Register a logger for use by `getLogger()`. This registers the logger name and extends the logging module with custom levels if needed.
 
@@ -107,7 +217,7 @@ If `logger_class` is provided and has an `extendLoggingModule()` method, it will
 - `log_level_env_vars` (list[str] | None): Optional list of environment variable names to check for log level. If provided, sets the log level environment variables in the registry permanently. Defaults to None (no change).
 - `default_log_level` (str | None): Optional default log level name. If provided, sets the default log level in the registry permanently. Defaults to None (no change).
 - `propagate` (bool | None): Optional propagate setting. If provided, sets the propagate value in the registry permanently. If None, uses registered propagate setting or falls back to DEFAULT_PROPAGATE from constants.py. Defaults to None (no change).
-- `compat_mode` (bool | None): Optional compatibility mode setting. If provided, sets the compatibility mode in the registry permanently. When True, restores stdlib-compatible behavior where possible (e.g., `getLogger(None)` returns root logger). If None, uses registered compatibility mode setting or defaults to False (improved behavior). Defaults to None (no change).
+- `compat_mode` (bool | None): Optional compatibility mode setting. If provided, sets the compatibility mode in the registry permanently. When `True`, enables stdlib-compatible behavior with no breaking changes (e.g., `getLogger(None)` returns root logger). When `False` (default), uses improved behavior with enhancements. If `None`, uses registered compatibility mode setting or defaults to `False`. Defaults to `None` (no change).
 
 **Example:**
 ```python
@@ -136,43 +246,63 @@ registerLogger(
 )
 ```
 
-### `registerCompatibilityMode(compat_mode: bool) -> None`
+### `registerCompatibilityMode`
+
+```python
+registerCompatibilityMode(compat_mode: bool) -> None
+```
 
 Register the compatibility mode setting for stdlib drop-in replacement.
 
-This sets the compatibility mode that will be used when creating loggers. If not set, the library defaults to False (improved behavior).
+This sets the compatibility mode that will be used when creating loggers. If not set, the library defaults to `False` (improved behavior with enhancements).
 
-When `compat_mode` is True, restores stdlib-compatible behavior where possible (e.g., `getLogger(None)` returns root logger instead of auto-inferring).
+**Compatibility Modes:**
+
+- **`compat_mode=False` (default):** Improved behavior with enhancements. May include changes from stdlib behavior (e.g., `getLogger(None)` auto-infers logger name from calling module).
+- **`compat_mode=True`:** Standard library compatible behavior with no breaking changes. Restores stdlib behavior where possible (e.g., `getLogger(None)` returns root logger).
 
 **Parameters:**
-- `compat_mode` (bool): Compatibility mode setting (True or False). When True, enables stdlib-compatible behavior.
+- `compat_mode` (bool): Compatibility mode setting. When `True`, enables stdlib-compatible behavior with no breaking changes. When `False` (default), uses improved behavior with enhancements.
 
 **Example:**
 ```python
 from apathetic_logging import registerCompatibilityMode
 
+# Enable stdlib-compatible behavior (no breaking changes)
 registerCompatibilityMode(compat_mode=True)
 # Now getLogger(None) returns root logger (stdlib behavior)
+
+# Use improved behavior with enhancements (default)
+registerCompatibilityMode(compat_mode=False)
+# Now getLogger(None) auto-infers logger name (improved behavior)
 ```
 
-### `getCompatibilityMode() -> bool`
+### `getCompatibilityMode`
+
+```python
+getCompatibilityMode() -> bool
+```
 
 Get the compatibility mode setting.
 
-Returns the registered compatibility mode setting, or False (improved behavior) if not registered.
+Returns the registered compatibility mode setting, or `False` (improved behavior) if not registered.
 
 **Returns:**
-- `bool`: Compatibility mode setting (True or False). Defaults to `False` if not registered.
+- `bool`: Compatibility mode setting. `False` means improved behavior with enhancements (default). `True` means stdlib-compatible behavior with no breaking changes.
 
 **Example:**
 ```python
 from apathetic_logging import getCompatibilityMode
 
 compat_mode = getCompatibilityMode()
-print(compat_mode)  # False (default)
+print(compat_mode)  # False (default: improved behavior)
 ```
 
-### `registerLogLevelEnvVars(env_vars: list[str]) -> None`
+### `registerLogLevelEnvVars`
+
+```python
+registerLogLevelEnvVars(env_vars: list[str]) -> None
+```
 
 Register environment variable names to check for log level.
 
@@ -188,7 +318,11 @@ from apathetic_logging import registerLogLevelEnvVars
 registerLogLevelEnvVars(["MYAPP_LOG_LEVEL", "LOG_LEVEL"])
 ```
 
-### `registerDefaultLogLevel(default_level: str) -> None`
+### `registerDefaultLogLevel`
+
+```python
+registerDefaultLogLevel(default_level: str) -> None
+```
 
 Register the default log level to use when no other source is found.
 
@@ -202,7 +336,11 @@ from apathetic_logging import registerDefaultLogLevel
 registerDefaultLogLevel("warning")
 ```
 
-### `registerTargetPythonVersion(version: tuple[int, int] | None) -> None`
+### `registerTargetPythonVersion`
+
+```python
+registerTargetPythonVersion(version: tuple[int, int] | None) -> None
+```
 
 Register the target Python version for compatibility checking.
 
@@ -226,7 +364,11 @@ registerTargetPythonVersion((3, 11))
 
 **Note:** This is useful when developing on a newer Python version (e.g., 3.12) but targeting an older version (e.g., 3.10). The library will validate function calls against your target version, preventing accidental use of features that don't exist in your target environment.
 
-### `registerPropagate(*, propagate: bool | None) -> None`
+### `registerPropagate`
+
+```python
+registerPropagate(*, propagate: bool | None) -> None
+```
 
 Register the propagate setting for loggers.
 
@@ -248,7 +390,11 @@ registerPropagate(propagate=True)
 registerPropagate(propagate=False)
 ```
 
-### `safeLog(msg: str) -> None`
+### `safeLog`
+
+```python
+safeLog(msg: str) -> None
+```
 
 Emergency logger that never fails.
 
@@ -268,7 +414,11 @@ except Exception:
     safeLog("Critical error: logging system may be broken")
 ```
 
-### `safeTrace(label: str, *args: Any, icon: str = "🧪") -> None`
+### `safeTrace`
+
+```python
+safeTrace(label: str, *args: Any, icon: str = "🧪") -> None
+```
 
 Debug tracing function for test development. Only active when `TEST_TRACE` environment variable is set.
 
@@ -277,7 +427,11 @@ Debug tracing function for test development. Only active when `TEST_TRACE` envir
 - `*args`: Additional arguments to trace
 - `icon` (str): Icon to use (default: `"🧪"`)
 
-### `makeSafeTrace(icon: str = "🧪") -> Callable`
+### `makeSafeTrace`
+
+```python
+makeSafeTrace(icon: str = "🧪") -> Callable
+```
 
 Create a test trace function with a custom icon.
 
@@ -287,7 +441,11 @@ Create a test trace function with a custom icon.
 **Returns:**
 - `Callable`: Test trace function
 
-### `hasLogger(logger_name: str) -> bool`
+### `hasLogger`
+
+```python
+hasLogger(logger_name: str) -> bool
+```
 
 Check if a logger exists in the logging manager's registry.
 
@@ -297,14 +455,22 @@ Check if a logger exists in the logging manager's registry.
 **Returns:**
 - `bool`: True if the logger exists, False otherwise
 
-### `removeLogger(logger_name: str) -> None`
+### `removeLogger`
+
+```python
+removeLogger(logger_name: str) -> None
+```
 
 Remove a logger from the logging manager's registry.
 
 **Parameters:**
 - `logger_name` (str): The name of the logger to remove
 
-### `getDefaultLoggerName(logger_name: str | None = None, *, check_registry: bool = True, skip_frames: int = 1, raise_on_error: bool = False, infer: bool = True, register: bool = False) -> str | None`
+### `getDefaultLoggerName`
+
+```python
+getDefaultLoggerName(logger_name: str | None = None, *, check_registry: bool = True, skip_frames: int = 1, raise_on_error: bool = False, infer: bool = True, register: bool = False) -> str | None
+```
 
 Get default logger name with optional inference from caller's frame.
 
@@ -322,7 +488,11 @@ Get default logger name with optional inference from caller's frame.
 **Raises:**
 - `RuntimeError`: If logger name cannot be resolved and raise_on_error=True
 
-### `getLogLevelEnvVars() -> list[str]`
+### `getLogLevelEnvVars`
+
+```python
+getLogLevelEnvVars() -> list[str]
+```
 
 Get the environment variable names to check for log level.
 
@@ -331,7 +501,11 @@ Returns the registered environment variable names, or the default environment va
 **Returns:**
 - `list[str]`: List of environment variable names to check for log level. Defaults to `["LOG_LEVEL"]` if not registered
 
-### `getDefaultLogLevel() -> str`
+### `getDefaultLogLevel`
+
+```python
+getDefaultLogLevel() -> str
+```
 
 Get the default log level.
 
@@ -340,7 +514,11 @@ Returns the registered default log level, or the module default if none is regis
 **Returns:**
 - `str`: Default log level name (e.g., "detail", "info"). Defaults to `"detail"` if not registered
 
-### `getRegisteredLoggerName() -> str | None`
+### `getRegisteredLoggerName`
+
+```python
+getRegisteredLoggerName() -> str | None
+```
 
 Get the registered logger name.
 
@@ -349,7 +527,11 @@ Returns the registered logger name, or None if no logger name has been registere
 **Returns:**
 - `str | None`: Registered logger name, or None if not registered
 
-### `getTargetPythonVersion() -> tuple[int, int]`
+### `getTargetPythonVersion`
+
+```python
+getTargetPythonVersion() -> tuple[int, int]
+```
 
 Get the target Python version.
 
@@ -358,7 +540,11 @@ Returns the registered target Python version, or the minimum supported version i
 **Returns:**
 - `tuple[int, int]`: Target Python version as (major, minor) tuple. Defaults to `(3, 10)` if not registered
 
-### `getDefaultPropagate() -> bool`
+### `getDefaultPropagate`
+
+```python
+getDefaultPropagate() -> bool
+```
 
 Get the default propagate setting.
 
@@ -367,52 +553,255 @@ Returns the registered propagate setting, or the module default if none is regis
 **Returns:**
 - `bool`: Default propagate setting (True or False). Defaults to `False` if not registered
 
-## Wrapped stdlib Functions
+### `basicConfig`
 
-These functions are direct wrappers of Python's standard library `logging` module functions, provided with camelCase naming to match stdlib conventions. They behave identically to their stdlib counterparts.
+```python
+basicConfig(*args: Any, **kwargs: Any) -> None
+```
 
-### Configuration Functions
+Wrapper for `logging.basicConfig()`. Configure the logging system.
 
-- `basicConfig(*args: Any, **kwargs: Any) -> None` — Wrapper for `logging.basicConfig()`
-- `addLevelName(level: int, level_name: str) -> None` — Wrapper for `logging.addLevelName()`
-- `getLevelName(level: int) -> str` — Wrapper for `logging.getLevelName()`
-- `getLevelNamesMapping() -> dict[int, str]` — Wrapper for `logging.getLevelNamesMapping()`
-- `getLoggerClass() -> type[logging.Logger]` — Wrapper for `logging.getLoggerClass()`
-- `setLoggerClass(klass: type[logging.Logger]) -> None` — Wrapper for `logging.setLoggerClass()`
-- `getLogRecordFactory() -> Callable` — Wrapper for `logging.getLogRecordFactory()`
-- `setLogRecordFactory(factory: Callable) -> None` — Wrapper for `logging.setLogRecordFactory()`
-- `shutdown() -> None` — Wrapper for `logging.shutdown()`
-- `disable(level: int) -> None` — Wrapper for `logging.disable()`
-- `captureWarnings(capture: bool) -> None` — Wrapper for `logging.captureWarnings()`
+For detailed documentation, see the [Python logging.basicConfig() documentation](https://docs.python.org/3/library/logging.html#logging.basicConfig).
 
-### Module-Level Logging Functions
+### `addLevelName`
 
-- `critical(msg: str, *args: Any, **kwargs: Any) -> None` — Wrapper for `logging.critical()`
-- `debug(msg: str, *args: Any, **kwargs: Any) -> None` — Wrapper for `logging.debug()`
-- `error(msg: str, *args: Any, **kwargs: Any) -> None` — Wrapper for `logging.error()`
-- `exception(msg: str, *args: Any, **kwargs: Any) -> None` — Wrapper for `logging.exception()`
-- `fatal(msg: str, *args: Any, **kwargs: Any) -> None` — Wrapper for `logging.fatal()`
-- `info(msg: str, *args: Any, **kwargs: Any) -> None` — Wrapper for `logging.info()`
-- `log(level: int, msg: str, *args: Any, **kwargs: Any) -> None` — Wrapper for `logging.log()`
-- `warn(msg: str, *args: Any, **kwargs: Any) -> None` — Wrapper for `logging.warn()`
-- `warning(msg: str, *args: Any, **kwargs: Any) -> None` — Wrapper for `logging.warning()`
+```python
+addLevelName(level: int, level_name: str) -> None
+```
 
-### Utility Functions
+Wrapper for `logging.addLevelName()`. Associate a level name with a numeric level.
 
-- `getHandlerByName(name: str) -> logging.Handler | None` — Wrapper for `logging.getHandlerByName()`
-- `getHandlerNames() -> list[str]` — Wrapper for `logging.getHandlerNames()`
-- `makeLogRecord(name: str, level: int, fn: str, lno: int, msg: str, args: tuple, exc_info: Any) -> logging.LogRecord` — Wrapper for `logging.makeLogRecord()`
-- `currentframe(*args: Any, **kwargs: Any) -> FrameType | None` — Wrapper for `logging.currentframe()`
+For detailed documentation, see the [Python logging.addLevelName() documentation](https://docs.python.org/3/library/logging.html#logging.addLevelName).
 
-For detailed documentation on these functions, see the [Python logging module documentation](https://docs.python.org/3/library/logging.html).
+### `getLevelName`
 
-## Classes
+```python
+getLevelName(level: int) -> str
+```
 
-### `Logger`
+Wrapper for `logging.getLevelName()`. Get the level name for a numeric level.
 
-Logger class for all Apathetic tools. Extends Python's standard `logging.Logger`.
+For detailed documentation, see the [Python logging.getLevelName() documentation](https://docs.python.org/3/library/logging.html#logging.getLevelName).
 
-#### Constructor
+### `getLevelNamesMapping`
+
+```python
+getLevelNamesMapping() -> dict[int, str]
+```
+
+**Requires Python 3.11+**
+
+Wrapper for `logging.getLevelNamesMapping()`. Get mapping of level names to numeric values.
+
+For detailed documentation, see the [Python logging.getLevelNamesMapping() documentation](https://docs.python.org/3.11/library/logging.html#logging.getLevelNamesMapping).
+
+### `getLoggerClass`
+
+```python
+getLoggerClass() -> type[logging.Logger]
+```
+
+Wrapper for `logging.getLoggerClass()`. Return the class to be used when instantiating a logger.
+
+For detailed documentation, see the [Python logging.getLoggerClass() documentation](https://docs.python.org/3/library/logging.html#logging.getLoggerClass).
+
+### `setLoggerClass`
+
+```python
+setLoggerClass(klass: type[logging.Logger]) -> None
+```
+
+Wrapper for `logging.setLoggerClass()`. Set the class to be used when instantiating a logger.
+
+For detailed documentation, see the [Python logging.setLoggerClass() documentation](https://docs.python.org/3/library/logging.html#logging.setLoggerClass).
+
+### `getLogRecordFactory`
+
+```python
+getLogRecordFactory() -> Callable
+```
+
+Wrapper for `logging.getLogRecordFactory()`. Return the factory function used to create LogRecords.
+
+For detailed documentation, see the [Python logging.getLogRecordFactory() documentation](https://docs.python.org/3/library/logging.html#logging.getLogRecordFactory).
+
+### `setLogRecordFactory`
+
+```python
+setLogRecordFactory(factory: Callable) -> None
+```
+
+Wrapper for `logging.setLogRecordFactory()`. Set the factory function used to create LogRecords.
+
+For detailed documentation, see the [Python logging.setLogRecordFactory() documentation](https://docs.python.org/3/library/logging.html#logging.setLogRecordFactory).
+
+### `shutdown`
+
+```python
+shutdown() -> None
+```
+
+Wrapper for `logging.shutdown()`. Perform an orderly shutdown of the logging system.
+
+For detailed documentation, see the [Python logging.shutdown() documentation](https://docs.python.org/3/library/logging.html#logging.shutdown).
+
+### `disable`
+
+```python
+disable(level: int) -> None
+```
+
+Wrapper for `logging.disable()`. Disable all logging calls of severity 'level' and below.
+
+For detailed documentation, see the [Python logging.disable() documentation](https://docs.python.org/3/library/logging.html#logging.disable).
+
+### `captureWarnings`
+
+```python
+captureWarnings(capture: bool) -> None
+```
+
+Wrapper for `logging.captureWarnings()`. Capture warnings issued by the warnings module.
+
+For detailed documentation, see the [Python logging.captureWarnings() documentation](https://docs.python.org/3/library/logging.html#logging.captureWarnings).
+
+### `critical`
+
+```python
+critical(msg: str, *args: Any, **kwargs: Any) -> None
+```
+
+Wrapper for `logging.critical()`. Log a message with severity CRITICAL.
+
+For detailed documentation, see the [Python logging.critical() documentation](https://docs.python.org/3/library/logging.html#logging.critical).
+
+### `debug`
+
+```python
+debug(msg: str, *args: Any, **kwargs: Any) -> None
+```
+
+Wrapper for `logging.debug()`. Log a message with severity DEBUG.
+
+For detailed documentation, see the [Python logging.debug() documentation](https://docs.python.org/3/library/logging.html#logging.debug).
+
+### `error`
+
+```python
+error(msg: str, *args: Any, **kwargs: Any) -> None
+```
+
+Wrapper for `logging.error()`. Log a message with severity ERROR.
+
+For detailed documentation, see the [Python logging.error() documentation](https://docs.python.org/3/library/logging.html#logging.error).
+
+### `exception`
+
+```python
+exception(msg: str, *args: Any, **kwargs: Any) -> None
+```
+
+Wrapper for `logging.exception()`. Log a message with severity ERROR with exception info.
+
+For detailed documentation, see the [Python logging.exception() documentation](https://docs.python.org/3/library/logging.html#logging.exception).
+
+### `fatal`
+
+```python
+fatal(msg: str, *args: Any, **kwargs: Any) -> None
+```
+
+Wrapper for `logging.fatal()`. Log a message with severity CRITICAL.
+
+For detailed documentation, see the [Python logging.fatal() documentation](https://docs.python.org/3/library/logging.html#logging.fatal).
+
+### `info`
+
+```python
+info(msg: str, *args: Any, **kwargs: Any) -> None
+```
+
+Wrapper for `logging.info()`. Log a message with severity INFO.
+
+For detailed documentation, see the [Python logging.info() documentation](https://docs.python.org/3/library/logging.html#logging.info).
+
+### `log`
+
+```python
+log(level: int, msg: str, *args: Any, **kwargs: Any) -> None
+```
+
+Wrapper for `logging.log()`. Log a message with an explicit level.
+
+For detailed documentation, see the [Python logging.log() documentation](https://docs.python.org/3/library/logging.html#logging.log).
+
+### `warn`
+
+```python
+warn(msg: str, *args: Any, **kwargs: Any) -> None
+```
+
+Wrapper for `logging.warn()`. Log a message with severity WARNING.
+
+For detailed documentation, see the [Python logging.warn() documentation](https://docs.python.org/3/library/logging.html#logging.warn).
+
+### `warning`
+
+```python
+warning(msg: str, *args: Any, **kwargs: Any) -> None
+```
+
+Wrapper for `logging.warning()`. Log a message with severity WARNING.
+
+For detailed documentation, see the [Python logging.warning() documentation](https://docs.python.org/3/library/logging.html#logging.warning).
+
+### `getHandlerByName`
+
+```python
+getHandlerByName(name: str) -> logging.Handler | None
+```
+
+**Requires Python 3.12+**
+
+Wrapper for `logging.getHandlerByName()`. Get a handler with the specified name.
+
+For detailed documentation, see the [Python logging.getHandlerByName() documentation](https://docs.python.org/3.12/library/logging.html#logging.getHandlerByName).
+
+### `getHandlerNames`
+
+```python
+getHandlerNames() -> list[str]
+```
+
+**Requires Python 3.12+**
+
+Wrapper for `logging.getHandlerNames()`. Return all known handler names.
+
+For detailed documentation, see the [Python logging.getHandlerNames() documentation](https://docs.python.org/3.12/library/logging.html#logging.getHandlerNames).
+
+### `makeLogRecord`
+
+```python
+makeLogRecord(name: str, level: int, fn: str, lno: int, msg: str, args: tuple, exc_info: Any) -> logging.LogRecord
+```
+
+Wrapper for `logging.makeLogRecord()`. Create a LogRecord from the given parameters.
+
+For detailed documentation, see the [Python logging.makeLogRecord() documentation](https://docs.python.org/3/library/logging.html#logging.makeLogRecord).
+
+### `currentframe`
+
+```python
+currentframe(*args: Any, **kwargs: Any) -> FrameType | None
+```
+
+Wrapper for `logging.currentframe()`. Return the frame object for the caller's stack frame.
+
+For detailed documentation, see the [Python logging.currentframe() documentation](https://docs.python.org/3/library/logging.html#logging.currentframe).
+
+## 4. `apathetic_logging.Logger` Function Reference
+
+### Constructor
 
 ```python
 Logger(
@@ -423,19 +812,26 @@ Logger(
 )
 ```
 
+Logger class for all Apathetic tools. Extends Python's standard `logging.Logger`.
+
 **Parameters:**
 - `name` (str): Logger name
 - `level` (int): Initial log level (defaults to `logging.NOTSET`)
 - `enable_color` (bool | None): Whether to enable colorized output. If None, auto-detects based on TTY and environment variables.
 
-#### Methods
+### `setLevel`
 
-##### `setLevel(level: int | str) -> None`
+```python
+setLevel(level: int | str, *, minimum: bool | None = False) -> None
+```
 
 Set the logging level. Accepts both string names (case-insensitive) and numeric values.
 
+**Changed from stdlib:** Accepts string level names and has a `minimum` parameter.
+
 **Parameters:**
 - `level` (int | str): Log level name or numeric value
+- `minimum` (bool | None): If True, only set the level if it's more verbose (lower numeric value) than the current level. Defaults to False.
 
 **Example:**
 ```python
@@ -443,7 +839,11 @@ logger.setLevel("debug")
 logger.setLevel(logging.DEBUG)
 ```
 
-##### `determineLogLevel(*, args: argparse.Namespace | None = None, root_log_level: str | None = None) -> str`
+### `determineLogLevel`
+
+```python
+determineLogLevel(*, args: argparse.Namespace | None = None, root_log_level: str | None = None) -> str
+```
 
 Resolve log level from CLI → env → root config → default.
 
@@ -466,9 +866,13 @@ level = logger.determineLogLevel(args=args)
 logger.setLevel(level)
 ```
 
-##### `determineColorEnabled() -> bool` (classmethod)
+### `determineColorEnabled`
 
-Return True if colored output should be enabled.
+```python
+determineColorEnabled() -> bool
+```
+
+Return True if colored output should be enabled. (classmethod)
 
 Checks:
 - `NO_COLOR` environment variable (disables colors)
@@ -478,9 +882,13 @@ Checks:
 **Returns:**
 - `bool`: True if colors should be enabled
 
-##### `extendLoggingModule() -> bool` (classmethod)
+### `extendLoggingModule`
 
-Extend Python's logging module with TRACE and SILENT levels.
+```python
+extendLoggingModule() -> bool
+```
+
+Extend Python's logging module with TRACE and SILENT levels. (classmethod)
 
 This method:
 - Sets `apathetic_logging.Logger` as the default logger class
@@ -490,7 +898,11 @@ This method:
 **Returns:**
 - `bool`: True if the extension ran, False if it was already extended
 
-##### `trace(msg: str, *args: Any, **kwargs: Any) -> None`
+### `trace`
+
+```python
+trace(msg: str, *args: Any, **kwargs: Any) -> None
+```
 
 Log a message at TRACE level.
 
@@ -499,7 +911,50 @@ Log a message at TRACE level.
 - `*args`: Format arguments
 - `**kwargs`: Additional keyword arguments (e.g., `exc_info`, `stacklevel`)
 
-##### `errorIfNotDebug(msg: str, *args: Any, **kwargs: Any) -> None`
+### `detail`
+
+```python
+detail(msg: str, *args: Any, **kwargs: Any) -> None
+```
+
+Log a message at DETAIL level.
+
+**Parameters:**
+- `msg` (str): Message to log
+- `*args`: Format arguments
+- `**kwargs`: Additional keyword arguments
+
+### `minimal`
+
+```python
+minimal(msg: str, *args: Any, **kwargs: Any) -> None
+```
+
+Log a message at MINIMAL level.
+
+**Parameters:**
+- `msg` (str): Message to log
+- `*args`: Format arguments
+- `**kwargs`: Additional keyword arguments
+
+### `test`
+
+```python
+test(msg: str, *args: Any, **kwargs: Any) -> None
+```
+
+Log a message at TEST level.
+
+**Parameters:**
+- `msg` (str): Message to log
+- `*args`: Format arguments
+- `**kwargs`: Additional keyword arguments
+
+### `errorIfNotDebug`
+
+```python
+errorIfNotDebug(msg: str, *args: Any, **kwargs: Any) -> None
+```
 
 Log an error with full traceback only if debug/trace is enabled.
 
@@ -518,13 +973,26 @@ except Exception:
     logger.errorIfNotDebug("Operation failed")
 ```
 
-##### `criticalIfNotDebug(msg: str, *args: Any, **kwargs: Any) -> None`
+### `criticalIfNotDebug`
+
+```python
+criticalIfNotDebug(msg: str, *args: Any, **kwargs: Any) -> None
+```
 
 Log a critical error with full traceback only if debug/trace is enabled.
 
 Similar to `errorIfNotDebug()` but logs at CRITICAL level.
 
-##### `colorize(text: str, color: str, *, enable_color: bool | None = None) -> str`
+**Parameters:**
+- `msg` (str): Error message
+- `*args`: Format arguments
+- `**kwargs`: Additional keyword arguments
+
+### `colorize`
+
+```python
+colorize(text: str, color: str, *, enable_color: bool | None = None) -> str
+```
 
 Apply ANSI color codes to text.
 
@@ -536,7 +1004,11 @@ Apply ANSI color codes to text.
 **Returns:**
 - `str`: Colorized text (or original text if colors disabled)
 
-##### `logDynamic(level: str | int, msg: str, *args: Any, **kwargs: Any) -> None`
+### `logDynamic`
+
+```python
+logDynamic(level: str | int, msg: str, *args: Any, **kwargs: Any) -> None
+```
 
 Log a message at a dynamically specified level.
 
@@ -552,7 +1024,11 @@ logger.logDynamic("warning", "This is a warning")
 logger.logDynamic(logging.ERROR, "This is an error")
 ```
 
-##### `useLevel(level: str | int, *, minimum: bool = False) -> ContextManager`
+### `useLevel`
+
+```python
+useLevel(level: str | int, *, minimum: bool = False) -> ContextManager
+```
 
 Context manager to temporarily change log level.
 
@@ -571,25 +1047,13 @@ with logger.useLevel("debug"):
 # Level is restored after the context
 ```
 
-#### Properties
+### `levelName`
 
-##### `level: int`
-
-Return the explicit level set on this logger (read-only).
-
-This property is inherited from `logging.Logger` and returns the level
-explicitly set on this logger. For the effective level (what's actually used,
-considering inheritance), use `effectiveLevel` instead.
-
-**Example:**
 ```python
-logger.setLevel("debug")
-print(logger.level)  # 10 (DEBUG)
+levelName: str
 ```
 
-##### `levelName: str`
-
-Return the explicit level name set on this logger (read-only).
+Return the explicit level name set on this logger (read-only property).
 
 This property returns the name of the level explicitly set on this logger.
 For the effective level name (what's actually used, considering inheritance),
@@ -601,9 +1065,13 @@ logger.setLevel("debug")
 print(logger.levelName)  # "DEBUG"
 ```
 
-##### `effectiveLevel: int`
+### `effectiveLevel`
 
-Return the effective level (what's actually used) (read-only).
+```python
+effectiveLevel: int
+```
+
+Return the effective level (what's actually used) (read-only property).
 
 This property returns the effective logging level for this logger, considering
 inheritance from parent loggers. This is the preferred way to get the effective
@@ -619,9 +1087,13 @@ print(child.level)  # 0 (NOTSET - explicit)
 print(child.effectiveLevel)  # 20 (INFO - effective, from parent)
 ```
 
-##### `effectiveLevelName: str`
+### `effectiveLevelName`
 
-Return the effective level name (what's actually used) (read-only).
+```python
+effectiveLevelName: str
+```
+
+Return the effective level name (what's actually used) (read-only property).
 
 This property returns the name of the effective logging level for this logger,
 considering inheritance from parent loggers. This is the preferred way to get
@@ -638,12 +1110,11 @@ print(child.levelName)  # "NOTSET" (explicit)
 print(child.effectiveLevelName)  # "INFO" (effective, from parent)
 ```
 
-#### Level Access Methods
+### `getLevel`
 
-For users who prefer method-based access or stdlib compatibility, these methods
-provide the same functionality as the properties above.
-
-##### `getLevel() -> int`
+```python
+getLevel() -> int
+```
 
 Return the explicit level set on this logger.
 
@@ -660,7 +1131,11 @@ logger.setLevel("debug")
 print(logger.getLevel())  # 10
 ```
 
-##### `getLevelName() -> str`
+### `getLevelName`
+
+```python
+getLevelName() -> str
+```
 
 Return the explicit level name set on this logger.
 
@@ -677,35 +1152,17 @@ logger.setLevel("debug")
 print(logger.getLevelName())  # "DEBUG"
 ```
 
-##### `getEffectiveLevel() -> int`
+### `getEffectiveLevelName`
 
-Return the effective level (what's actually used).
-
-This method returns the effective logging level for this logger, considering
-inheritance from parent loggers. This is inherited from `logging.Logger` and
-is available for stdlib compatibility. Prefer the `effectiveLevel` property
-for convenience.
-
-**Returns:**
-- `int`: The effective level value for this logger
-
-**Example:**
 ```python
-parent = getLogger("parent")
-parent.setLevel("info")
-
-child = getLogger("parent.child")
-print(child.getEffectiveLevel())  # 20 (from parent)
+getEffectiveLevelName() -> str
 ```
-
-##### `getEffectiveLevelName() -> str`
 
 Return the effective level name (what's actually used).
 
 This method returns the name of the effective logging level for this logger,
-considering inheritance from parent loggers. Prefer the `effectiveLevelName`
-property for convenience, or use this method for consistency with
-`getEffectiveLevel()`.
+considering inheritance from parent loggers. Prefer the `effectiveLevelName` property
+for convenience, or use this method for consistency with `getEffectiveLevel()`.
 
 **Returns:**
 - `str`: The effective level name for this logger
@@ -718,6 +1175,80 @@ parent.setLevel("info")
 child = getLogger("parent.child")
 print(child.getEffectiveLevelName())  # "INFO" (from parent)
 ```
+
+### `ensureHandlers`
+
+```python
+ensureHandlers() -> None
+```
+
+Ensure handlers are attached to this logger.
+
+DualStreamHandler is what will ensure logs go to the write channel.
+Rebuilds handlers if they're missing or if stdout/stderr have changed.
+
+### `validateLevelPositive`
+
+```python
+validateLevelPositive(level: int, *, level_name: str | None = None) -> None
+```
+
+Validate that a level value is positive (> 0). (staticmethod)
+
+Custom levels with values <= 0 will inherit from the root logger,
+causing NOTSET inheritance issues.
+
+**Parameters:**
+- `level` (int): The numeric level value to validate
+- `level_name` (str | None): Optional name for the level (for error messages).
+    If None, will attempt to get from getLevelName()
+
+**Raises:**
+- `ValueError`: If level <= 0
+
+**Example:**
+```python
+Logger.validateLevelPositive(5, level_name="TRACE")
+Logger.validateLevelPositive(0, level_name="TEST")
+# ValueError: Level 'TEST' has value 0...
+```
+
+### `_log`
+
+```python
+_log(level: int, msg: str, args: tuple[Any, ...], **kwargs: Any) -> None
+```
+
+Log a message with the specified level.
+
+**Changed from stdlib:** Automatically ensures handlers are attached via `ensureHandlers()`.
+
+**Parameters:**
+- `level` (int): The numeric logging level
+- `msg` (str): The message format string
+- `args` (tuple[Any, ...]): Arguments for the message format string
+- `**kwargs`: Additional keyword arguments passed to the base implementation
+
+### `addLevelName`
+
+```python
+addLevelName(level: int, level_name: str) -> None
+```
+
+Associate a level name with a numeric level. (staticmethod)
+
+**Changed from stdlib:** Validates that level value is positive (> 0) to prevent NOTSET
+inheritance issues. Sets `logging.<LEVEL_NAME>` attribute for convenience.
+
+**Parameters:**
+- `level` (int): The numeric level value (must be > 0 for custom levels)
+- `level_name` (str): The name to associate with this level
+
+**Raises:**
+- `ValueError`: If level <= 0 (which would cause NOTSET inheritance)
+- `ValueError`: If `logging.<LEVEL_NAME>` already exists with an invalid value
+
+## Classes
 
 ### `TagFormatter`
 
@@ -818,35 +1349,27 @@ Create a test trace function with a custom icon.
 
 Boolean flag indicating if test tracing is enabled (checks `TEST_TRACE` environment variable).
 
-## Breaking Changes
+## Compatibility Mode
 
-This section documents breaking changes that may affect existing code when upgrading.
+This library provides two modes of operation:
 
-### Logger Name Auto-Inference
+### Default Mode (Improved Behavior)
 
-**Changed in:** Current version
+When compatibility mode is **disabled** (`compat_mode=False`, the default), the library provides improved behavior with enhancements over the standard library:
 
-**Affected Function:** `getLogger(logger_name=None)`
+- **Auto-inference:** `getLogger(None)` auto-infers the logger name from the calling module's `__package__` attribute, making it easier to use the logger without explicitly registering a name.
+- **Enhanced features:** Additional improvements and quality-of-life enhancements.
 
-When `getLogger(None)` is called, the logger name is now **auto-inferred** from the calling module's `__package__` attribute instead of returning the root logger.
+### Compatibility Mode (Standard Library Compatible)
 
-**Migration:**
-- **Old behavior:** `getLogger(None)` returned the root logger
-- **New behavior:** `getLogger(None)` auto-infers the logger name from the calling module
-- **To get root logger:** Use `getLogger("")` instead
+When compatibility mode is **enabled** (`compat_mode=True`), the library maintains standard library compatible behavior with **no breaking changes**:
 
-**Example:**
-```python
-# Old (no longer works as before)
-logger = getLogger(None)  # Now auto-infers name, doesn't return root
+- **Stdlib behavior:** `getLogger(None)` returns the root logger (matching standard library behavior).
+- **Full compatibility:** All behavior matches the Python standard library `logging` module.
 
-# New (to get root logger)
-logger = getLogger("")  # Returns root logger
-```
+### Enabling Compatibility Mode
 
-**Why this change:** Auto-inference makes it easier to use the logger without explicitly registering a name, while still allowing explicit root logger access via `""`.
-
-**Compatibility Mode:** If you need stdlib-compatible behavior where `getLogger(None)` returns the root logger, you can enable compatibility mode:
+To enable compatibility mode for stdlib-compatible behavior:
 
 ```python
 from apathetic_logging import registerCompatibilityMode
@@ -855,4 +1378,25 @@ registerCompatibilityMode(compat_mode=True)
 # Now getLogger(None) returns root logger (stdlib behavior)
 ```
 
-See `registerCompatibilityMode()` for more details.
+You can also set it when registering a logger:
+
+```python
+from apathetic_logging import registerLogger
+
+registerLogger("my_app", compat_mode=True)
+```
+
+### Behavior Differences
+
+**`getLogger(None)` behavior:**
+
+- **Default mode (`compat_mode=False`):** Auto-infers logger name from calling module (improved behavior)
+- **Compatibility mode (`compat_mode=True`):** Returns root logger (stdlib behavior)
+
+**To get root logger in default mode:**
+
+```python
+logger = getLogger("")  # Returns root logger (works in both modes)
+```
+
+See [`registerCompatibilityMode()`](#registercompatibilitymode) for more details.
