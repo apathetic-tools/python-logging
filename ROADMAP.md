@@ -7,8 +7,6 @@ Some of these we just want to consider, and may not want to implement.
 
 
 ## 🧩 Joiner Scripts (Build System)
-Exploring bundling options for generating the single-file release:
-
 - zip file: zipapp / shiv / pyinstaller --onefile
 
 
@@ -17,9 +15,8 @@ Exploring bundling options for generating the single-file release:
 
 ## 🧑‍💻 Development
 
-
 ## 🚀 Deployment
-- Deploy action when I tag a release should create a release and attach it to the tagged release.
+- Streamline deployment process
 
 ## 🔌 API
 
@@ -33,9 +30,7 @@ Exploring bundling options for generating the single-file release:
 - should we generate API docs? replace the ones in our docs?
 
 ## 💡 Ideas & Experiments
-Potential quality-of-life features:
 
-- publish to PyPI
 
 > See [REJECTED.md](REJECTED.md) for experiments and ideas that were explored but intentionally not pursued.
 

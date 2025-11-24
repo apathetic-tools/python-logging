@@ -87,11 +87,25 @@ Pytest will discover all files in `tests/` automatically.
 ### Testing on Python 3.10
 
 The project supports Python 3.10+ and CI tests on both Python 3.10 and the latest 3.x.  
-To test locally on Python 3.10, you can either use a system-installed Python 3.10 or pyenv.
+To test locally on Python 3.10, you can either use a system-installed Python 3.10 or mise.
 
 > [!NOTE]
-> pyenv setup is optional. You can develop and test on any Python 3.10+ version.  
+> mise setup is optional. You can develop and test on any Python 3.10+ version.  
 > The `test:py310` task is only useful if you want to match CI's Python 3.10 environment exactly.
+
+#### Quick Check
+
+First, run the setup check to see if Python 3.10 is available:
+
+```bash
+poetry run poe setup:python:check
+```
+
+This command will:
+- Check for system Python 3.10
+- Check for mise-managed Python 3.10
+- Provide installation instructions if not found
+- Verify everything is working
 
 #### Option 1: System Python 3.10 (Simplest)
 
@@ -101,24 +115,22 @@ If you're on Ubuntu/Debian and Python 3.10 is available in your repositories:
 sudo apt install python3.10 python3.10-venv python3.10-dev
 ```
 
-Then you can use `poetry run poe env:py310` directly — no pyenv needed!
+Then you can use `poetry run poe env:py310` directly — no mise needed!
 
-#### Option 2: pyenv (For Multiple Versions or Newer Systems)
+#### Option 2: mise (For Multiple Versions or Newer Systems)
 
-If Python 3.10 isn't available via your system package manager (e.g., Ubuntu 24.04), you can use pyenv:
+If Python 3.10 isn't available via your system package manager (e.g., Ubuntu 24.04), you can use mise:
 
-**1. Install pyenv:**
+**1. Install mise** (if not already installed):
 
 ```bash
-curl https://pyenv.run | bash
+curl https://mise.run | sh
 ```
 
 **2. Add to your shell configuration** (`~/.bashrc` or `~/.zshrc`):
 
 ```bash
-export PYENV_ROOT="$HOME/.pyenv"
-[ -d "$PYENV_ROOT/bin" ] && export PATH="$PYENV_ROOT/bin:$PATH"
-eval "$(pyenv init - bash)"
+eval "$(mise activate bash)"
 ```
 
 **3. Restart your shell** or run `source ~/.bashrc`
@@ -126,25 +138,24 @@ eval "$(pyenv init - bash)"
 **4. Run the check command** — it will guide you through the rest:
 
 ```bash
-poetry run poe setup:pyenv:check
+poetry run poe setup:python:check
 ```
 
 The check command will:
-- Verify pyenv is set up correctly
+- Verify mise is set up correctly
 - Check if Python 3.10 is installed
-- Provide exact commands for installing build dependencies (if needed)
-- Guide you through installing Python 3.10.19
+- Provide exact commands for installing Python 3.10 via mise
 - Verify everything is working
 
 > [!TIP]
-> Run `poetry run poe setup:pyenv:check` repeatedly until it shows all checks passing. It provides interactive, step-by-step guidance.
+> Run `poetry run poe setup:python:check` repeatedly until it shows all checks passing. It provides interactive, step-by-step guidance.
 
 > [!NOTE]
-> The `env:py310` task automatically detects system Python 3.10 first, then falls back to pyenv if needed.
+> The `env:py310` task automatically detects system Python 3.10 first, then falls back to mise if needed.
 
 #### Using Python 3.10 for Testing
 
-Once pyenv is set up, you can switch between Python versions:
+Once Python 3.10 is available, you can switch between Python versions:
 
 ```bash
 # Switch to Python 3.10
@@ -156,6 +167,95 @@ poetry run poe test:py310
 # Switch back to latest Python 3.x
 poetry run poe env:py3x
 ```
+
+## Previewing Documentation Locally
+
+The documentation site is built with Jekyll and can be previewed locally before pushing changes.
+
+### Prerequisites
+
+You'll need Ruby 3.3 for Jekyll. The project supports both system Ruby and mise-managed Ruby.
+
+#### Quick Check
+
+First, run the setup check to see if Ruby 3.3 is available:
+
+```bash
+poetry run poe setup:ruby:check
+```
+
+This command will:
+- Check for system Ruby 3.3
+- Check for mise-managed Ruby 3.3
+- Provide installation instructions if not found
+- Verify everything is working
+
+#### Option 1: System Ruby 3.3 (Simplest)
+
+If you're on Ubuntu/Debian and Ruby 3.3 is available in your repositories:
+
+```bash
+sudo apt install ruby3.3 ruby3.3-dev
+```
+
+#### Option 2: mise (For Multiple Versions or Newer Systems)
+
+If Ruby 3.3 isn't available via your system package manager, you can use mise:
+
+**1. Install mise** (if not already installed):
+
+```bash
+curl https://mise.run | sh
+```
+
+**2. Add to your shell configuration** (`~/.bashrc` or `~/.zshrc`):
+
+```bash
+eval "$(mise activate bash)"
+```
+
+**3. Restart your shell** or run `source ~/.bashrc`
+
+**4. Run the check command** — it will guide you through the rest:
+
+```bash
+poetry run poe setup:ruby:check
+```
+
+The check command will:
+- Verify mise is set up correctly
+- Check if Ruby 3.3 is installed
+- Provide exact commands for installing Ruby 3.3 via mise
+- Verify everything is working
+
+> [!NOTE]
+> If you're using mise, Ruby 3.3 will be automatically activated when you enter the project directory (via `.tool-versions`).
+
+### Building and Serving the Documentation
+
+Once Ruby 3.3 is available:
+
+**1. Install Jekyll dependencies:**
+
+```bash
+cd docs
+bundle install
+```
+
+**2. Start the Jekyll server:**
+
+```bash
+bundle exec jekyll serve
+```
+
+**3. Open your browser:**
+
+Navigate to `http://localhost:4000/python-logging/`
+
+> [!NOTE]
+> The baseurl is `/python-logging`, so make sure to include it in the local URL.
+
+The server will automatically rebuild when you make changes to the documentation files.
 
 ## Building and Publishing (for maintainers)
 

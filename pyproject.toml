@@ -114,8 +114,11 @@ fix = ["sync:ai:guidance", "fix:ruff:installed", "fix:format:installed"]
   "env:py3x"
 ]
 
-# 🐍 pyenv setup helpers (for Python 3.10 testing)
-"setup:pyenv:check" = "bash dev/setup_pyenv_check.sh"
+# 🐍 Python setup helpers (for Python 3.10 testing)
+"setup:python:check" = "bash dev/setup_python_check.sh"
+
+# 💎 Ruby setup helpers (for Jekyll documentation)
+"setup:ruby:check" = "bash dev/setup_ruby_check.sh"
 
 # 🧪 Internal verification
 [tool.poe.tasks."verify:pytest"]
