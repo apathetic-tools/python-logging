@@ -1,6 +1,15 @@
 # Releases
 
-## v0.1.0 - Initial Release
+## v0.1.1 - Bug Fixes - 2025-11-24
+
+### 🐛 Bug Fixes
+
+- **Fixed `errorIfNotDebug` and `criticalIfNotDebug` methods** - Now properly pass through all remaining `**kwargs` to underlying logging methods
+- **Added `*args` and `**kwargs` support to `getLevelName` and `getLevelNameStr`** - These wrapper functions now accept and forward all arguments to `logging.getLevelName` for consistency and future-proofing
+
+---
+
+## v0.1.0 - Initial Release - 2025-11-24
 
 ### 🎉 What's New
 
