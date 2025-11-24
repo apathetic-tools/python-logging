@@ -61,11 +61,14 @@ Complete API documentation for Apathetic Python Logger.
 | [`captureWarnings()`](#capturewarnings) | | Capture warnings issued by the warnings module |
 | [`critical()`](#critical) | | Log a message with severity CRITICAL |
 | [`debug()`](#debug) | | Log a message with severity DEBUG |
+| [`detail()`](#detail) | | Log a message with severity DETAIL |
 | [`error()`](#error) | | Log a message with severity ERROR |
 | [`exception()`](#exception) | | Log a message with severity ERROR with exception info |
 | [`fatal()`](#fatal) | | Log a message with severity CRITICAL |
 | [`info()`](#info) | | Log a message with severity INFO |
 | [`log()`](#log) | | Log a message with an explicit level |
+| [`minimal()`](#minimal) | | Log a message with severity MINIMAL |
+| [`trace()`](#trace) | | Log a message with severity TRACE |
 | [`warn()`](#warn) | | Log a message with severity WARNING |
 | [`warning()`](#warning) | | Log a message with severity WARNING |
 | [`getHandlerByName()`](#gethandlerbyname) | 3.12+ | Get a handler with the specified name |
@@ -754,6 +757,81 @@ warning(msg: str, *args: Any, **kwargs: Any) -> None
 Wrapper for `logging.warning()`. Log a message with severity WARNING.
 
 For detailed documentation, see the [Python logging.warning() documentation](https://docs.python.org/3/library/logging.html#logging.warning).
+
+### `trace`
+
+```python
+trace(msg: str, *args: Any, **kwargs: Any) -> None
+```
+
+Log a message with severity TRACE on the root logger.
+
+TRACE is more verbose than DEBUG. This function gets an `apathetic_logging.Logger` instance (ensuring the root logger is an apathetic logger) and calls its `trace()` method.
+
+If the logger has no handlers, `basicConfig()` is automatically called to add a console handler with a pre-defined format.
+
+**Parameters:**
+- `msg` (str): Message to log
+- `*args`: Format arguments for message formatting
+- `**kwargs`: Additional keyword arguments (e.g., `exc_info`, `stacklevel`)
+
+**Example:**
+```python
+import apathetic_logging
+
+# Log a trace message
+apathetic_logging.trace("Detailed trace information: %s", variable)
+```
+
+### `detail`
+
+```python
+detail(msg: str, *args: Any, **kwargs: Any) -> None
+```
+
+Log a message with severity DETAIL on the root logger.
+
+DETAIL is more detailed than INFO. This function gets an `apathetic_logging.Logger` instance (ensuring the root logger is an apathetic logger) and calls its `detail()` method.
+
+If the logger has no handlers, `basicConfig()` is automatically called to add a console handler with a pre-defined format.
+
+**Parameters:**
+- `msg` (str): Message to log
+- `*args`: Format arguments for message formatting
+- `**kwargs`: Additional keyword arguments (e.g., `exc_info`, `stacklevel`)
+
+**Example:**
+```python
+import apathetic_logging
+
+# Log a detail message
+apathetic_logging.detail("Additional detail: %s", information)
+```
+
+### `minimal`
+
+```python
+minimal(msg: str, *args: Any, **kwargs: Any) -> None
+```
+
+Log a message with severity MINIMAL on the root logger.
+
+MINIMAL is less detailed than INFO. This function gets an `apathetic_logging.Logger` instance (ensuring the root logger is an apathetic logger) and calls its `minimal()` method.
+
+If the logger has no handlers, `basicConfig()` is automatically called to add a console handler with a pre-defined format.
+
+**Parameters:**
+- `msg` (str): Message to log
+- `*args`: Format arguments for message formatting
+- `**kwargs`: Additional keyword arguments (e.g., `exc_info`, `stacklevel`)
+
+**Example:**
+```python
+import apathetic_logging
+
+# Log a minimal message
+apathetic_logging.minimal("Minimal information: %s", summary)
+```
 
 ### `getHandlerByName`
 

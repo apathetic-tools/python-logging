@@ -75,6 +75,7 @@ captureWarnings = apathetic_logging.captureWarnings
 critical = apathetic_logging.critical
 currentframe = apathetic_logging.currentframe
 debug = apathetic_logging.debug
+detail = apathetic_logging.detail
 disable = apathetic_logging.disable
 error = apathetic_logging.error
 exception = apathetic_logging.exception
@@ -89,9 +90,11 @@ getLoggerClass = apathetic_logging.getLoggerClass
 info = apathetic_logging.info
 log = apathetic_logging.log
 makeLogRecord = apathetic_logging.makeLogRecord
+minimal = apathetic_logging.minimal
 setLogRecordFactory = apathetic_logging.setLogRecordFactory
 setLoggerClass = apathetic_logging.setLoggerClass
 shutdown = apathetic_logging.shutdown
+trace = apathetic_logging.trace
 warn = apathetic_logging.warn
 warning = apathetic_logging.warning
 
@@ -140,6 +143,7 @@ __all__ = [
     "critical",
     "currentframe",
     "debug",
+    "detail",
     "disable",
     "error",
     "exception",
@@ -165,6 +169,7 @@ __all__ = [
     "log",
     "makeLogRecord",
     "makeSafeTrace",
+    "minimal",
     "registerCompatibilityMode",
     "registerDefaultLogLevel",
     "registerLogLevelEnvVars",
@@ -177,6 +182,7 @@ __all__ = [
     "setLogRecordFactory",
     "setLoggerClass",
     "shutdown",
+    "trace",
     "warn",
     "warning",
 ]

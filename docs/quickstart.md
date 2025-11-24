@@ -28,6 +28,28 @@ logger.warning("This is a warning")
 logger.error("An error occurred")
 ```
 
+### Module-Level Convenience Functions
+
+You can also use module-level convenience functions that log to the root logger:
+
+```python
+import apathetic_logging
+
+# Standard levels
+apathetic_logging.debug("Debug message")
+apathetic_logging.info("Info message")
+apathetic_logging.warning("Warning message")
+apathetic_logging.error("Error message")
+apathetic_logging.critical("Critical message")
+
+# Custom levels
+apathetic_logging.trace("Trace message")
+apathetic_logging.detail("Detail message")
+apathetic_logging.minimal("Minimal message")
+```
+
+These functions automatically ensure the root logger is an apathetic logger and handle configuration if needed.
+
 ## Log Levels
 
 Apathetic Python Logger supports the following log levels (in order of verbosity):

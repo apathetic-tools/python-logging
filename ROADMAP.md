@@ -21,8 +21,6 @@ Exploring bundling options for generating the single-file release:
 ## 🚀 Deployment
 - Deploy action when I tag a release should create a release and attach it to the tagged release.
 
-- does apathetic_logging need functions for our custom levels?
-
 ## 🔌 API
 - **Compatibility mode for `getLevelNumber()` unknown level handling** (deferred)
   - it does really mess with our type system since the return type becomes ambiguous, may not be worth it?
