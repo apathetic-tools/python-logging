@@ -13,7 +13,7 @@ jobs:
     permissions:
       contents: write  # Required to create releases and tags
       id-token: write  # Required for PyPI publishing (if enabled)
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v5
@@ -50,12 +50,18 @@ jobs:
 
       - name: Semantic Release
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: poetry run semantic-release publish
+        run: |
+          output=$(poetry run semantic-release publish 2>&1) || true
+          echo "$output"
+          if echo "$output" | grep -q "Published release"; then
+            echo "released=true" >> $GITHUB_OUTPUT
+          else
+            echo "released=false" >> $GITHUB_OUTPUT
+          fi
 
       - name: Upload custom release assets
-        if: success()
+        if: steps.release.outputs.released == 'true'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
