@@ -55,8 +55,8 @@ jobs:
         run: |
           output=$(poetry run semantic-release version 2>&1) || true
           echo "$output"
-          # Check if a new version was created
-          if echo "$output" | grep -q "Created new version\|Version:"; then
+          # Check if a new version was created (looks for version number pattern)
+          if echo "$output" | grep -qE "^[0-9]+\.[0-9]+\.[0-9]+|next version is"; then
             echo "released=true" >> $GITHUB_OUTPUT
           else
             echo "released=false" >> $GITHUB_OUTPUT
