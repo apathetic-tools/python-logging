@@ -171,6 +171,7 @@ The documentation should be **easy to maintain, visually consistent, and automat
 | **Jekyll with Minima theme** | ✅ Native GitHub Pages support<br>✅ Automatic deployment on push<br>✅ Minimal configuration required<br>✅ Large ecosystem of plugins<br>✅ Markdown-based content | ⚠️ Requires Ruby for local development<br>⚠️ Less flexible than custom static site generators |
 | **MkDocs** | ✅ Python-based (matches project language)<br>✅ Good documentation tools<br>✅ Easy theme customization | ❌ Requires GitHub Actions for deployment<br>❌ Additional CI/CD configuration |
 | **Sphinx** | ✅ Powerful documentation generation<br>✅ Excellent for API documentation | ❌ More complex setup<br>❌ Requires build step for GitHub Pages<br>❌ Heavier configuration |
+| **Astro** | ✅ Modern, fast static site generator<br>✅ Component-based architecture<br>✅ Good performance and SEO<br>✅ Markdown support<br>✅ Flexible and modern tooling | ❌ Requires GitHub Actions for deployment<br>❌ Requires Node.js for local development<br>❌ Less mature ecosystem than Jekyll<br>❌ Additional CI/CD configuration |
 | **Custom static site** | ✅ Full control over design and features | ❌ Significant development overhead<br>❌ Requires custom build and deployment setup |
 | **GitHub Wiki** | ✅ Built into GitHub<br>✅ No setup required | ❌ Limited formatting options<br>❌ No custom domain or branding<br>❌ Less professional appearance |
 
