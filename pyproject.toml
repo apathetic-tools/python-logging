@@ -335,12 +335,14 @@ commit_message = "chore: release v{version} [skip ci]"
 allow_zero_version = true  # Required for major_on_zero to work (defaults to false in v10.0.0+)
 major_on_zero = false
 upload_to_pypi = false  # We handle PyPI publishing in GitHub Actions
-upload_to_release = false  # Disabled - workflow handles asset uploads manually to avoid 422 errors
 hvcs = "github"
 remote = { name = "origin" }
 tag_commit = true
 prerelease_tag = "rc"
 build_commit_message = "chore: build release v{version} [skip ci]"
+
+[tool.semantic_release.publish]
+upload_to_vcs_release = false  # Disabled - workflow handles asset uploads manually to avoid 422 errors
 
 [tool.semantic_release.changelog]
 sections = [
