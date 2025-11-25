@@ -13,6 +13,7 @@ from .debug_logger import debug_logger_summary
 from .level_validation import validate_test_level
 from .mock_superclass import create_mock_superclass_test
 from .patch_everywhere import patch_everywhere
+from .runtime_detection import detect_runtime_mode
 from .runtime_swap import runtime_swap
 from .safe_trace import make_safe_trace, safe_trace
 from .strip_common_prefix import strip_common_prefix
@@ -38,6 +39,8 @@ __all__ = [  # noqa: RUF022
     "create_mock_superclass_test",
     # patch_everywhere
     "patch_everywhere",
+    # runtime_detection
+    "detect_runtime_mode",
     # runtime_swap
     "runtime_swap",
     # strip_common_prefix

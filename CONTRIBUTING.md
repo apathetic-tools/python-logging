@@ -33,14 +33,6 @@ poetry run poe check:fix
 
 ---
 
-## 📦 Publishing (for maintainers)
-
-**Automated Releases:** Use [Conventional Commits](https://www.conventionalcommits.org/) — releases are automated via semantic-release when pushing to `main`.
-
-**Manual Release:** See [docs/contributing.md](docs/contributing.md) for detailed instructions.
-
----
-
 ## 🪶 Contribution Rules
 
 - Follow [PEP 8](https://peps.python.org/pep-0008/) (enforced via Ruff).  
