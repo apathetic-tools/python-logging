@@ -2,6 +2,14 @@
 
 <!-- version list -->
 
+## v0.2.2 (2025-11-25)
+
+### Bug Fixes
+
+- **release**: Remove invalid --no-vcs-release flag from semantic-release
+  ([`3dae602`](https://github.com/apathetic-tools/python-logging/commit/3dae602ea216ffc7b038947c8f7af2e1b272e14d))
+
+
 ## v0.2.1 (2025-11-25)
 
 ### Bug Fixes
