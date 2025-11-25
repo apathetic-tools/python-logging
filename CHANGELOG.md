@@ -2,6 +2,14 @@
 
 <!-- version list -->
 
+## v0.2.1 (2025-11-25)
+
+### Bug Fixes
+
+- **release**: Improve version detection pattern for semantic-release output
+  ([`3f9451f`](https://github.com/apathetic-tools/python-logging/commit/3f9451ff446669633a5d6cbb2d210c158e61cea8))
+
+
 ## v0.2.0 (2025-11-25)
 
 ### Bug Fixes
