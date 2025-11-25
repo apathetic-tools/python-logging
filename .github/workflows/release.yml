@@ -55,7 +55,8 @@ jobs:
         run: |
           output=$(poetry run semantic-release publish 2>&1) || true
           echo "$output"
-          if echo "$output" | grep -q "Published release"; then
+          # Check if a new tag was created (indicates successful release)
+          if echo "$output" | grep -q "Created new version\|Tagging"; then
             echo "released=true" >> $GITHUB_OUTPUT
           else
             echo "released=false" >> $GITHUB_OUTPUT
