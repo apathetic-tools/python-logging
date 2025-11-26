@@ -3,7 +3,7 @@
 [project]
 name = "apathetic-logging"
 version = "0.2.2"
-description = "Because consistent logging shouldn't require large dependencies. "
+description = "Small quality-of-life features on top of stdlib."
 authors = [
     { name = "Apathetic Tools" }
 ]

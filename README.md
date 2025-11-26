@@ -1,4 +1,4 @@
-# Apathetic Python Logging 📝
+# Apathetic Python Logging 🪵
 
 [![CI](https://github.com/apathetic-tools/python-logs/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/goldilocks/python-logs/actions/workflows/ci.yml)
 [![License: MIT-a-NOAI](https://img.shields.io/badge/License-MIT--a--NOAI-blueviolet.svg)](LICENSE)
@@ -6,8 +6,8 @@
 
 📘 **[Roadmap](./ROADMAP.md)** · 📝 **[Release Notes](https://github.com/apathetic-tools/python-logs/releases)**
 
-**Minimal wrapper for the Python standard library logger.**  
-*Because consistent logging shouldn't require large dependencies.*
+**Small quality-of-life features on top of stdlib.**
+*Because you don't need another large dependency.*
 
 *Apathetic Python Logger* provides a lightweight, dependency-free logging solution designed for CLI tools. It extends Python's standard library `logging` module with colorized output, dual-stream handling (stdout/stderr), extra logging levels and context.
 
