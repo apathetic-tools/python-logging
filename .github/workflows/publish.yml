@@ -42,11 +42,16 @@ jobs:
       - name: Build package
         run: poetry build
 
+      - name: List built packages
+        if: github.event.inputs.testpypi_only == 'true'
+        run: ls -lh dist/
+
       - name: Publish to TestPyPI
         if: github.event.inputs.testpypi_only == 'true'
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           repository-url: https://test.pypi.org/legacy/
+        continue-on-error: true  # Continue if version already exists or other errors occur
 
       - name: Publish to PyPI
         if: github.event.inputs.testpypi_only != 'true'
