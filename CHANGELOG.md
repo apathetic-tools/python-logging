@@ -2,6 +2,38 @@
 
 <!-- version list -->
 
+## v0.2.3 (2025-11-27)
+
+### Bug Fixes
+
+- **release**: Prevent semantic-release from uploading custom files and improve error handling
+  ([`38aeeb4`](https://github.com/apathetic-tools/python-logging/commit/38aeeb4275a1e356b3abf88f084d0963830aef20))
+
+- **release**: Remove build_command config from semantic-release
+  ([`7c33438`](https://github.com/apathetic-tools/python-logging/commit/7c33438d7d119d09991dd87b26b4b00d407fad81))
+
+### Chores
+
+- **pyproject**: Update keywords and classifiers
+  ([`89365b5`](https://github.com/apathetic-tools/python-logging/commit/89365b5912c710a65f016b6fc304180f6c84bdd8))
+
+### Documentation
+
+- Update project description and tagline
+  ([`95ea9f1`](https://github.com/apathetic-tools/python-logging/commit/95ea9f1802e29aebb94418e23f4158e539937fcf))
+
+### Refactoring
+
+- **ci**: Use pypa/gh-action-pypi-publish for publishing
+  ([`a8bd8ee`](https://github.com/apathetic-tools/python-logging/commit/a8bd8eeafeeef14fb272c2b23fc4fd7bf24798be))
+
+- **core**: Rename _is_standalone to _apathetic_logging_is_standalone
+  ([`97f6a7f`](https://github.com/apathetic-tools/python-logging/commit/97f6a7f050c66625fdc90cf83227dd34cab61b51))
+
+- **publish**: Clean up PyPI publishing workflow
+  ([`d148024`](https://github.com/apathetic-tools/python-logging/commit/d148024743462b2af63670fdddfee10bae648e0f))
+
+
 ## v0.2.2 (2025-11-25)
 
 ### Bug Fixes
