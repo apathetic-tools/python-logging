@@ -51,6 +51,7 @@ jobs:
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           repository-url: https://test.pypi.org/legacy/
+          verbose: true  # Enable verbose output to see detailed error messages
         continue-on-error: true  # Continue if version already exists or other errors occur
 
       - name: Publish to PyPI
