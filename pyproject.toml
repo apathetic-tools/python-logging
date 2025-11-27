@@ -13,6 +13,7 @@ requires-python = ">=3.10"
 dependencies = [
 ]
 keywords = ["library", "logging", "logger"]
+# https://pypi.org/classifiers/
 classifiers = [    
     "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
@@ -22,8 +23,8 @@ classifiers = [
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
-    "Topic :: Software Development :: Libraries",
-    "Topic :: Software Development :: Logging",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: System :: Logging",
 ]
 
 [project.urls]
@@ -39,9 +40,10 @@ Changelog = "https://github.com/apathetic-tools/python-logging/releases"
 "check:fix" = ["pre-commit:install", "fix", "typecheck", "test"]
 
 # 🔍 Linting and static checks
-check = ["lint", "typecheck",  "test"]
+check = ["lint", "typecheck", "validate:classifiers", "test"]
 lint = ["lint:ruff"]
 "lint:ruff" = "ruff check ."
+"validate:classifiers" = "python dev/validate_classifiers.py"
 
 # 🧠 Type checking
 typecheck = ["typecheck:mypy", "typecheck:pyright"]
@@ -156,6 +158,7 @@ dev = [
     "pyright (>=1.1.407,<2.0.0)",
     "shiv (>=1.0.0,<2.0.0)",
     "python-semantic-release (>=10.0.0,<11.0.0)",
+    "trove-classifiers (>=2025.11.14.15,<2026.0.0.0)",
 ]
 
 # --- Ruff: formatter and linter ---

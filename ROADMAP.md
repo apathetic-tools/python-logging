@@ -12,6 +12,7 @@ Some of these we just want to consider, and may not want to implement.
 
 ## 🧑‍💻 Development
 - Beta phase, we need to use the library more to identify further improvements or problems
+- should we also release to anaconda? others?
 
 
 ## 🔌 API
