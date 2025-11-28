@@ -26,9 +26,7 @@ jobs:
       github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success' ||
       github.event_name == 'push' ||
       github.event_name == 'workflow_dispatch'
-    environment:
-      name: pypi
-      url: https://pypi.org/p/apathetic-logging
+    environment: pypi
     permissions:
       id-token: write
 
@@ -90,11 +88,11 @@ jobs:
         run: poetry install --no-interaction --no-root
 
       - name: Build package
-      if: |
-        github.event_name == 'push' ||
-        github.event_name == 'workflow_dispatch' ||
-        steps.check_tag.outputs.tag_exists == 'true'
-      run: poetry build
+        if: |
+          github.event_name == 'push' ||
+          github.event_name == 'workflow_dispatch' ||
+          steps.check_tag.outputs.tag_exists == 'true'
+        run: poetry build
 
       - name: Publish to TestPyPI
         if: |
