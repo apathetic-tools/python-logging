@@ -138,7 +138,7 @@ def test_pytest_runtime_cache_integrity() -> None:
 
     if os.getenv("TRACE"):
         dump_snapshot()
-    runtime_mode = detect_runtime_mode()
+    runtime_mode = detect_runtime_mode(PROGRAM_PACKAGE)
 
     if mode == "singlefile":
         # --- verify singlefile ---

@@ -10,7 +10,7 @@ import pytest
 import apathetic_logging as mod_alogs
 import apathetic_logging.logging_utils as mod_logging_utils
 import apathetic_logging.registry_data as mod_registry_data
-from tests.utils.patch_everywhere import patch_everywhere
+from tests.utils import PATCH_STITCH_HINTS, PROGRAM_PACKAGE, patch_everywhere
 from tests.utils.version_info_mock import create_version_info
 
 
@@ -125,7 +125,13 @@ def test_version_gated_function_works_when_target_sufficient(
         # (e.g., Python 3.11+ functions on Python 3.10)
         # monkeypatch will automatically clean up created attributes on undo
         patch_everywhere(
-            monkeypatch, logging, stdlib_func_name, mock_func, create_if_missing=True
+            monkeypatch,
+            logging,
+            stdlib_func_name,
+            mock_func,
+            PROGRAM_PACKAGE,
+            PATCH_STITCH_HINTS,
+            create_if_missing=True,
         )
         func = getattr(mod_alogs, func_name)
         # --- execute ---

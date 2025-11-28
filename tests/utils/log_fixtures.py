@@ -4,12 +4,16 @@
 import uuid
 from typing import TYPE_CHECKING
 
+import apathetic_utils as mod_utils
 import pytest
 
 import apathetic_logging as mod_alogs
 
-from .patch_everywhere import patch_everywhere
+from .constants import PATCH_STITCH_HINTS, PROGRAM_PACKAGE
 from .safe_trace import make_safe_trace
+
+
+patch_everywhere = mod_utils.patch_everywhere
 
 
 if TYPE_CHECKING:
@@ -56,7 +60,14 @@ def module_logger(monkeypatch: pytest.MonkeyPatch) -> Logger:
     """
     new_logger = mod_alogs.Logger(f"isolated_logger{_suffix()}")
     new_logger.setLevel("test")
-    patch_everywhere(monkeypatch, mod_alogs, "getLogger", lambda: new_logger)
+    patch_everywhere(
+        monkeypatch,
+        mod_alogs,
+        "getLogger",
+        lambda: new_logger,
+        PROGRAM_PACKAGE,
+        PATCH_STITCH_HINTS,
+    )
     safe_trace(
         "module_logger fixture",
         f"id={id(new_logger)}",

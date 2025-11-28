@@ -14,8 +14,8 @@ import apathetic_logging as mod_alogs
 import apathetic_logging.constants as mod_constants
 import apathetic_logging.logging_utils as mod_logging_utils
 import apathetic_logging.registry_data as mod_registry_data
+from tests.utils import PATCH_STITCH_HINTS, PROGRAM_PACKAGE, patch_everywhere
 from tests.utils.level_validation import validate_test_level
-from tests.utils.patch_everywhere import patch_everywhere
 from tests.utils.version_info_mock import create_version_info
 
 
@@ -138,11 +138,14 @@ def test_module_std_camel_function(  # noqa: PLR0915
                     logging,
                     func_name_in_module,
                     mock_func,
+                    PROGRAM_PACKAGE,
+                    PATCH_STITCH_HINTS,
                     create_if_missing=True,
                 )
             else:
-                # For non-logging modules, use standard patching
-                pytest.skip(f"Unsupported module: {module_name}")
+                # All test data should use logging module
+                msg = f"Unexpected non-logging module in test data: {module_name}"
+                raise AssertionError(msg)
             with suppress(Exception):
                 camel_func(*args, **kwargs)
             mock_func.assert_called_once_with(*args, **kwargs)
@@ -169,11 +172,14 @@ def test_module_std_camel_function(  # noqa: PLR0915
                     logging,
                     func_name_in_module,
                     mock_func,
+                    PROGRAM_PACKAGE,
+                    PATCH_STITCH_HINTS,
                     create_if_missing=True,
                 )
             else:
-                # For non-logging modules, use standard patching
-                pytest.skip(f"Unsupported module: {module_name}")
+                # All test data should use logging module
+                msg = f"Unexpected non-logging module in test data: {module_name}"
+                raise AssertionError(msg)
             # Call the camelCase function
             # Some functions may raise (e.g., if logging is already configured)
             # That's okay - we just want to verify the mock was called

@@ -19,9 +19,9 @@ import sys
 import types
 import zipfile
 
+import apathetic_utils as mod_utils
 import pytest
 
-from tests.utils.build_tools import find_shiv
 from tests.utils.constants import PROJ_ROOT
 
 
@@ -196,7 +196,7 @@ def test_zipapp_import_semantics() -> None:
     zipapp_file.parent.mkdir(parents=True, exist_ok=True)
 
     # --- execute: build zipapp ---
-    shiv_cmd = find_shiv()
+    shiv_cmd = mod_utils.find_shiv()
     result = subprocess.run(  # noqa: S603
         [
             shiv_cmd,

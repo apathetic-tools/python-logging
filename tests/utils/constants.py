@@ -18,3 +18,6 @@ PROGRAM_CONFIG = "apathetic_logging"
 
 # Path to the bundler script (relative to project root)
 BUNDLER_SCRIPT = "dev/serger.py"
+
+# Stitch hints for patch_everywhere (used to identify stitched modules)
+PATCH_STITCH_HINTS = {"/dist/", "standalone", f"{PROGRAM_SCRIPT}.py"}

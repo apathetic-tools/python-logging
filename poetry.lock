@@ -13,6 +13,21 @@ files = [
 ]
 
 [[package]]
+name = "apathetic-utils"
+version = "0.2.0"
+description = "When stdlib isn't enough."
+optional = false
+python-versions = ">=3.10"
+groups = ["dev"]
+files = [
+    {file = "apathetic_utils-0.2.0-py3-none-any.whl", hash = "sha256:6e334d80cf29161c03145a0b94dbf14c9443ed3423803ecfd0ace2ffa6509e6d"},
+    {file = "apathetic_utils-0.2.0.tar.gz", hash = "sha256:8e6e47f0701db48a600d9404ffc14a3cd27143ac444094ae2e5b4c0e4ed568f6"},
+]
+
+[package.dependencies]
+apathetic-logging = ">=0.2.2,<2.0.0"
+
+[[package]]
 name = "certifi"
 version = "2025.11.12"
 description = "Python package for providing Mozilla's CA Bundle."

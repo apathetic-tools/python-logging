@@ -15,7 +15,14 @@ from collections.abc import Generator
 
 import pytest
 
-from tests.utils import make_safe_trace, runtime_swap
+from tests.utils import (
+    BUNDLER_SCRIPT,
+    PROGRAM_PACKAGE,
+    PROGRAM_SCRIPT,
+    PROJ_ROOT,
+    make_safe_trace,
+    runtime_swap,
+)
 from tests.utils.log_fixtures import (
     direct_logger,
     module_logger,
@@ -31,7 +38,12 @@ __all__ = [
 safe_trace = make_safe_trace("⚡️")
 
 # early jank hook
-runtime_swap()
+runtime_swap(
+    root=PROJ_ROOT,
+    package_name=PROGRAM_PACKAGE,
+    script_name=PROGRAM_SCRIPT,
+    bundler_script=BUNDLER_SCRIPT,
+)
 
 # Import after runtime_swap to ensure we get the right module
 import apathetic_logging as mod_alogs  # noqa: E402
@@ -120,7 +132,9 @@ def _filter_debug_tests(
         return  # user explicitly requested them, don't skip
 
     for item in items:
-        if "debug" in item.keywords:
+        # Check for the actual @pytest.mark.debug marker, not just "debug" in keywords
+        # (parametrized values can add "debug" to keywords, causing false positives)
+        if item.get_closest_marker("debug") is not None:
             item.add_marker(
                 pytest.mark.skip(reason="Skipped debug test (use -k debug to run)"),
             )
