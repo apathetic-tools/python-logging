@@ -2,6 +2,28 @@
 
 <!-- version list -->
 
+## v0.3.0 (2025-11-28)
+
+### Bug Fixes
+
+- **ci**: Enable verbose output for TestPyPI publish debugging
+  ([`a015fa4`](https://github.com/apathetic-tools/python-logging/commit/a015fa469efce3f39e3a38bc127c6019423946b0))
+
+- **ci**: Improve TestPyPI publish error handling
+  ([`5b9cba0`](https://github.com/apathetic-tools/python-logging/commit/5b9cba08cdf1237dcf9c7fbcb425bc7b25fd36ce))
+
+- **ci**: Update publish workflow to match pypa documentation format
+  ([`748bfd7`](https://github.com/apathetic-tools/python-logging/commit/748bfd7e748f09efa9ea38e41b65c3be35f85e49))
+
+- **metadata**: Fix invalid PyPI classifier and add validation
+  ([`f116dd1`](https://github.com/apathetic-tools/python-logging/commit/f116dd1570e363e87fac1ddd7f1af11fb19250ee))
+
+### Features
+
+- **ci**: Integrate publish workflow with release workflow
+  ([`7763808`](https://github.com/apathetic-tools/python-logging/commit/7763808be3c4b867dc5ad70f2c93b7799b9b3bc4))
+
+
 ## v0.2.3 (2025-11-27)
 
 ### Bug Fixes
