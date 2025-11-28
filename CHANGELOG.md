@@ -2,6 +2,14 @@
 
 <!-- version list -->
 
+## v0.3.1 (2025-11-28)
+
+### Bug Fixes
+
+- **workflows**: Correct YAML indentation in publish workflow
+  ([`4be6e43`](https://github.com/apathetic-tools/python-logging/commit/4be6e435a790b1eee63af4a5122f7efea0fdabca))
+
+
 ## v0.3.0 (2025-11-28)
 
 ### Bug Fixes
