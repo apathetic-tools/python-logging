@@ -2,6 +2,14 @@
 
 <!-- version list -->
 
+## v0.3.2 (2025-11-28)
+
+### Bug Fixes
+
+- **tests**: Resolve lint errors and debug test filter bug
+  ([`bca70df`](https://github.com/apathetic-tools/python-logging/commit/bca70df85deff5ab0dad36c197d95464ac0aa73e))
+
+
 ## v0.3.1 (2025-11-28)
 
 ### Bug Fixes
