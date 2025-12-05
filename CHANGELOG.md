@@ -2,6 +2,14 @@
 
 <!-- version list -->
 
+## v0.5.0 (2025-12-05)
+
+### Features
+
+- **tests**: Skip zipapp tests until zipbundler replaces shiv
+  ([`d491f0e`](https://github.com/apathetic-tools/python-logging/commit/d491f0e3962bf4403992b8a564ffab878928b45d))
+
+
 ## v0.4.0 (2025-12-05)
 
 ### Chores
