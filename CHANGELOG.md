@@ -2,6 +2,25 @@
 
 <!-- version list -->
 
+## v0.4.0 (2025-12-05)
+
+### Chores
+
+- **deps**: Bump actions/checkout from 5 to 6
+  ([#1](https://github.com/apathetic-tools/python-logging/pull/1),
+  [`c2fe742`](https://github.com/apathetic-tools/python-logging/commit/c2fe742ac3dd1050abcf648ee4dda46ec39c9a63))
+
+### Features
+
+- **api**: Rename MINIMAL_LEVEL to BRIEF_LEVEL and minimal() to brief()
+  ([`842b696`](https://github.com/apathetic-tools/python-logging/commit/842b69640150ad67b70a6182c0d825e26332b69b))
+
+### Refactoring
+
+- **ci**: Rename workflow files for clarity
+  ([`356e1eb`](https://github.com/apathetic-tools/python-logging/commit/356e1eb4e16a94fb0500bd39bf169f8dfb3a0208))
+
+
 ## v0.3.2 (2025-11-28)
 
 ### Bug Fixes
