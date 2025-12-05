@@ -22,6 +22,9 @@ permalink: /
 - 🔧 **CLI-friendly** — Designed with command-line applications in mind
 - 🧩 **Apathetic Tools integration** — Works seamlessly with serger and other Apathetic Tools
 
+> [!NOTE]
+> Heads up: the AI cooked dinner. It’s edible, but watch your step.  
+> Detailed bug reports welcome.
 
 ## Quick Example
 
