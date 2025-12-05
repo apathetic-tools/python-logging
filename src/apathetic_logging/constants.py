@@ -44,6 +44,13 @@ class ApatheticLogging_Internal_Constants:  # noqa: N801  # pyright: ignore[repo
     BRIEF_LEVEL: int = logging.INFO + 5
     """Less detailed than INFO."""
 
+    MINIMAL_LEVEL: int = logging.INFO + 5
+    """Deprecated: Alias for BRIEF_LEVEL. Use BRIEF_LEVEL instead.
+
+    This level is deprecated and will be removed once sibling tools have upgraded.
+    Functionally equivalent to BRIEF_LEVEL.
+    """
+
     SILENT_LEVEL: int = logging.CRITICAL + 1
     """Disables all logging (one above the highest builtin level)."""
 
@@ -53,6 +60,7 @@ class ApatheticLogging_Internal_Constants:  # noqa: N801  # pyright: ignore[repo
         "debug",
         "detail",
         "info",
+        "minimal",  # deprecated: alias for brief
         "brief",
         "warning",
         "error",

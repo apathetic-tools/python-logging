@@ -351,6 +351,9 @@ class ApatheticLogging_Internal_LoggerCore(logging.Logger):  # noqa: N801  # pyr
         cls.addLevelName(_constants.TEST_LEVEL, "TEST")
         cls.addLevelName(_constants.TRACE_LEVEL, "TRACE")
         cls.addLevelName(_constants.DETAIL_LEVEL, "DETAIL")
+        # Register MINIMAL before BRIEF so BRIEF "wins" the name mapping
+        # (since MINIMAL is deprecated)
+        cls.addLevelName(_constants.MINIMAL_LEVEL, "MINIMAL")  # deprecated
         cls.addLevelName(_constants.BRIEF_LEVEL, "BRIEF")
         cls.addLevelName(_constants.SILENT_LEVEL, "SILENT")
 
@@ -577,6 +580,23 @@ class ApatheticLogging_Internal_LoggerCore(logging.Logger):  # noqa: N801  # pyr
         if self.isEnabledFor(_constants.BRIEF_LEVEL):
             self._log(
                 _constants.BRIEF_LEVEL,
+                msg,
+                args,
+                **kwargs,
+            )
+
+    def minimal(self, msg: str, *args: Any, **kwargs: Any) -> None:
+        """Log a minimal-level message (deprecated: alias for brief).
+
+        .. deprecated::
+            This method is deprecated and will be removed once sibling tools
+            have upgraded. Use :meth:`brief` instead. Functionally equivalent
+            to :meth:`brief`.
+        """
+        _constants = ApatheticLogging_Internal_Constants
+        if self.isEnabledFor(_constants.MINIMAL_LEVEL):
+            self._log(
+                _constants.MINIMAL_LEVEL,
                 msg,
                 args,
                 **kwargs,

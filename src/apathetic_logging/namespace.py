@@ -83,6 +83,7 @@ class apathetic_logging(  # noqa: N801
     - ``TEST_LEVEL`` → ``ApatheticLogging_Internal_Constants``
     - ``TRACE_LEVEL`` → ``ApatheticLogging_Internal_Constants``
     - ``BRIEF_LEVEL`` → ``ApatheticLogging_Internal_Constants``
+    - ``MINIMAL_LEVEL`` → ``ApatheticLogging_Internal_Constants``
     - ``DETAIL_LEVEL`` → ``ApatheticLogging_Internal_Constants``
     - ``SILENT_LEVEL`` → ``ApatheticLogging_Internal_Constants``
     - ``LEVEL_ORDER`` → ``ApatheticLogging_Internal_Constants``
@@ -91,7 +92,7 @@ class apathetic_logging(  # noqa: N801
     """
 
 
-# Ensure logging module is extended with TEST, TRACE, BRIEF, DETAIL, and SILENT
+# Ensure logging module is extended with TEST, TRACE, DETAIL, BRIEF, MINIMAL, and SILENT
 # levels
 # This must be called before any loggers are created
 # This runs when namespace.py is executed (both installed and stitched modes)

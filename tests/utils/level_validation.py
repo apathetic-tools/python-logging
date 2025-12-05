@@ -27,6 +27,7 @@ def _get_safe_ranges() -> list[str]:
         (_constants.TRACE_LEVEL, "TRACE"),
         (_constants.DETAIL_LEVEL, "DETAIL"),
         (_constants.BRIEF_LEVEL, "BRIEF"),
+        (_constants.MINIMAL_LEVEL, "MINIMAL"),  # deprecated: same value as BRIEF
         (_constants.SILENT_LEVEL, "SILENT"),
     ]
     reserved_levels.sort()
@@ -66,7 +67,7 @@ def validate_test_level(level: int) -> None:
 
     Raises ValueError if the level conflicts with:
     - Built-in logging levels (DEBUG, INFO, WARNING, ERROR, CRITICAL)
-    - Apathetic logging custom levels (TEST, TRACE, DETAIL, BRIEF, SILENT)
+    - Apathetic logging custom levels (TEST, TRACE, DETAIL, BRIEF, MINIMAL, SILENT)
 
     This forces test designers to explicitly choose safe level values,
     preventing accidental conflicts that could cause test failures.
@@ -103,6 +104,7 @@ def validate_test_level(level: int) -> None:
     reserved_levels[_constants.TRACE_LEVEL] = "TRACE"
     reserved_levels[_constants.DETAIL_LEVEL] = "DETAIL"
     reserved_levels[_constants.BRIEF_LEVEL] = "BRIEF"
+    reserved_levels[_constants.MINIMAL_LEVEL] = "MINIMAL"  # deprecated
     reserved_levels[_constants.SILENT_LEVEL] = "SILENT"
 
     # Check for conflict

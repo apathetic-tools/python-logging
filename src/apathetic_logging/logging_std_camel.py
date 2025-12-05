@@ -475,6 +475,35 @@ class ApatheticLogging_Internal_StdCamelCase:  # noqa: N801  # pyright: ignore[r
         elif logger.isEnabledFor(_constants.BRIEF_LEVEL):
             logger._log(_constants.BRIEF_LEVEL, msg, args, **kwargs)  # noqa: SLF001  # pyright: ignore[reportPrivateUsage]
 
+    @staticmethod
+    def minimal(msg: str, *args: Any, **kwargs: Any) -> None:
+        """Log a message with severity 'MINIMAL' on the root logger (deprecated).
+
+        .. deprecated::
+            This function is deprecated and will be removed once sibling tools
+            have upgraded. Use :func:`brief` instead. Functionally equivalent
+            to :func:`brief`.
+
+        MINIMAL is less detailed than INFO. If the logger has no handlers,
+        call basicConfig() to add a console handler with a pre-defined format.
+
+        This function gets an apathetic_logging.Logger instance (ensuring
+        the root logger is an apathetic logger) and calls its minimal() method.
+        """
+        _get_logger = ApatheticLogging_Internal_GetLogger
+        _logger = ApatheticLogging_Internal_Logger
+        _constants = ApatheticLogging_Internal_Constants
+        # Ensure logging module is extended
+        _logger.Logger.extendLoggingModule()
+        # Get root logger - it should be an apathetic logger now
+        logger = _get_logger.getLogger("", extend=True)
+        # Check if logger has minimal method (it should if it's an apathetic logger)
+        if hasattr(logger, "minimal"):
+            logger.minimal(msg, *args, **kwargs)
+        # Fallback: if root logger is still a standard logger, use _log directly
+        elif logger.isEnabledFor(_constants.MINIMAL_LEVEL):
+            logger._log(_constants.MINIMAL_LEVEL, msg, args, **kwargs)  # noqa: SLF001  # pyright: ignore[reportPrivateUsage]
+
     # --- Utility Functions ---
 
     @staticmethod
