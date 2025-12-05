@@ -477,7 +477,12 @@ except Exception:
 safeTrace(label: str, *args: Any, icon: str = "🧪") -> None
 ```
 
-Debug tracing function for test development. Only active when `TEST_TRACE` environment variable is set.
+Debug tracing function for test development. Only active when safe trace is enabled via environment variables.
+
+Safe trace is enabled when any of the following conditions are met:
+1. `SAFE_TRACE` environment variable is set to `"1"`, `"true"`, or `"yes"` (case insensitive)
+2. `LOG_LEVEL` environment variable (case insensitive) is set to `"TRACE"` or `"TEST"`
+3. `LOG_LEVEL` numeric value is less than or equal to `TRACE_LEVEL` (supports both numeric strings like `"5"` and standard logging level names like `"DEBUG"`)
 
 **Parameters:**
 
@@ -486,6 +491,24 @@ Debug tracing function for test development. Only active when `TEST_TRACE` envir
 | `label` | str | Trace label |
 | `*args` | Any | Additional arguments to trace |
 | `icon` | str | Icon to use (default: `"🧪"`) |
+
+**Example:**
+```python
+from apathetic_logging import safeTrace
+import os
+
+# Enable via SAFE_TRACE
+os.environ["SAFE_TRACE"] = "1"
+safeTrace("debug", "message")  # Will output
+
+# Enable via LOG_LEVEL
+os.environ["LOG_LEVEL"] = "TRACE"
+safeTrace("debug", "message")  # Will output
+
+# Or via numeric LOG_LEVEL
+os.environ["LOG_LEVEL"] = "5"  # TRACE_LEVEL is 5
+safeTrace("debug", "message")  # Will output
+```
 
 ### makeSafeTrace
 
@@ -1732,7 +1755,12 @@ message = f"{ANSIColors.CYAN}Colored text{ANSIColors.RESET}"
 
 ### SAFE_TRACE(label: str, *args: Any, icon: str = "🧵") -> None
 
-Debug tracing function for test development. Only active when `TEST_TRACE` environment variable is set.
+Debug tracing function for test development. Only active when safe trace is enabled via environment variables.
+
+Safe trace is enabled when any of the following conditions are met:
+1. `SAFE_TRACE` environment variable is set to `"1"`, `"true"`, or `"yes"` (case insensitive)
+2. `LOG_LEVEL` environment variable (case insensitive) is set to `"TRACE"` or `"TEST"`
+3. `LOG_LEVEL` numeric value is less than or equal to `TRACE_LEVEL` (supports both numeric strings like `"5"` and standard logging level names like `"DEBUG"`)
 
 **Parameters:**
 
@@ -1757,7 +1785,33 @@ Create a test trace function with a custom icon.
 
 ### SAFE_TRACE_ENABLED: bool
 
-Boolean flag indicating if test tracing is enabled (checks `TEST_TRACE` environment variable).
+Boolean flag indicating if safe trace is enabled. This is determined by checking environment variables at module import time.
+
+Safe trace is enabled when any of the following conditions are met:
+1. `SAFE_TRACE` environment variable is set to `"1"`, `"true"`, or `"yes"` (case insensitive)
+2. `LOG_LEVEL` environment variable (case insensitive) is set to `"TRACE"` or `"TEST"`
+3. `LOG_LEVEL` numeric value is less than or equal to `TRACE_LEVEL` (supports both numeric strings like `"5"` and standard logging level names like `"DEBUG"`)
+
+**Note:** This value is computed once at module import time. To change it at runtime, you can directly assign to this attribute (useful for testing).
+
+**Example:**
+```python
+from apathetic_logging import SAFE_TRACE_ENABLED, safeTrace
+import os
+
+# Check if safe trace is enabled
+if SAFE_TRACE_ENABLED:
+    safeTrace("debug", "message")  # Will output
+
+# Enable via environment variable before import
+os.environ["SAFE_TRACE"] = "1"
+# Note: You need to re-import for the change to take effect
+
+# Or override directly (useful in tests)
+import apathetic_logging
+apathetic_logging.SAFE_TRACE_ENABLED = True
+safeTrace("debug", "message")  # Will output
+```
 
 ## Compatibility Mode
 
