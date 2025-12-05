@@ -4,7 +4,6 @@
 from __future__ import annotations
 
 import logging
-import os
 from typing import ClassVar
 
 
@@ -20,13 +19,6 @@ class ApatheticLogging_Internal_Constants:  # noqa: N801  # pyright: ignore[repo
 
     DEFAULT_APATHETIC_LOG_LEVEL_ENV_VARS: ClassVar[list[str]] = ["LOG_LEVEL"]
     """Default environment variable names to check for log level."""
-
-    SAFE_TRACE_ENABLED: bool = os.getenv("SAFE_TRACE", "").lower() in {
-        "1",
-        "true",
-        "yes",
-    }
-    """Enable safe trace diagnostics (controlled by SAFE_TRACE env var)."""
 
     NOTSET_LEVEL: int = logging.NOTSET
     """NOTSET level (0) - logger inherits level from parent."""

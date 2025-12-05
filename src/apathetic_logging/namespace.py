@@ -79,7 +79,7 @@ class apathetic_logging(  # noqa: N801
     **Constants:**
     - ``DEFAULT_APATHETIC_LOG_LEVEL`` → ``ApatheticLogging_Internal_Constants``
     - ``DEFAULT_APATHETIC_LOG_LEVEL_ENV_VARS`` → ``ApatheticLogging_Internal_Constants``
-    - ``SAFE_TRACE_ENABLED`` → ``ApatheticLogging_Internal_Constants``
+    - ``SAFE_TRACE_ENABLED`` → ``ApatheticLogging_Internal_SafeLogging``
     - ``TEST_LEVEL`` → ``ApatheticLogging_Internal_Constants``
     - ``TRACE_LEVEL`` → ``ApatheticLogging_Internal_Constants``
     - ``BRIEF_LEVEL`` → ``ApatheticLogging_Internal_Constants``
