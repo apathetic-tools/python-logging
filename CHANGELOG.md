@@ -2,6 +2,17 @@
 
 <!-- version list -->
 
+## v0.6.0 (2025-12-05)
+
+### Features
+
+- **logging**: Add minimal level as deprecated alias for brief
+  ([`e739dbf`](https://github.com/apathetic-tools/python-logging/commit/e739dbfbe5f40361603863050c76bca673f8b0d8))
+
+- **safe-logging**: Add isSafeTraceEnabled method
+  ([`4ff04e5`](https://github.com/apathetic-tools/python-logging/commit/4ff04e52d933accb1bf759a8ced8a8c0b6048d72))
+
+
 ## v0.5.0 (2025-12-05)
 
 ### Features
