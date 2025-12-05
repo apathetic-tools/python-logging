@@ -18,7 +18,7 @@ from tests.utils.level_validation import validate_test_level
 from tests.utils.version_info_mock import create_version_info
 
 
-# Safe test level value (26 is between MINIMAL=25 and WARNING=30)
+# Safe test level value (26 is between BRIEF=25 and WARNING=30)
 TEST_LEVEL_VALUE = 26
 validate_test_level(TEST_LEVEL_VALUE)
 

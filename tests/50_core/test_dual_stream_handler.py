@@ -148,14 +148,14 @@ def test_dual_stream_handler_detail_goes_to_stdout(
     assert "test detail message" not in err_buf.getvalue()
 
 
-def test_dual_stream_handler_minimal_goes_to_stdout(
+def test_dual_stream_handler_brief_goes_to_stdout(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """DualStreamHandler should route MINIMAL level to stdout."""
+    """DualStreamHandler should route BRIEF level to stdout."""
     # --- setup ---
     handler = mod_alogs.apathetic_logging.DualStreamHandler()
-    logger = mod_alogs.Logger("test_minimal")
-    logger.setLevel(mod_alogs.apathetic_logging.MINIMAL_LEVEL)
+    logger = mod_alogs.Logger("test_brief")
+    logger.setLevel(mod_alogs.apathetic_logging.BRIEF_LEVEL)
     logger.addHandler(handler)
 
     out_buf = io.StringIO()
@@ -164,11 +164,11 @@ def test_dual_stream_handler_minimal_goes_to_stdout(
     # --- execute ---
     monkeypatch.setattr(sys, "stdout", out_buf)
     monkeypatch.setattr(sys, "stderr", err_buf)
-    logger.minimal("test minimal message")
+    logger.brief("test brief message")
 
     # --- verify ---
-    assert "test minimal message" in out_buf.getvalue()
-    assert "test minimal message" not in err_buf.getvalue()
+    assert "test brief message" in out_buf.getvalue()
+    assert "test brief message" not in err_buf.getvalue()
 
 
 def test_dual_stream_handler_has_enable_color_attribute() -> None:

@@ -41,7 +41,7 @@ class ApatheticLogging_Internal_Constants:  # noqa: N801  # pyright: ignore[repo
     DETAIL_LEVEL: int = logging.INFO - 5
     """More detailed than INFO."""
 
-    MINIMAL_LEVEL: int = logging.INFO + 5
+    BRIEF_LEVEL: int = logging.INFO + 5
     """Less detailed than INFO."""
 
     SILENT_LEVEL: int = logging.CRITICAL + 1
@@ -53,7 +53,7 @@ class ApatheticLogging_Internal_Constants:  # noqa: N801  # pyright: ignore[repo
         "debug",
         "detail",
         "info",
-        "minimal",
+        "brief",
         "warning",
         "error",
         "critical",

@@ -22,7 +22,7 @@ class ApatheticLogging_Internal_DualStreamHandler:  # noqa: N801  # pyright: ign
     class DualStreamHandler(logging.StreamHandler):  # type: ignore[type-arg]
         """Send info to stdout, everything else to stderr.
 
-        INFO, MINIMAL, and DETAIL go to stdout (normal program output).
+        INFO, BRIEF, and DETAIL go to stdout (normal program output).
         TRACE, DEBUG, WARNING, ERROR, and CRITICAL go to stderr
         (diagnostic/error output).
         When logger level is TEST, TEST/TRACE/DEBUG messages bypass capture
@@ -50,7 +50,7 @@ class ApatheticLogging_Internal_DualStreamHandler:  # noqa: N801  # pyright: ign
 
             Features:
             - Routes messages to stdout or stderr based on log level:
-              - DETAIL, INFO, and MINIMAL → stdout (normal program output)
+              - DETAIL, INFO, and BRIEF → stdout (normal program output)
               - TRACE, DEBUG, WARNING, ERROR, and CRITICAL → stderr
                 (diagnostic/error output)
             - In TEST mode, TEST/TRACE/DEBUG messages bypass pytest capture
@@ -112,7 +112,7 @@ class ApatheticLogging_Internal_DualStreamHandler:  # noqa: N801  # pyright: ign
                 else:
                     self.stream = sys.stderr
             else:
-                # DETAIL, INFO, MINIMAL → stdout (normal program output)
+                # DETAIL, INFO, BRIEF → stdout (normal program output)
                 self.stream = sys.stdout
 
             # used by TagFormatter

@@ -73,28 +73,28 @@ def test_set_level_with_detail_lowercase(
     assert direct_logger.levelName == "DETAIL"
 
 
-def test_set_level_with_minimal_string(
+def test_set_level_with_brief_string(
     direct_logger: Logger,
 ) -> None:
-    """setLevel() should accept 'MINIMAL' as a string."""
+    """setLevel() should accept 'BRIEF' as a string."""
     # --- execute ---
-    direct_logger.setLevel("MINIMAL")
+    direct_logger.setLevel("BRIEF")
 
     # --- verify ---
-    assert direct_logger.level == mod_alogs.apathetic_logging.MINIMAL_LEVEL
-    assert direct_logger.levelName == "MINIMAL"
+    assert direct_logger.level == mod_alogs.apathetic_logging.BRIEF_LEVEL
+    assert direct_logger.levelName == "BRIEF"
 
 
-def test_set_level_with_minimal_lowercase(
+def test_set_level_with_brief_lowercase(
     direct_logger: Logger,
 ) -> None:
-    """setLevel() should accept 'minimal' (lowercase) as a string."""
+    """setLevel() should accept 'brief' (lowercase) as a string."""
     # --- execute ---
-    direct_logger.setLevel("minimal")
+    direct_logger.setLevel("brief")
 
     # --- verify ---
-    assert direct_logger.level == mod_alogs.apathetic_logging.MINIMAL_LEVEL
-    assert direct_logger.levelName == "MINIMAL"
+    assert direct_logger.level == mod_alogs.apathetic_logging.BRIEF_LEVEL
+    assert direct_logger.levelName == "BRIEF"
 
 
 def test_set_level_with_silent_lowercase(

@@ -69,7 +69,7 @@ Complete API documentation for Apathetic Python Logger.
 | [`fatal()`](#fatal) | Log a message with severity CRITICAL |
 | [`info()`](#info) | Log a message with severity INFO |
 | [`log()`](#log) | Log a message with an explicit level |
-| [`minimal()`](#minimal) | Log a message with severity MINIMAL |
+| [`brief()`](#brief) | Log a message with severity BRIEF |
 | [`trace()`](#trace) | Log a message with severity TRACE |
 | [`warn()`](#warn) | Log a message with severity WARNING |
 | [`warning()`](#warning) | Log a message with severity WARNING |
@@ -89,7 +89,7 @@ Complete API documentation for Apathetic Python Logger.
 | [`extendLoggingModule()`](#extendloggingmodule) | Extend Python's logging module with TRACE and SILENT levels (classmethod) |
 | [`trace()`](#trace) | Log a message at TRACE level |
 | [`detail()`](#detail) | Log a message at DETAIL level |
-| [`minimal()`](#minimal) | Log a message at MINIMAL level |
+| [`brief()`](#brief) | Log a message at BRIEF level |
 | [`test()`](#test) | Log a message at TEST level |
 | [`errorIfNotDebug()`](#errorifnotdebug) | Log an error with full traceback only if debug/trace is enabled |
 | [`criticalIfNotDebug()`](#criticalifnotdebug) | Log a critical error with full traceback only if debug/trace is enabled |
@@ -1036,15 +1036,15 @@ import apathetic_logging
 apathetic_logging.detail("Additional detail: %s", information)
 ```
 
-### minimal
+### brief
 
 ```python
-minimal(msg: str, *args: Any, **kwargs: Any) -> None
+brief(msg: str, *args: Any, **kwargs: Any) -> None
 ```
 
-Log a message with severity MINIMAL on the root logger.
+Log a message with severity BRIEF on the root logger.
 
-MINIMAL is less detailed than INFO. This function gets an `apathetic_logging.Logger` instance (ensuring the root logger is an apathetic logger) and calls its `minimal()` method.
+BRIEF is less detailed than INFO. This function gets an `apathetic_logging.Logger` instance (ensuring the root logger is an apathetic logger) and calls its `brief()` method.
 
 If the logger has no handlers, `basicConfig()` is automatically called to add a console handler with a pre-defined format.
 
@@ -1060,8 +1060,8 @@ If the logger has no handlers, `basicConfig()` is automatically called to add a 
 ```python
 import apathetic_logging
 
-# Log a minimal message
-apathetic_logging.minimal("Minimal information: %s", summary)
+# Log a brief message
+apathetic_logging.brief("brief information: %s", summary)
 ```
 
 ### getHandlerByName
@@ -1260,13 +1260,13 @@ Log a message at DETAIL level.
 | `*args` | Any | Format arguments |
 | `**kwargs` | Any | Additional keyword arguments |
 
-### minimal
+### brief
 
 ```python
-minimal(msg: str, *args: Any, **kwargs: Any) -> None
+brief(msg: str, *args: Any, **kwargs: Any) -> None
 ```
 
-Log a message at MINIMAL level.
+Log a message at BRIEF level.
 
 **Parameters:**
 

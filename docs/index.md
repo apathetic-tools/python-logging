@@ -16,7 +16,7 @@ permalink: /
 - 🔄 **Drop-in replacement** — Can be used as a drop-in replacement for stdlib `logging`
 - 🐍 **stdlib-compatible** — Uses camelCase naming to match Python's standard library `logging` module
 - 🔄 **Dual-stream handling** — Smart routing to stdout/stderr
-- 📊 **Extra logging levels** — TEST, TRACE, DETAIL, MINIMAL, and SILENT levels for fine-grained control
+- 📊 **Extra logging levels** — TEST, TRACE, DETAIL, BRIEF, and SILENT levels for fine-grained control
 - 🏷️ **Tag-based formatting** — Clean, readable log tags with emoji support
 - 🎨 **Colorized output** — Automatic color detection with TTY support
 - 🔧 **CLI-friendly** — Designed with command-line applications in mind
@@ -37,7 +37,7 @@ logger = getLogger()
 # Use it!
 logger.info("Hello, world!")
 logger.detail("Extra verbosity above INFO")
-logger.minimal("Lower verbosity than INFO")
+logger.brief("Lower verbosity than INFO")
 logger.trace("Trace information")
 ```
 

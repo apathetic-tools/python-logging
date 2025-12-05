@@ -50,7 +50,7 @@ TEST_LEVEL = apathetic_logging.TEST_LEVEL
 safeTrace = apathetic_logging.safeTrace
 SAFE_TRACE_ENABLED = apathetic_logging.SAFE_TRACE_ENABLED
 TRACE_LEVEL = apathetic_logging.TRACE_LEVEL
-MINIMAL_LEVEL = apathetic_logging.MINIMAL_LEVEL
+BRIEF_LEVEL = apathetic_logging.BRIEF_LEVEL
 DETAIL_LEVEL = apathetic_logging.DETAIL_LEVEL
 NOTSET_LEVEL = apathetic_logging.NOTSET_LEVEL
 
@@ -90,7 +90,7 @@ getLoggerClass = apathetic_logging.getLoggerClass
 info = apathetic_logging.info
 log = apathetic_logging.log
 makeLogRecord = apathetic_logging.makeLogRecord
-minimal = apathetic_logging.minimal
+brief = apathetic_logging.brief
 setLogRecordFactory = apathetic_logging.setLogRecordFactory
 setLoggerClass = apathetic_logging.setLoggerClass
 shutdown = apathetic_logging.shutdown
@@ -122,11 +122,11 @@ safeLog = apathetic_logging.safeLog
 
 
 __all__ = [
+    "BRIEF_LEVEL",
     "DEFAULT_APATHETIC_LOG_LEVEL",
     "DEFAULT_APATHETIC_LOG_LEVEL_ENV_VARS",
     "DETAIL_LEVEL",
     "LEVEL_ORDER",
-    "MINIMAL_LEVEL",
     "NOTSET_LEVEL",
     "SAFE_TRACE_ENABLED",
     "SILENT_LEVEL",
@@ -140,6 +140,7 @@ __all__ = [
     "addLevelName",
     "apathetic_logging",
     "basicConfig",
+    "brief",
     "captureWarnings",
     "critical",
     "currentframe",
@@ -171,7 +172,6 @@ __all__ = [
     "log",
     "makeLogRecord",
     "makeSafeTrace",
-    "minimal",
     "registerCompatibilityMode",
     "registerDefaultLogLevel",
     "registerLogLevelEnvVars",

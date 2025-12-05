@@ -145,7 +145,7 @@ class ApatheticLogging_Internal_LoggerCore(logging.Logger):  # noqa: N801  # pyr
         Changed:
         - Accepts both int and str level values (case-insensitive for strings)
         - Automatically resolves string level names to numeric values
-        - Supports custom level names (TEST, TRACE, MINIMAL, DETAIL, SILENT)
+        - Supports custom level names (TEST, TRACE, BRIEF, DETAIL, SILENT)
         - Validates that custom levels are not set to 0, which would cause
           NOTSET inheritance from root logger
         - Added `minimum` parameter: if True, only sets the level if it's more
@@ -154,7 +154,7 @@ class ApatheticLogging_Internal_LoggerCore(logging.Logger):  # noqa: N801  # pyr
         Args:
             level: The logging level, either as an integer or a string name
                 (case-insensitive). Standard levels (DEBUG, INFO, WARNING, ERROR,
-                CRITICAL) and custom levels (TEST, TRACE, MINIMAL, DETAIL, SILENT)
+                CRITICAL) and custom levels (TEST, TRACE, BRIEF, DETAIL, SILENT)
                 are supported.
             minimum: If True, only set the level if it's more verbose (lower
                 numeric value) than the current level. This prevents downgrading
@@ -351,7 +351,7 @@ class ApatheticLogging_Internal_LoggerCore(logging.Logger):  # noqa: N801  # pyr
         cls.addLevelName(_constants.TEST_LEVEL, "TEST")
         cls.addLevelName(_constants.TRACE_LEVEL, "TRACE")
         cls.addLevelName(_constants.DETAIL_LEVEL, "DETAIL")
-        cls.addLevelName(_constants.MINIMAL_LEVEL, "MINIMAL")
+        cls.addLevelName(_constants.BRIEF_LEVEL, "BRIEF")
         cls.addLevelName(_constants.SILENT_LEVEL, "SILENT")
 
         return True
@@ -571,12 +571,12 @@ class ApatheticLogging_Internal_LoggerCore(logging.Logger):  # noqa: N801  # pyr
                 **kwargs,
             )
 
-    def minimal(self, msg: str, *args: Any, **kwargs: Any) -> None:
-        """Log a minimal-level message (less detailed than INFO)."""
+    def brief(self, msg: str, *args: Any, **kwargs: Any) -> None:
+        """Log a brief-level message (less detailed than INFO)."""
         _constants = ApatheticLogging_Internal_Constants
-        if self.isEnabledFor(_constants.MINIMAL_LEVEL):
+        if self.isEnabledFor(_constants.BRIEF_LEVEL):
             self._log(
-                _constants.MINIMAL_LEVEL,
+                _constants.BRIEF_LEVEL,
                 msg,
                 args,
                 **kwargs,

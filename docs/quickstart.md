@@ -45,7 +45,7 @@ apathetic_logging.critical("Critical message")
 # Custom levels
 apathetic_logging.trace("Trace message")
 apathetic_logging.detail("Detail message")
-apathetic_logging.minimal("Minimal message")
+apathetic_logging.brief("Brief message")
 ```
 
 These functions automatically ensure the root logger is an apathetic logger and handle configuration if needed.

@@ -136,7 +136,7 @@ def test_register_logger_extends_logging_module() -> None:
     # Should have extended logging module with custom levels
     assert hasattr(logging, "TRACE")
     assert hasattr(logging, "DETAIL")
-    assert hasattr(logging, "MINIMAL")
+    assert hasattr(logging, "BRIEF")
     assert hasattr(logging, "SILENT")
     # Verify logger name was registered
     _registry = mod_registry.ApatheticLogging_Internal_RegistryData

@@ -81,7 +81,7 @@ def reset_logger_class_and_registry() -> Generator[None, None, None]:
     mod_alogs.Logger.addLevelName(_constants.TEST_LEVEL, "TEST")
     mod_alogs.Logger.addLevelName(_constants.TRACE_LEVEL, "TRACE")
     mod_alogs.Logger.addLevelName(_constants.DETAIL_LEVEL, "DETAIL")
-    mod_alogs.Logger.addLevelName(_constants.MINIMAL_LEVEL, "MINIMAL")
+    mod_alogs.Logger.addLevelName(_constants.BRIEF_LEVEL, "BRIEF")
     mod_alogs.Logger.addLevelName(_constants.SILENT_LEVEL, "SILENT")
     _registry.registered_internal_logger_name = None
     _registry.registered_internal_default_log_level = None
@@ -103,7 +103,7 @@ def reset_logger_class_and_registry() -> Generator[None, None, None]:
     mod_alogs.Logger.addLevelName(_constants.TEST_LEVEL, "TEST")
     mod_alogs.Logger.addLevelName(_constants.TRACE_LEVEL, "TRACE")
     mod_alogs.Logger.addLevelName(_constants.DETAIL_LEVEL, "DETAIL")
-    mod_alogs.Logger.addLevelName(_constants.MINIMAL_LEVEL, "MINIMAL")
+    mod_alogs.Logger.addLevelName(_constants.BRIEF_LEVEL, "BRIEF")
     mod_alogs.Logger.addLevelName(_constants.SILENT_LEVEL, "SILENT")
     _registry.registered_internal_logger_name = original_name
     _registry.registered_internal_default_log_level = original_default

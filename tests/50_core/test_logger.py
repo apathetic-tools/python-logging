@@ -81,7 +81,7 @@ def capture_log_output(
         ("debug", "stderr"),
         ("detail", "stdout"),
         ("info", "stdout"),
-        ("minimal", "stdout"),
+        ("brief", "stdout"),
         ("warning", "stderr"),
         ("error", "stderr"),
         ("critical", "stderr"),

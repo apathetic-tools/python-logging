@@ -64,7 +64,7 @@ from apathetic_logging import getLogger, registerLogger
 
 registerLogger("test")
 logger = getLogger()
-logger.minimal("Installation successful!")
+logger.brief("Installation successful!")
 ```
 
 If you see the info message, installation was successful!

@@ -33,7 +33,7 @@ def test_get_level_name_custom_levels() -> None:
     assert mod_alogs.getLevelName(mod_alogs.TEST_LEVEL) == "TEST"
     assert mod_alogs.getLevelName(mod_alogs.TRACE_LEVEL) == "TRACE"
     assert mod_alogs.getLevelName(mod_alogs.DETAIL_LEVEL) == "DETAIL"
-    assert mod_alogs.getLevelName(mod_alogs.MINIMAL_LEVEL) == "MINIMAL"
+    assert mod_alogs.getLevelName(mod_alogs.BRIEF_LEVEL) == "BRIEF"
     assert mod_alogs.getLevelName(mod_alogs.SILENT_LEVEL) == "SILENT"
 
 
@@ -120,7 +120,7 @@ def test_get_level_number_custom_levels() -> None:
     assert mod_alogs.getLevelNumber("TEST") == mod_alogs.TEST_LEVEL
     assert mod_alogs.getLevelNumber("TRACE") == mod_alogs.TRACE_LEVEL
     assert mod_alogs.getLevelNumber("DETAIL") == mod_alogs.DETAIL_LEVEL
-    assert mod_alogs.getLevelNumber("MINIMAL") == mod_alogs.MINIMAL_LEVEL
+    assert mod_alogs.getLevelNumber("BRIEF") == mod_alogs.BRIEF_LEVEL
     assert mod_alogs.getLevelNumber("SILENT") == mod_alogs.SILENT_LEVEL
 
 
@@ -159,7 +159,7 @@ def test_get_level_name_str_custom_levels() -> None:
     assert mod_alogs.getLevelNameStr(mod_alogs.TEST_LEVEL) == "TEST"
     assert mod_alogs.getLevelNameStr(mod_alogs.TRACE_LEVEL) == "TRACE"
     assert mod_alogs.getLevelNameStr(mod_alogs.DETAIL_LEVEL) == "DETAIL"
-    assert mod_alogs.getLevelNameStr(mod_alogs.MINIMAL_LEVEL) == "MINIMAL"
+    assert mod_alogs.getLevelNameStr(mod_alogs.BRIEF_LEVEL) == "BRIEF"
     assert mod_alogs.getLevelNameStr(mod_alogs.SILENT_LEVEL) == "SILENT"
 
 

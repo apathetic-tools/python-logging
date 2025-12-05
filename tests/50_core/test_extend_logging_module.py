@@ -35,15 +35,15 @@ def test_extend_logging_module_adds_detail_level() -> None:
     assert logging.DETAIL == mod_alogs.apathetic_logging.DETAIL_LEVEL  # pyright: ignore[reportAttributeAccessIssue,reportUnknownMemberType]
 
 
-def test_extend_logging_module_adds_minimal_level() -> None:
-    """extendLoggingModule() should add MINIMAL level to logging module."""
+def test_extend_logging_module_adds_brief_level() -> None:
+    """extendLoggingModule() should add BRIEF level to logging module."""
     # --- execute ---
     mod_alogs.Logger.extendLoggingModule()
 
     # --- verify ---
-    # Should have MINIMAL level defined
-    assert hasattr(logging, "MINIMAL")
-    assert logging.MINIMAL == mod_alogs.apathetic_logging.MINIMAL_LEVEL  # pyright: ignore[reportAttributeAccessIssue,reportUnknownMemberType]
+    # Should have BRIEF level defined
+    assert hasattr(logging, "BRIEF")
+    assert logging.BRIEF == mod_alogs.apathetic_logging.BRIEF_LEVEL  # pyright: ignore[reportAttributeAccessIssue,reportUnknownMemberType]
 
 
 def test_extend_logging_module_adds_silent_level() -> None:
@@ -66,11 +66,11 @@ def test_extend_logging_module_adds_level_names() -> None:
     # Should be able to get level names
     trace_name = logging.getLevelName(mod_alogs.apathetic_logging.TRACE_LEVEL)  # pyright: ignore[reportDeprecated]
     detail_name = logging.getLevelName(mod_alogs.apathetic_logging.DETAIL_LEVEL)  # pyright: ignore[reportDeprecated]
-    minimal_name = logging.getLevelName(mod_alogs.apathetic_logging.MINIMAL_LEVEL)  # pyright: ignore[reportDeprecated]
+    brief_name = logging.getLevelName(mod_alogs.apathetic_logging.BRIEF_LEVEL)  # pyright: ignore[reportDeprecated]
     silent_name = logging.getLevelName(mod_alogs.apathetic_logging.SILENT_LEVEL)  # pyright: ignore[reportDeprecated]
     assert trace_name == "TRACE"
     assert detail_name == "DETAIL"
-    assert minimal_name == "MINIMAL"
+    assert brief_name == "BRIEF"
     assert silent_name == "SILENT"
 
 

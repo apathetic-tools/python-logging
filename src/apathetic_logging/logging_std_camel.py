@@ -452,14 +452,14 @@ class ApatheticLogging_Internal_StdCamelCase:  # noqa: N801  # pyright: ignore[r
             logger._log(_constants.DETAIL_LEVEL, msg, args, **kwargs)  # noqa: SLF001  # pyright: ignore[reportPrivateUsage]
 
     @staticmethod
-    def minimal(msg: str, *args: Any, **kwargs: Any) -> None:
-        """Log a message with severity 'MINIMAL' on the root logger.
+    def brief(msg: str, *args: Any, **kwargs: Any) -> None:
+        """Log a message with severity 'BRIEF' on the root logger.
 
-        MINIMAL is less detailed than INFO. If the logger has no handlers,
+        BRIEF is less detailed than INFO. If the logger has no handlers,
         call basicConfig() to add a console handler with a pre-defined format.
 
         This function gets an apathetic_logging.Logger instance (ensuring
-        the root logger is an apathetic logger) and calls its minimal() method.
+        the root logger is an apathetic logger) and calls its brief() method.
         """
         _get_logger = ApatheticLogging_Internal_GetLogger
         _logger = ApatheticLogging_Internal_Logger
@@ -468,12 +468,12 @@ class ApatheticLogging_Internal_StdCamelCase:  # noqa: N801  # pyright: ignore[r
         _logger.Logger.extendLoggingModule()
         # Get root logger - it should be an apathetic logger now
         logger = _get_logger.getLogger("", extend=True)
-        # Check if logger has minimal method (it should if it's an apathetic logger)
-        if hasattr(logger, "minimal"):
-            logger.minimal(msg, *args, **kwargs)
+        # Check if logger has brief method (it should if it's an apathetic logger)
+        if hasattr(logger, "brief"):
+            logger.brief(msg, *args, **kwargs)
         # Fallback: if root logger is still a standard logger, use _log directly
-        elif logger.isEnabledFor(_constants.MINIMAL_LEVEL):
-            logger._log(_constants.MINIMAL_LEVEL, msg, args, **kwargs)  # noqa: SLF001  # pyright: ignore[reportPrivateUsage]
+        elif logger.isEnabledFor(_constants.BRIEF_LEVEL):
+            logger._log(_constants.BRIEF_LEVEL, msg, args, **kwargs)  # noqa: SLF001  # pyright: ignore[reportPrivateUsage]
 
     # --- Utility Functions ---
 

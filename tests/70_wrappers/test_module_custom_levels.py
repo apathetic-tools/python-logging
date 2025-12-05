@@ -1,5 +1,5 @@
 # tests/70_wrappers/test_module_custom_levels.py
-"""Test module-level custom level convenience functions (trace, detail, minimal)."""
+"""Test module-level custom level convenience functions (trace, detail, brief)."""
 
 from __future__ import annotations
 
@@ -28,8 +28,8 @@ def test_module_custom_level_functions_exist() -> None:
     assert hasattr(mod_alogs, "detail"), (
         "Function detail should exist on apathetic_logging"
     )
-    assert hasattr(mod_alogs, "minimal"), (
-        "Function minimal should exist on apathetic_logging"
+    assert hasattr(mod_alogs, "brief"), (
+        "Function brief should exist on apathetic_logging"
     )
 
 
@@ -93,10 +93,10 @@ def test_detail_logs_to_root_logger(
     assert "test detail message" in output
 
 
-def test_minimal_logs_to_root_logger(
+def test_brief_logs_to_root_logger(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Test that minimal() logs to root logger at MINIMAL level."""
+    """Test that brief() logs to root logger at BRIEF level."""
     # --- setup ---
     # Capture output
     out_buf = io.StringIO()
@@ -106,7 +106,7 @@ def test_minimal_logs_to_root_logger(
 
     # Get root logger and configure it
     root_logger = mod_alogs.getLogger("")
-    root_logger.setLevel("MINIMAL")
+    root_logger.setLevel("BRIEF")
     # Clear any existing handlers
     root_logger.handlers.clear()
     # Add a handler to capture output
@@ -115,11 +115,11 @@ def test_minimal_logs_to_root_logger(
     root_logger.addHandler(handler)
 
     # --- execute ---
-    mod_alogs.minimal("test minimal message")
+    mod_alogs.brief("test brief message")
 
     # --- verify ---
-    output = out_buf.getvalue()  # MINIMAL goes to stdout like INFO
-    assert "test minimal message" in output
+    output = out_buf.getvalue()  # BRIEF goes to stdout like INFO
+    assert "test brief message" in output
 
 
 def test_trace_respects_log_level(
@@ -180,10 +180,10 @@ def test_detail_respects_log_level(
     assert "test detail message - should not appear" not in output
 
 
-def test_minimal_respects_log_level(
+def test_brief_respects_log_level(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Test that minimal() respects log level setting."""
+    """Test that brief() respects log level setting."""
     # --- setup ---
     # Capture output
     out_buf = io.StringIO()
@@ -193,7 +193,7 @@ def test_minimal_respects_log_level(
 
     # Get root logger and configure it
     root_logger = mod_alogs.getLogger("")
-    root_logger.setLevel("WARNING")  # Set to WARNING, so MINIMAL should not log
+    root_logger.setLevel("WARNING")  # Set to WARNING, so BRIEF should not log
     # Clear any existing handlers
     root_logger.handlers.clear()
     # Add a handler to capture output
@@ -202,11 +202,11 @@ def test_minimal_respects_log_level(
     root_logger.addHandler(handler)
 
     # --- execute ---
-    mod_alogs.minimal("test minimal message - should not appear")
+    mod_alogs.brief("test brief message - should not appear")
 
     # --- verify ---
     output = out_buf.getvalue()
-    assert "test minimal message - should not appear" not in output
+    assert "test brief message - should not appear" not in output
 
 
 def test_custom_level_functions_work_with_format_args(
@@ -232,11 +232,11 @@ def test_custom_level_functions_work_with_format_args(
     # --- execute ---
     mod_alogs.trace("test %s message with %d args", "trace", 2)
     mod_alogs.detail("test %s message with %d args", "detail", 2)
-    mod_alogs.minimal("test %s message with %d args", "minimal", 2)
+    mod_alogs.brief("test %s message with %d args", "brief", 2)
 
     # --- verify ---
     err_output = err_buf.getvalue()
     out_output = out_buf.getvalue()
     assert "test trace message with 2 args" in err_output
     assert "test detail message with 2 args" in out_output
-    assert "test minimal message with 2 args" in out_output
+    assert "test brief message with 2 args" in out_output

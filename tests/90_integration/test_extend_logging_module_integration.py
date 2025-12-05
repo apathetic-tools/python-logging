@@ -19,14 +19,14 @@ def test_extendLoggingModule_called_twice_is_safe() -> None:
     # --- verify ---
     # Second call should return False (already extended)
     assert result2 is False
-    # TRACE, DETAIL, MINIMAL, and SILENT should still be available
+    # TRACE, DETAIL, BRIEF, and SILENT should still be available
     assert hasattr(logging, "TRACE")
     assert hasattr(logging, "DETAIL")
-    assert hasattr(logging, "MINIMAL")
+    assert hasattr(logging, "BRIEF")
     assert hasattr(logging, "SILENT")
     assert logging.TRACE == mod_alogs.apathetic_logging.TRACE_LEVEL  # pyright: ignore[reportAttributeAccessIssue,reportUnknownMemberType]
     assert logging.DETAIL == mod_alogs.apathetic_logging.DETAIL_LEVEL  # type: ignore[attr-defined]  # pyright: ignore[reportAttributeAccessIssue,reportUnknownMemberType]
-    assert logging.MINIMAL == mod_alogs.apathetic_logging.MINIMAL_LEVEL  # type: ignore[attr-defined]  # pyright: ignore[reportAttributeAccessIssue,reportUnknownMemberType]
+    assert logging.BRIEF == mod_alogs.apathetic_logging.BRIEF_LEVEL  # type: ignore[attr-defined]  # pyright: ignore[reportAttributeAccessIssue,reportUnknownMemberType]
     assert logging.SILENT == mod_alogs.apathetic_logging.SILENT_LEVEL  # type: ignore[attr-defined]  # pyright: ignore[reportAttributeAccessIssue,reportUnknownMemberType]
 
 
@@ -43,13 +43,13 @@ def test_extendLoggingModule_before_get_logger_works() -> None:
     # --- verify ---
     assert logger is not None
     assert logger.name == "test_integration"
-    # Logger should be able to use TRACE, DETAIL, MINIMAL, and SILENT levels
+    # Logger should be able to use TRACE, DETAIL, BRIEF, and SILENT levels
     logger.setLevel("TRACE")
     assert logger.levelName == "TRACE"
     logger.setLevel("DETAIL")
     assert logger.levelName == "DETAIL"
-    logger.setLevel("MINIMAL")
-    assert logger.levelName == "MINIMAL"
+    logger.setLevel("BRIEF")
+    assert logger.levelName == "BRIEF"
     logger.setLevel("SILENT")
     assert logger.levelName == "SILENT"
 
@@ -77,8 +77,8 @@ def test_get_logger_works_after_extendLoggingModule() -> None:
     assert logger.level == mod_alogs.apathetic_logging.TRACE_LEVEL
     logger.setLevel(logging.DETAIL)  # type: ignore[attr-defined]
     assert logger.level == mod_alogs.apathetic_logging.DETAIL_LEVEL
-    logger.setLevel(logging.MINIMAL)  # type: ignore[attr-defined]
-    assert logger.level == mod_alogs.apathetic_logging.MINIMAL_LEVEL
+    logger.setLevel(logging.BRIEF)  # type: ignore[attr-defined]
+    assert logger.level == mod_alogs.apathetic_logging.BRIEF_LEVEL
     logger.setLevel(logging.SILENT)  # type: ignore[attr-defined]
     assert logger.level == mod_alogs.apathetic_logging.SILENT_LEVEL
 
@@ -108,17 +108,17 @@ def test_logger_can_use_detail_level_after_extend() -> None:
     assert logger.levelName == "DETAIL"
 
 
-def test_logger_can_use_minimal_level_after_extend() -> None:
-    """Logger should be able to use MINIMAL level after extendLoggingModule()."""
+def test_logger_can_use_brief_level_after_extend() -> None:
+    """Logger should be able to use BRIEF level after extendLoggingModule()."""
     # --- setup ---
-    logger = mod_alogs.Logger("test_minimal_logger")
-    logger.setLevel("MINIMAL")
+    logger = mod_alogs.Logger("test_brief_logger")
+    logger.setLevel("BRIEF")
 
     # --- verify ---
-    # Should be able to call minimal() method
-    assert hasattr(logger, "minimal")
-    assert callable(logger.minimal)
-    assert logger.levelName == "MINIMAL"
+    # Should be able to call brief() method
+    assert hasattr(logger, "brief")
+    assert callable(logger.brief)
+    assert logger.levelName == "BRIEF"
 
 
 def test_logger_can_use_silent_level_after_extend() -> None:
@@ -165,10 +165,10 @@ def test_multiple_calls_to_extendLoggingModule() -> None:
     # First call should return True (or False if already called at import)
     # Subsequent calls should all return False
     assert all(r is False for r in results[1:])  # pyright: ignore[reportUnknownMemberType,reportUnknownVariableType]
-    # TRACE, DETAIL, MINIMAL, and SILENT should still be available
+    # TRACE, DETAIL, BRIEF, and SILENT should still be available
     assert hasattr(logging, "TRACE")
     assert hasattr(logging, "DETAIL")
-    assert hasattr(logging, "MINIMAL")
+    assert hasattr(logging, "BRIEF")
     assert hasattr(logging, "SILENT")
 
 

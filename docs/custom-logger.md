@@ -227,7 +227,7 @@ class AppLogger(ApatheticLogger):
 
 ## Key Points
 
-1. **Call `extendLoggingModule()` (Optional but Recommended)** - This registers TRACE, DETAIL, MINIMAL, and SILENT levels with the logging module. While `getLoggerOfType()` will automatically call this on your logger class if needed, calling it explicitly is recommended for:
+1. **Call `extendLoggingModule()` (Optional but Recommended)** - This registers TRACE, DETAIL, BRIEF, and SILENT levels with the logging module. While `getLoggerOfType()` will automatically call this on your logger class if needed, calling it explicitly is recommended for:
    - Immediate availability of `logging.TRACE`, `logging.DETAIL`, etc. after import
    - Better performance (one-time setup at import time)
    - Clear documentation of when the module is extended
