@@ -113,6 +113,12 @@ def test_serger_build_with_sample_code_is_deterministic(
             )
 
 
+@pytest.mark.skip(
+    reason=(
+        "Skip until zipbundler is implemented to replace shiv. "
+        "Remove this marker once zipbundler is available."
+    )
+)
 def test_zipapp_build_with_sample_code_is_deterministic(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
@@ -319,6 +325,12 @@ def test_serger_build_is_deterministic() -> None:
             )
 
 
+@pytest.mark.skip(
+    reason=(
+        "Skip until zipbundler is implemented to replace shiv. "
+        "Remove this marker once zipbundler is available."
+    )
+)
 def test_zipapp_build_produces_valid_file() -> None:
     """Test that shiv creates a valid zipapp file for the project.
 
@@ -382,6 +394,12 @@ def test_zipapp_build_produces_valid_file() -> None:
     )
 
 
+@pytest.mark.skip(
+    reason=(
+        "Skip until zipbundler is implemented to replace shiv. "
+        "Remove this marker once zipbundler is available."
+    )
+)
 def test_zipapp_build_is_deterministic() -> None:
     """Test that two zipapp builds of the project produce identical output.
 

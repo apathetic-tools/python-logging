@@ -13,6 +13,22 @@ files = [
 ]
 
 [[package]]
+name = "apathetic-schema"
+version = "0.0.1"
+description = "Type-based validation for dict-based configs."
+optional = false
+python-versions = ">=3.10"
+groups = ["dev"]
+files = [
+    {file = "apathetic_schema-0.0.1-py3-none-any.whl", hash = "sha256:c69e671fd43622fe70a6ab24752d55e218c9271142a5d891d9ba5abf677ba799"},
+    {file = "apathetic_schema-0.0.1.tar.gz", hash = "sha256:35dfea8fe282be8c561d79d07a2ab38c54e40c18523e94916dc0a55e419acb46"},
+]
+
+[package.dependencies]
+apathetic-logging = ">=0.3.2,<2.0.0"
+apathetic-utils = ">=0.2.1,<2.0.0"
+
+[[package]]
 name = "apathetic-utils"
 version = "0.2.1"
 description = "When stdlib isn't enough."
@@ -863,18 +879,6 @@ files = [
 ]
 
 [[package]]
-name = "pip"
-version = "25.3"
-description = "The PyPA recommended tool for installing Python packages."
-optional = false
-python-versions = ">=3.9"
-groups = ["dev"]
-files = [
-    {file = "pip-25.3-py3-none-any.whl", hash = "sha256:9655943313a94722b7774661c21049070f6bbb0a1516bf02f7c8d5d9201514cd"},
-    {file = "pip-25.3.tar.gz", hash = "sha256:8d0538dbbd7babbd207f261ed969c65de439f6bc9e5dbd3b3b9a77f25d95f343"},
-]
-
-[[package]]
 name = "platformdirs"
 version = "4.5.0"
 description = "A small Python package for determining appropriate platform-specific dirs, e.g. a `user data dir`."
@@ -1522,26 +1526,6 @@ files = [
 ]
 
 [[package]]
-name = "shiv"
-version = "1.0.8"
-description = "A command line utility for building fully self contained Python zipapps."
-optional = false
-python-versions = ">=3.6"
-groups = ["dev"]
-files = [
-    {file = "shiv-1.0.8-py2.py3-none-any.whl", hash = "sha256:a60e4b05a2d2f8b820d567b1d89ee59af731759771c32c282d03c4ceae6aba24"},
-    {file = "shiv-1.0.8.tar.gz", hash = "sha256:2a68d69e98ce81cb5b8fdafbfc1e27efa93e6d89ca14bfae33482e4176f561d6"},
-]
-
-[package.dependencies]
-click = ">=6.7,<7.0 || >7.0"
-pip = ">=9.0.3"
-setuptools = "*"
-
-[package.extras]
-rtd = ["sphinx-click"]
-
-[[package]]
 name = "smmap"
 version = "5.0.2"
 description = "A pure Python implementation of a sliding window memory map manager"
@@ -1816,6 +1800,23 @@ files = [
 
 [package.extras]
 dev = ["pytest", "setuptools"]
+
+[[package]]
+name = "zipbundler"
+version = "0.1.0"
+description = "Bundle your packages into a runnable, importable zip"
+optional = false
+python-versions = ">=3.10"
+groups = ["dev"]
+files = [
+    {file = "zipbundler-0.1.0-py3-none-any.whl", hash = "sha256:4705fb865f6620d9e9838408c9c903c679d96895cc9fd520c794d53365114265"},
+    {file = "zipbundler-0.1.0.tar.gz", hash = "sha256:78e1a25331b1258709472be284c610f3d3ad8be44d8202a4ddf775b93c8882c9"},
+]
+
+[package.dependencies]
+apathetic-logging = ">=0.0.1,<2.0.0"
+apathetic-schema = ">=0.0.1,<2.0.0"
+apathetic-utils = ">=0.0.1,<2.0.0"
 
 [metadata]
 lock-version = "2.1"

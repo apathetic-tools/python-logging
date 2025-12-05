@@ -173,6 +173,12 @@ def test_serger_build_import_semantics() -> None:  # noqa: PLR0915
         sys.modules[name] = mod
 
 
+@pytest.mark.skip(
+    reason=(
+        "Skip until zipbundler is implemented to replace shiv. "
+        "Remove this marker once zipbundler is available."
+    )
+)
 def test_zipapp_import_semantics() -> None:
     """Test that zipapp builds maintain correct import semantics.
 
