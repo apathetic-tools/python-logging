@@ -2,6 +2,24 @@
 
 <!-- version list -->
 
+## v0.6.2 (2025-12-08)
+
+### Bug Fixes
+
+- **core**: Remove space in pyright ignore comment
+  ([`3b20e15`](https://github.com/apathetic-tools/python-logging/commit/3b20e156bcf71d8e6f0b2fc62f7e6f346b38ce17))
+
+### Chores
+
+- **deps**: Update dependency versions in poetry.lock
+  ([`f3ca19e`](https://github.com/apathetic-tools/python-logging/commit/f3ca19e5cd469f510a7f2891bf6518d813b91fba))
+
+### Testing
+
+- **core**: Add test for isEnabledFor cache invalidation on setLevel
+  ([`0f4603a`](https://github.com/apathetic-tools/python-logging/commit/0f4603ae3624b60f6db4a5120ae9b6c7414756fd))
+
+
 ## v0.6.1 (2025-12-08)
 
 ### Bug Fixes
