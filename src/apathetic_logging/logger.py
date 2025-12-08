@@ -192,6 +192,11 @@ class ApatheticLogging_Internal_LoggerCore(logging.Logger):  # noqa: N801  # pyr
         self.validateLevelPositive(level, level_name=level_name)
 
         super().setLevel(level)
+        # Clear the isEnabledFor cache when level changes, as cached values
+        # may be stale (e.g., if level was TRACE and cached isEnabledFor(TRACE)=True,
+        # then changing to DEBUG should invalidate that cache entry)
+        if hasattr(self, "_cache"):
+            self._cache.clear()  # pyright: ignore[reportAttributeAccessIssue, reportUnknownMemberType]
 
     @classmethod
     def determineColorEnabled(cls) -> bool:
