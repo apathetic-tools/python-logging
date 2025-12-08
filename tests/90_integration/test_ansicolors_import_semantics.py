@@ -2,15 +2,15 @@
 """Integration tests for import semantics in different runtime modes.
 
 This test explicitly verifies that import semantics work correctly in both
-installed mode (from src/) and singlefile mode (from dist/apathetic_logging.py).
+package mode (from src/) and stitched mode (from dist/apathetic_logging.py).
 
 The test uses ANSIColors.RED as an example to verify that:
 - Imports from apathetic_logging work correctly
 - Exported constants are accessible
 - Values are correct regardless of runtime mode
 
-This replicates the verification done in mode_verify/installed_example/installed_run.py
-and mode_verify/singlefile_example/singlefile_run.py, but as a pytest integration test
+This replicates the verification done in mode_verify/package_example/package_run.py
+and mode_verify/stitched_example/stitched_run.py, but as a pytest integration test
 that runs in both runtime modes.
 """
 
@@ -18,15 +18,15 @@ import apathetic_logging as mod_alogs
 
 
 def test_import_semantics_work_in_all_runtime_modes() -> None:
-    """Test that import semantics work correctly in installed and singlefile modes.
+    """Test that import semantics work correctly in package and stitched modes.
 
     This test verifies import semantics by importing and using ANSIColors.RED
-    as an example. The test runs in the current runtime mode (installed by default,
-    singlefile when RUNTIME_MODE=singlefile).
+    as an example. The test runs in the current runtime mode (package by default,
+    stitched when RUNTIME_MODE=stitched).
 
     The key verification is that imports work correctly regardless of whether
-    the module is loaded from src/ (installed) or dist/apathetic_logging.py
-    (singlefile).
+    the module is loaded from src/ (package) or dist/apathetic_logging.py
+    (stitched).
     """
     # --- setup ---
     # Expected ANSI escape code for RED (used as example to verify import semantics)

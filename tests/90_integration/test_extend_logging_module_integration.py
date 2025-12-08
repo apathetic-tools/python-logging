@@ -86,7 +86,7 @@ def test_get_logger_works_after_extendLoggingModule() -> None:
 def test_logger_can_use_trace_level_after_extend() -> None:
     """Logger should be able to use TRACE level after extendLoggingModule()."""
     # --- setup ---
-    logger = mod_alogs.Logger("test_trace_logger")
+    logger = mod_alogs.Logger("safe_trace_logger")
     logger.setLevel("TRACE")
 
     # --- verify ---

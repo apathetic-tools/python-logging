@@ -1,19 +1,18 @@
 # tests/utils/log_fixtures.py
 """Reusable fixtures for testing the Apathetic logger system."""
 
+import logging
 import uuid
+from collections.abc import Generator
 from typing import TYPE_CHECKING
 
-import apathetic_utils as mod_utils
+import apathetic_utils
 import pytest
 
 import apathetic_logging as mod_alogs
 
 from .constants import PATCH_STITCH_HINTS, PROGRAM_PACKAGE
 from .safe_trace import make_safe_trace
-
-
-patch_everywhere = mod_utils.patch_everywhere
 
 
 if TYPE_CHECKING:
@@ -48,30 +47,66 @@ def direct_logger() -> Logger:
 
 
 @pytest.fixture
-def module_logger(monkeypatch: pytest.MonkeyPatch) -> Logger:
-    """Replace get_logger() everywhere with a new isolated instance.
+def module_logger(
+    monkeypatch: pytest.MonkeyPatch,
+) -> Generator[Logger, None, None]:
+    """Replace getLogger() everywhere with a new isolated instance.
 
-    Ensures all modules calling get_logger()
+    Ensures all modules (build, config, etc.) calling getLogger()
     will use this test logger for the duration of the test.
 
-    Automatically reverts after test completion.
+    Automatically reverts after test completion, including restoring the
+    logging registry to its original state.
 
     Default log level is set to "test" for maximum verbosity in test output.
     """
-    new_logger = mod_alogs.Logger(f"isolated_logger{_suffix()}")
+    # Use the same logger name as the original logger so that DualStreamHandler
+    # can find it when it looks up the logger by name in emit()
+    original_logger_name = PROGRAM_PACKAGE
+    new_logger = mod_alogs.Logger(original_logger_name)
     new_logger.setLevel("test")
-    patch_everywhere(
+    new_logger.propagate = False
+
+    # Replace the logger in the logging registry
+    registry = logging.Logger.manager.loggerDict
+    original_registry_logger = registry.get(original_logger_name)
+    registry[original_logger_name] = new_logger
+
+    # Patch logging.getLogger to prevent it from creating new logger instances
+    original_get_logger = logging.getLogger
+
+    def patched_get_logger(name: str | None = None) -> logging.Logger:
+        if name == original_logger_name:
+            return new_logger
+        return original_get_logger(name)
+
+    monkeypatch.setattr(logging, "getLogger", patched_get_logger)
+
+    # Patch getLogger everywhere it's imported
+    def mock_get_logger(*_args: object, **_kwargs: object) -> Logger:
+        return new_logger
+
+    apathetic_utils.patch_everywhere(
         monkeypatch,
         mod_alogs,
         "getLogger",
-        lambda: new_logger,
-        PROGRAM_PACKAGE,
-        PATCH_STITCH_HINTS,
+        mock_get_logger,
+        package_prefix=PROGRAM_PACKAGE,
+        stitch_hints=PATCH_STITCH_HINTS,
     )
+
     safe_trace(
         "module_logger fixture",
         f"id={id(new_logger)}",
         f"level={new_logger.levelName}",
         f"handlers={[type(h).__name__ for h in new_logger.handlers]}",
     )
-    return new_logger
+
+    # Yield the logger for the test to use
+    yield new_logger
+
+    # --- Cleanup: Restore the logging registry to its original state ---
+    if original_registry_logger is not None:
+        registry[original_logger_name] = original_registry_logger
+    else:
+        logging.Logger.manager.loggerDict.pop(original_logger_name, None)

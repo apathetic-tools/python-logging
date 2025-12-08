@@ -6,7 +6,7 @@ when timestamps are disabled. We test both:
 1. Basic tool functionality with sample code (to verify tools work)
 2. Project-specific builds with our actual code (to verify our config/code works)
 
-Tests both serger (single-file .py) and shiv (zipapp .pyz) builds.
+Tests both serger (single-file .py) and zipbundler (zipapp .pyz) builds.
 """
 
 import json
@@ -52,7 +52,6 @@ def test_serger_build_with_sample_code_is_deterministic(
     }
     config.write_text(json.dumps(config_data, indent=2))
 
-    serger_script = PROJ_ROOT / "dev" / "serger.py"
     monkeypatch.chdir(tmp_path)
 
     # Use temp directories for builds
@@ -64,7 +63,8 @@ def test_serger_build_with_sample_code_is_deterministic(
         result1 = subprocess.run(  # noqa: S603
             [
                 sys.executable,
-                str(serger_script),
+                "-m",
+                "serger",
                 "--config",
                 str(config),
                 "--out",
@@ -88,7 +88,8 @@ def test_serger_build_with_sample_code_is_deterministic(
             result2 = subprocess.run(  # noqa: S603
                 [
                     sys.executable,
-                    str(serger_script),
+                    "-m",
+                    "serger",
                     "--config",
                     str(config),
                     "--out",
@@ -113,17 +114,11 @@ def test_serger_build_with_sample_code_is_deterministic(
             )
 
 
-@pytest.mark.skip(
-    reason=(
-        "Skip until zipbundler is implemented to replace shiv. "
-        "Remove this marker once zipbundler is available."
-    )
-)
 def test_zipapp_build_with_sample_code_is_deterministic(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Test that shiv produces deterministic output with sample code.
+    """Test that zipbundler produces deterministic output with sample code.
 
     This verifies the tool itself works correctly before testing our code.
     """
@@ -137,7 +132,7 @@ def test_zipapp_build_with_sample_code_is_deterministic(
         'def main() -> None:\n    print("testpkg")\n'
     )
 
-    # Create pyproject.toml for shiv with entry point
+    # Create pyproject.toml for zipbundler with entry point
     pyproject = tmp_path / "pyproject.toml"
     pyproject.write_text(
         """[project]
@@ -155,14 +150,15 @@ testpkg = "testpkg.module:main"
     (tmp_path / "dist").mkdir(exist_ok=True)
 
     # --- execute: first build ---
-    shiv_cmd = mod_utils.find_shiv()
+    zipbundler_cmd = mod_utils.find_python_command("zipbundler")
     result1 = subprocess.run(  # noqa: S603
         [
-            shiv_cmd,
-            "-c",
+            *zipbundler_cmd,
+            "-m",
             "testpkg",
             "-o",
             "dist/testpkg.pyz",
+            "-q",
             ".",
         ],
         cwd=tmp_path,
@@ -189,11 +185,12 @@ testpkg = "testpkg.module:main"
         # --- execute: second build ---
         result2 = subprocess.run(  # noqa: S603
             [
-                shiv_cmd,
-                "-c",
+                *zipbundler_cmd,
+                "-m",
                 "testpkg",
                 "-o",
                 "dist/testpkg.pyz",
+                "-q",
                 ".",
             ],
             cwd=tmp_path,
@@ -261,7 +258,6 @@ def test_serger_build_is_deterministic() -> None:
     3. Verifies both builds produce identical output (with disable_build_timestamp)
     """
     # --- setup ---
-    serger_script = PROJ_ROOT / "dev" / "serger.py"
     config_file = PROJ_ROOT / ".serger.jsonc"
 
     # Use temp directories for builds
@@ -273,7 +269,8 @@ def test_serger_build_is_deterministic() -> None:
         result1 = subprocess.run(  # noqa: S603
             [
                 sys.executable,
-                str(serger_script),
+                "-m",
+                "serger",
                 "--config",
                 str(config_file),
                 "--disable-build-timestamp",
@@ -298,7 +295,8 @@ def test_serger_build_is_deterministic() -> None:
             result2 = subprocess.run(  # noqa: S603
                 [
                     sys.executable,
-                    str(serger_script),
+                    "-m",
+                    "serger",
                     "--config",
                     str(config_file),
                     "--disable-build-timestamp",
@@ -325,26 +323,14 @@ def test_serger_build_is_deterministic() -> None:
             )
 
 
-@pytest.mark.skip(
-    reason=(
-        "Skip until zipbundler is implemented to replace shiv. "
-        "Remove this marker once zipbundler is available."
-    )
-)
 def test_zipapp_build_produces_valid_file() -> None:
-    """Test that shiv creates a valid zipapp file for the project.
+    """Test that zipbundler creates a valid zipapp file for the project.
 
     This test:
     1. Builds the project as a zipapp using the actual pyproject.toml
     2. Verifies the zipapp file is valid and can be executed
 
-    This verifies our project configuration works correctly with shiv.
-    """
-    """Test that shiv creates a valid zipapp file for the project.
-
-    This test:
-    1. Builds the project as a zipapp using the actual pyproject.toml
-    2. Verifies the zipapp file is valid and can be executed
+    This verifies our project configuration works correctly with zipbundler.
     """
     # --- setup ---
     zipapp_file = PROJ_ROOT / "dist" / "apathetic_logging.pyz"
@@ -353,14 +339,15 @@ def test_zipapp_build_produces_valid_file() -> None:
     zipapp_file.parent.mkdir(parents=True, exist_ok=True)
 
     # --- execute: build zipapp ---
-    shiv_cmd = mod_utils.find_shiv()
+    zipbundler_cmd = mod_utils.find_python_command("zipbundler")
     result = subprocess.run(  # noqa: S603
         [
-            shiv_cmd,
-            "-c",
+            *zipbundler_cmd,
+            "-m",
             "apathetic_logging",
             "-o",
             str(zipapp_file),
+            "-q",
             ".",
         ],
         cwd=PROJ_ROOT,
@@ -394,12 +381,6 @@ def test_zipapp_build_produces_valid_file() -> None:
     )
 
 
-@pytest.mark.skip(
-    reason=(
-        "Skip until zipbundler is implemented to replace shiv. "
-        "Remove this marker once zipbundler is available."
-    )
-)
 def test_zipapp_build_is_deterministic() -> None:
     """Test that two zipapp builds of the project produce identical output.
 
@@ -419,14 +400,15 @@ def test_zipapp_build_is_deterministic() -> None:
     zipapp_file.parent.mkdir(parents=True, exist_ok=True)
 
     # --- execute: first build ---
-    shiv_cmd = mod_utils.find_shiv()
+    zipbundler_cmd = mod_utils.find_python_command("zipbundler")
     result1 = subprocess.run(  # noqa: S603
         [
-            shiv_cmd,
-            "-c",
+            *zipbundler_cmd,
+            "-m",
             "apathetic_logging",
             "-o",
             str(zipapp_file),
+            "-q",
             ".",
         ],
         cwd=PROJ_ROOT,
@@ -452,11 +434,12 @@ def test_zipapp_build_is_deterministic() -> None:
         # --- execute: second build ---
         result2 = subprocess.run(  # noqa: S603
             [
-                shiv_cmd,
-                "-c",
+                *zipbundler_cmd,
+                "-m",
                 "apathetic_logging",
                 "-o",
                 str(zipapp_file),
+                "-q",
                 ".",
             ],
             cwd=PROJ_ROOT,

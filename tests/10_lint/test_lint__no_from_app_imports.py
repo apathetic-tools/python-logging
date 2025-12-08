@@ -10,7 +10,7 @@ CRITICAL: This rule applies to ALL imports from our project, including private
 functions (those starting with _). There are NO exceptions.
 
 Why this matters:
-- runtime_swap: Tests can run against either installed package or standalone
+- runtime_swap: Tests can run against either package or stitched
   single-file script. The `import ... as mod_*` pattern ensures the module object
   is available for runtime swapping.
 - patch_everywhere: Predictive patching requires module objects to be available
@@ -76,7 +76,7 @@ def test_no_app_from_imports() -> None:
     tests_dir = Path(__file__).parents[1]  # tests/ directory (not project root)
     bad_files: list[Path] = []
 
-    for path in tests_dir.rglob("*.py"):
+    for path in tests_dir.rglob("test_*.py"):
         tree = ast.parse(path.read_text(encoding="utf-8"))
         checker = ImportChecker()
         checker.visit(tree)

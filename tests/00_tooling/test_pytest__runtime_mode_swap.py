@@ -3,13 +3,13 @@
 
 This test verifies that our unique runtime_mode swap functionality works
 correctly. Our conftest.py uses runtime_swap() to allow tests to run against
-either the installed package (src/apathetic_logging) or the standalone
+either the package (src/apathetic_logging) or the stitched
 single-file script (dist/apathetic_logging.py) based on the RUNTIME_MODE
 environment variable.
 
 Verifies:
-  - When RUNTIME_MODE=singlefile: All modules resolve to dist/apathetic_logging.py
-  - When RUNTIME_MODE is unset (installed): All modules resolve to
+  - When RUNTIME_MODE=stitched: All modules resolve to dist/apathetic_logging.py
+  - When RUNTIME_MODE is unset (package): All modules resolve to
     src/apathetic_logging/
   - Python's import cache (sys.modules) points to the correct sources
   - All submodules load from the expected location
@@ -24,6 +24,7 @@ import pkgutil
 import sys
 from pathlib import Path
 
+import apathetic_utils
 import pytest
 
 import apathetic_logging as app_package
@@ -31,7 +32,6 @@ from tests.utils import (
     PROGRAM_PACKAGE,
     PROGRAM_SCRIPT,
     PROJ_ROOT,
-    detect_runtime_mode,
     make_safe_trace,
 )
 
@@ -40,7 +40,7 @@ from tests.utils import (
 # Helpers
 # ---------------------------------------------------------------------------
 
-TEST_TRACE = make_safe_trace("🪞")
+SAFE_TRACE = make_safe_trace("🪞")
 
 SRC_ROOT = PROJ_ROOT / "src"
 DIST_ROOT = PROJ_ROOT / "dist"
@@ -50,7 +50,7 @@ def list_important_modules() -> list[str]:
     """Return all importable submodules under the package, if available."""
     important: list[str] = []
     if not hasattr(app_package, "__path__"):
-        TEST_TRACE("pkgutil.walk_packages skipped — standalone runtime (no __path__)")
+        SAFE_TRACE("pkgutil.walk_packages skipped — stitched runtime (no __path__)")
         important.append(app_package.__name__)
     else:
         for _, name, _ in pkgutil.walk_packages(
@@ -64,32 +64,32 @@ def list_important_modules() -> list[str]:
 
 def dump_snapshot(*, include_full: bool = False) -> None:
     """Prints a summary of key modules and (optionally) a full sys.modules dump."""
-    mode: str = os.getenv("RUNTIME_MODE", "installed")
+    mode: str = os.getenv("RUNTIME_MODE", "package")
 
-    TEST_TRACE("========== SNAPSHOT ===========")
-    TEST_TRACE(f"RUNTIME_MODE={mode}")
+    SAFE_TRACE("========== SNAPSHOT ===========")
+    SAFE_TRACE(f"RUNTIME_MODE={mode}")
 
     important_modules = list_important_modules()
 
     # Summary: the modules we care about most
-    TEST_TRACE("======= IMPORTANT MODULES =====")
+    SAFE_TRACE("======= IMPORTANT MODULES =====")
     for name in important_modules:
         mod = sys.modules.get(name)
         if not mod:
             continue
         origin = getattr(mod, "__file__", None)
-        TEST_TRACE(f"  {name:<25} {origin}")
+        SAFE_TRACE(f"  {name:<25} {origin}")
 
     if include_full:
         # Full origin dump
-        TEST_TRACE("======== OTHER MODULES ========")
+        SAFE_TRACE("======== OTHER MODULES ========")
         for name, mod in sorted(sys.modules.items()):
             if name in important_modules:
                 continue
             origin = getattr(mod, "__file__", None)
-            TEST_TRACE(f"  {name:<38} {origin}")
+            SAFE_TRACE(f"  {name:<38} {origin}")
 
-    TEST_TRACE("===============================")
+    SAFE_TRACE("===============================")
 
 
 # ---------------------------------------------------------------------------
@@ -102,8 +102,8 @@ def test_pytest_runtime_cache_integrity() -> None:
 
     Ensures that modules imported at the top of test files resolve to the
     correct source based on RUNTIME_MODE:
-    - singlefile mode: All modules must load from dist/serger.py
-    - installed mode: All modules must load from src/serger/
+    - stitched mode: All modules must load from dist/apathetic_logging.py
+    - package mode: All modules must load from src/apathetic_logging/
 
     Also verifies that Python's import cache (sys.modules) doesn't have stale
     references pointing to the wrong runtime.
@@ -113,12 +113,12 @@ def test_pytest_runtime_cache_integrity() -> None:
     expected_script = DIST_ROOT / f"{PROGRAM_SCRIPT}.py"
 
     # Get the package module to check its location
-    # In singlefile mode, get the module from sys.modules to ensure we're using
-    # the version from the standalone script (which was loaded by runtime_swap)
+    # In stitched mode, get the module from sys.modules to ensure we're using
+    # the version from the stitched script (which was loaded by runtime_swap)
     # rather than the one imported at the top of this file (which might be from
     # the installed package if it was imported before runtime_swap ran)
-    if mode == "singlefile" and PROGRAM_PACKAGE in sys.modules:
-        # Use the module from sys.modules, which should be from the standalone script
+    if mode == "stitched" and PROGRAM_PACKAGE in sys.modules:
+        # Use the module from sys.modules, which should be from the stitched script
         app_package_actual = sys.modules[PROGRAM_PACKAGE]
         # Check __file__ directly - for stitched modules, should point to
         # dist/apathetic_logging.py
@@ -133,18 +133,18 @@ def test_pytest_runtime_cache_integrity() -> None:
         app_package_actual = app_package
         package_file = str(inspect.getsourcefile(app_package_actual) or "")
     # --- execute ---
-    TEST_TRACE(f"RUNTIME_MODE={mode}")
-    TEST_TRACE(f"{PROGRAM_PACKAGE}  → {package_file}")
+    SAFE_TRACE(f"RUNTIME_MODE={mode}")
+    SAFE_TRACE(f"{PROGRAM_PACKAGE}  → {package_file}")
 
     if os.getenv("TRACE"):
         dump_snapshot()
-    runtime_mode = detect_runtime_mode(PROGRAM_PACKAGE)
+    runtime_mode = apathetic_utils.detect_runtime_mode(PROGRAM_PACKAGE)
 
-    if mode == "singlefile":
-        # --- verify singlefile ---
+    if mode == "stitched":
+        # --- verify stitched ---
         # what does the module itself think?
-        assert runtime_mode == "standalone", (
-            f"Expected runtime_mode='standalone' but got '{runtime_mode}'"
+        assert runtime_mode == "stitched", (
+            f"Expected runtime_mode='stitched' but got '{runtime_mode}'"
         )
 
         # exists
@@ -152,32 +152,32 @@ def test_pytest_runtime_cache_integrity() -> None:
             f"Expected standalone script at {expected_script}"
         )
 
-        # path peeks - in singlefile mode, the package module might be
-        # imported from the installed package, but it should still detect
-        # standalone mode correctly via sys.modules.get(PROGRAM_PACKAGE)
+        # path peeks - in stitched mode, the package module might be
+        # imported from the package, but it should still detect
+        # stitched mode correctly via sys.modules.get(PROGRAM_PACKAGE)
         # So we only check the path if the module is actually from dist/
         if package_file.startswith(str(DIST_ROOT)):
-            # Module is from standalone script, verify it's the right file
+            # Module is from stitched script, verify it's the right file
             assert Path(package_file).samefile(expected_script), (
                 f"{package_file} should be same file as {expected_script}"
             )
         else:
-            # Module is from installed package, but that's OK as long as
-            # detect_runtime_mode() correctly returns "standalone"
-            TEST_TRACE(
-                f"Note: {PROGRAM_PACKAGE} loaded from installed package "
-                f"({package_file}), but runtime_mode correctly detected as 'standalone'"
+            # Module is from package, but that's OK as long as
+            # detect_runtime_mode() correctly returns "stitched"
+            SAFE_TRACE(
+                f"Note: {PROGRAM_PACKAGE} loaded from package "
+                f"({package_file}), but runtime_mode correctly detected as 'stitched'"
             )
 
         # troubleshooting info
-        TEST_TRACE(
+        SAFE_TRACE(
             f"sys.modules['{PROGRAM_PACKAGE}'] = {sys.modules.get(PROGRAM_PACKAGE)}",
         )
 
     else:
         # --- verify module ---
         # what does the module itself think?
-        assert runtime_mode != "standalone"
+        assert runtime_mode != "stitched"
 
         # path peeks
         assert package_file.startswith(str(SRC_ROOT)), f"{package_file} not in src/"
@@ -187,7 +187,7 @@ def test_pytest_runtime_cache_integrity() -> None:
     for submodule in important_modules:
         mod = importlib.import_module(f"{submodule}")
         path = Path(inspect.getsourcefile(mod) or "")
-        if mode == "singlefile":
+        if mode == "stitched":
             assert path.samefile(expected_script), f"{submodule} loaded from {path}"
         else:
             assert path.is_relative_to(SRC_ROOT), f"{submodule} not in src/: {path}"
@@ -203,7 +203,7 @@ def test_debug_dump_all_module_origins() -> None:
 
     Usage:
         TRACE=1 poetry run pytest -k debug -s
-        RUNTIME_MODE=singlefile TRACE=1 poetry run pytest -k debug -s
+        RUNTIME_MODE=stitched TRACE=1 poetry run pytest -k debug -s
     """
     # --- verify ---
 
@@ -212,7 +212,7 @@ def test_debug_dump_all_module_origins() -> None:
 
     # show total module count for quick glance
     count = sum(1 for name in sys.modules if name.startswith(PROGRAM_PACKAGE))
-    TEST_TRACE(f"Loaded {count} {PROGRAM_PACKAGE} modules total")
+    SAFE_TRACE(f"Loaded {count} {PROGRAM_PACKAGE} modules total")
 
     # force visible failure for debugging runs
     xmsg = f"Intentional fail — {count} {PROGRAM_PACKAGE} modules listed above."

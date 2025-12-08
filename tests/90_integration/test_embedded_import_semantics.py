@@ -1,12 +1,12 @@
 # tests/90_integration/test_embedded_import_semantics.py
 """Integration tests for import semantics in built distributions.
 
-These tests verify that when the project is built using serger or shiv,
+These tests verify that when the project is built using serger or zipbundler,
 the import semantics work correctly:
 - apathetic_logging.ANSIColors.RED is available and correct
 - Can import and use the module from built files
 
-Tests both serger (single-file .py) and shiv (zipapp .pyz) builds
+Tests both serger (single-file .py) and zipbundler (zipapp .pyz) builds
 using the actual project configuration and source code.
 
 These are project-specific tests that verify our code works correctly
@@ -42,7 +42,6 @@ def test_serger_build_import_semantics() -> None:  # noqa: PLR0915
     test_text = "Hello, world!"
 
     # Build the project's single-file script
-    serger_script = PROJ_ROOT / "dev" / "serger.py"
     config_file = PROJ_ROOT / ".serger.jsonc"
     output_file = PROJ_ROOT / "dist" / "apathetic_logging.py"
 
@@ -53,7 +52,8 @@ def test_serger_build_import_semantics() -> None:  # noqa: PLR0915
     result = subprocess.run(  # noqa: S603
         [
             sys.executable,
-            str(serger_script),
+            "-m",
+            "serger",
             "--config",
             str(config_file),
         ],
@@ -173,22 +173,16 @@ def test_serger_build_import_semantics() -> None:  # noqa: PLR0915
         sys.modules[name] = mod
 
 
-@pytest.mark.skip(
-    reason=(
-        "Skip until zipbundler is implemented to replace shiv. "
-        "Remove this marker once zipbundler is available."
-    )
-)
 def test_zipapp_import_semantics() -> None:
     """Test that zipapp builds maintain correct import semantics.
 
-    This test verifies our project code works correctly when built with shiv:
-    1. Builds apathetic_logging as a zipapp using shiv (from project root)
+    This test verifies our project code works correctly when built with zipbundler:
+    1. Builds apathetic_logging as a zipapp using zipbundler (from project root)
     2. Imports from the zipapp and verifies import semantics work correctly:
        - apathetic_logging.ANSIColors.RED is available and correct
        - Can import and use the module from zipapp format
 
-    This verifies our project configuration and code work correctly with shiv.
+    This verifies our project configuration and code work correctly with zipbundler.
     """
     # --- setup ---
     expected_red_code = "\033[91m"
@@ -202,14 +196,15 @@ def test_zipapp_import_semantics() -> None:
     zipapp_file.parent.mkdir(parents=True, exist_ok=True)
 
     # --- execute: build zipapp ---
-    shiv_cmd = mod_utils.find_shiv()
+    zipbundler_cmd = mod_utils.find_python_command("zipbundler")
     result = subprocess.run(  # noqa: S603
         [
-            shiv_cmd,
-            "-c",
+            *zipbundler_cmd,
+            "-m",
             "apathetic_logging",
             "-o",
             str(zipapp_file),
+            "-q",
             ".",
         ],
         cwd=PROJ_ROOT,
@@ -220,7 +215,7 @@ def test_zipapp_import_semantics() -> None:
 
     if result.returncode != 0:
         pytest.fail(
-            f"Shiv failed with return code {result.returncode}.\n"
+            f"Zipbundler failed with return code {result.returncode}.\n"
             f"stdout: {result.stdout}\n"
             f"stderr: {result.stderr}"
         )

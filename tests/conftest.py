@@ -3,25 +3,24 @@
 
 Each pytest run now targets a single runtime mode:
 - Normal mode (default): uses src/apathetic_logging
-- Standalone mode: uses dist/apathetic_logging.py when RUNTIME_MODE=singlefile
+- Stitched mode: uses dist/apathetic_logging.py when RUNTIME_MODE=stitched
 - Zipapp mode: uses dist/apathetic_logging.pyz when RUNTIME_MODE=zipapp
 
-Switch mode with: RUNTIME_MODE=singlefile pytest or RUNTIME_MODE=zipapp pytest
+Switch mode with: RUNTIME_MODE=stitched pytest or RUNTIME_MODE=zipapp pytest
 """
 
 import logging
 import os
 from collections.abc import Generator
 
+import apathetic_utils
 import pytest
 
 from tests.utils import (
-    BUNDLER_SCRIPT,
     PROGRAM_PACKAGE,
     PROGRAM_SCRIPT,
     PROJ_ROOT,
     make_safe_trace,
-    runtime_swap,
 )
 from tests.utils.log_fixtures import (
     direct_logger,
@@ -38,11 +37,10 @@ __all__ = [
 safe_trace = make_safe_trace("⚡️")
 
 # early jank hook
-runtime_swap(
+apathetic_utils.runtime_swap(
     root=PROJ_ROOT,
     package_name=PROGRAM_PACKAGE,
     script_name=PROGRAM_SCRIPT,
-    bundler_script=BUNDLER_SCRIPT,
 )
 
 # Import after runtime_swap to ensure we get the right module
@@ -123,7 +121,7 @@ def reset_logger_class_and_registry() -> Generator[None, None, None]:
 
 
 def _mode() -> str:
-    return os.getenv("RUNTIME_MODE", "installed")
+    return os.getenv("RUNTIME_MODE", "package")
 
 
 def _filter_debug_tests(
@@ -232,7 +230,7 @@ def pytest_collection_modifyitems(
 def pytest_unconfigure(config: pytest.Config) -> None:
     """Print summary of included runtime-specific tests at the end."""
     included_map: dict[str, int] = getattr(config, "_included_map", {})
-    mode = getattr(config, "_runtime_mode", "installed")
+    mode = getattr(config, "_runtime_mode", "package")
 
     if not included_map:
         return

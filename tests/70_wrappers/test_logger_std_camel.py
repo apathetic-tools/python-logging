@@ -8,12 +8,13 @@ import sys
 from contextlib import suppress
 from unittest.mock import MagicMock
 
+import apathetic_utils
 import pytest
 
 import apathetic_logging as mod_alogs
 import apathetic_logging.logging_utils as mod_logging_utils
 import apathetic_logging.registry_data as mod_registry_data
-from tests.utils import PATCH_STITCH_HINTS, PROGRAM_PACKAGE, patch_everywhere
+from tests.utils import PATCH_STITCH_HINTS, PROGRAM_PACKAGE
 from tests.utils.level_validation import validate_test_level
 from tests.utils.version_info_mock import create_version_info
 
@@ -127,13 +128,13 @@ def test_module_std_camel_function(  # noqa: PLR0915
             module_name, func_name_in_module = mock_target.rsplit(".", 1)
             mock_func = MagicMock()
             if module_name == "logging":
-                patch_everywhere(
+                apathetic_utils.patch_everywhere(
                     monkeypatch,
                     logging,
                     func_name_in_module,
                     mock_func,
-                    PROGRAM_PACKAGE,
-                    PATCH_STITCH_HINTS,
+                    package_prefix=PROGRAM_PACKAGE,
+                    stitch_hints=PATCH_STITCH_HINTS,
                     create_if_missing=True,
                 )
             else:
@@ -161,13 +162,13 @@ def test_module_std_camel_function(  # noqa: PLR0915
             module_name, func_name_in_module = mock_target.rsplit(".", 1)
             mock_func = MagicMock()
             if module_name == "logging":
-                patch_everywhere(
+                apathetic_utils.patch_everywhere(
                     monkeypatch,
                     logging,
                     func_name_in_module,
                     mock_func,
-                    PROGRAM_PACKAGE,
-                    PATCH_STITCH_HINTS,
+                    package_prefix=PROGRAM_PACKAGE,
+                    stitch_hints=PATCH_STITCH_HINTS,
                     create_if_missing=True,
                 )
             else:

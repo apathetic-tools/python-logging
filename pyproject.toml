@@ -51,16 +51,16 @@ typecheck = ["typecheck:mypy", "typecheck:pyright"]
 # run pyright to simulate pylance for AI CLI auto-fix
 "typecheck:pyright" = "pyright src tests"
 
-# 🧪 Tests (runs all three: installed + singlefile + zipapp)
+# 🧪 Tests (runs all three: package + stitched + zipapp)
 test = [
-  "test:pytest:installed", 
-  "test:pytest:script", 
+  "test:pytest:package", 
+  "test:pytest:stitched", 
 #  "test:pytest:zipapp"
 ]
-"test:pytest:installed" = "pytest"
-"test:pytest:script" = [
-  "build:script",
-  { cmd = "pytest", env = { RUNTIME_MODE="singlefile" } }
+"test:pytest:package" = "pytest"
+"test:pytest:stitched" = [
+  "build:stitched",
+  { cmd = "pytest", env = { RUNTIME_MODE="stitched" } }
 ]
 "test:pytest:zipapp" = [
   "build:zipapp",
@@ -69,15 +69,15 @@ test = [
 
 # 📊 Coverage reporting
 "coverage:clean" = { shell = "rm -f .coverage .coverage.*" }
-"coverage:run:installed" = { cmd = "pytest --cov=src --cov-report= --cov-context=test", env = { COVERAGE_FILE=".coverage.installed" } }
-"coverage:run:singlefile" = { cmd = "pytest --cov=src --cov-report= --cov-context=test", env = { RUNTIME_MODE="singlefile", COVERAGE_FILE=".coverage.singlefile" } }
+"coverage:run:package" = { cmd = "pytest --cov=src --cov-report= --cov-context=test", env = { COVERAGE_FILE=".coverage.package" } }
+"coverage:run:stitched" = { cmd = "pytest --cov=src --cov-report= --cov-context=test", env = { RUNTIME_MODE="stitched", COVERAGE_FILE=".coverage.stitched" } }
 "coverage:run:zipapp" = { cmd = "pytest --cov=src --cov-report= --cov-context=test", env = { RUNTIME_MODE="zipapp", COVERAGE_FILE=".coverage.zipapp" } }
-"coverage:combine" = { cmd = "coverage combine .coverage.installed .coverage.singlefile .coverage.zipapp" }
+"coverage:combine" = { cmd = "coverage combine .coverage.package .coverage.stitched .coverage.zipapp" }
 "coverage:base" = [
   "coverage:clean",
-  "coverage:run:installed",
-  "build:script",
-  "coverage:run:singlefile",
+  "coverage:run:package",
+  "build:stitched",
+  "coverage:run:stitched",
   "build:zipapp",
   "coverage:run:zipapp",
   "coverage:combine",
@@ -94,17 +94,17 @@ test = [
 ]
 
 # 🧹 Automated fixing / formatting
-fix = ["sync:ai:guidance", "fix:ruff:installed", "fix:format:installed"]
+fix = ["sync:ai:guidance", "fix:ruff:package", "fix:format:package"]
 "fix:dist" = ["fix:ruff:dist", "fix:format:dist"]
-"fix:ruff:installed" = "ruff check . --fix"
+"fix:ruff:package" = "ruff check . --fix"
 "fix:ruff:dist" = { shell = "if [ -d dist ]; then ruff check dist --fix; fi" }
-"fix:format:installed" = "ruff format ."
+"fix:format:package" = "ruff format ."
 "fix:format:dist" = { shell = "if [ -d dist ]; then ruff format dist; fi" }
 
 # 🧩 Build and license
-"sync:ai:guidance" = "python dev/sync_ai_guidance.py --quiet"
-"build:script" = "python dev/serger.py"
-"build:zipapp" = "echo 'not implemented'"
+"sync:ai:guidance" = "python -m sync_ai_guidance --quiet"
+"build:stitched" = "python -m serger"
+"build:zipapp" = "python -m zipbundler -m apathetic_logging.__main__:main -c -o dist/apathetic_logging.pyz src --quiet"
 
 # 🚀 Release management (semantic-release)
 "release:version" = "semantic-release version --noop"
@@ -162,8 +162,10 @@ dev = [
     "pyright (>=1.1.407,<2.0.0)",
     "python-semantic-release (>=10.0.0,<11.0.0)",
     "trove-classifiers (>=2025.11.14.15,<2026.0.0.0)",
-    "apathetic-utils (>=0.2.0,<0.3.0)",
-    "zipbundler (>=0.1.0,<0.2.0)",
+    "apathetic-utils (>=0.2.0,<2.0.0)",
+    "zipbundler (>=0.1.0,<2.0.0)",
+    "serger (>=0.1.0,<2.0.0)",
+    "sheave (>=0.3.0,<2.0.0)",
 ]
 
 # --- Ruff: formatter and linter ---
