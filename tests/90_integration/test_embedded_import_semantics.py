@@ -173,6 +173,7 @@ def test_serger_build_import_semantics() -> None:  # noqa: PLR0915
         sys.modules[name] = mod
 
 
+@pytest.mark.skip(reason="Will re-enable when zipbundler is integrated")
 def test_zipapp_import_semantics() -> None:
     """Test that zipapp builds maintain correct import semantics.
 

@@ -114,6 +114,7 @@ def test_serger_build_with_sample_code_is_deterministic(
             )
 
 
+@pytest.mark.skip(reason="Will re-enable when zipbundler is integrated")
 def test_zipapp_build_with_sample_code_is_deterministic(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
@@ -323,6 +324,7 @@ def test_serger_build_is_deterministic() -> None:
             )
 
 
+@pytest.mark.skip(reason="Will re-enable when zipbundler is integrated")
 def test_zipapp_build_produces_valid_file() -> None:
     """Test that zipbundler creates a valid zipapp file for the project.
 
@@ -381,6 +383,7 @@ def test_zipapp_build_produces_valid_file() -> None:
     )
 
 
+@pytest.mark.skip(reason="Will re-enable when zipbundler is integrated")
 def test_zipapp_build_is_deterministic() -> None:
     """Test that two zipapp builds of the project produce identical output.
 

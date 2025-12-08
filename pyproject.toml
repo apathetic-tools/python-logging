@@ -37,19 +37,19 @@ Changelog = "https://github.com/apathetic-tools/python-logging/releases"
 # --- Development tasks ---
 [tool.poe.tasks]
 # 🧩 All-in-one
-"check:fix" = ["pre-commit:install", "fix", "typecheck", "test"]
+"check:fix" = ["pre-commit:install", "fix", "typecheck", "test:parallel"]
 
 # 🔍 Linting and static checks
-check = ["lint", "typecheck", "validate:classifiers", "test"]
+check = ["lint", "typecheck", "validate:classifiers", "test:parallel"]
 lint = ["lint:ruff"]
 "lint:ruff" = "ruff check ."
 "validate:classifiers" = "python dev/validate_classifiers.py"
 
 # 🧠 Type checking
 typecheck = ["typecheck:mypy", "typecheck:pyright"]
-"typecheck:mypy" = "mypy src tests"
+"typecheck:mypy" = "mypy src tests --no-error-summary"
 # run pyright to simulate pylance for AI CLI auto-fix
-"typecheck:pyright" = "pyright src tests"
+"typecheck:pyright" = "bash dev/pyright-quiet.sh src tests"
 
 # 🧪 Tests (runs all three: package + stitched + zipapp)
 test = [
@@ -58,13 +58,47 @@ test = [
 #  "test:pytest:zipapp"
 ]
 "test:pytest:package" = "pytest"
+"test:pytest:package:parallel" = "pytest -n auto"
 "test:pytest:stitched" = [
   "build:stitched",
   { cmd = "pytest", env = { RUNTIME_MODE="stitched" } }
 ]
+"test:pytest:stitched:parallel" = [
+  "build:stitched",
+  { cmd = "pytest -n auto", env = { RUNTIME_MODE="stitched" } }
+]
 "test:pytest:zipapp" = [
   "build:zipapp",
   { cmd = "pytest", env = { RUNTIME_MODE="zipapp" } }
+]
+"test:pytest:zipapp:parallel" = [
+  "build:zipapp",
+  { cmd = "pytest -n auto", env = { RUNTIME_MODE="zipapp" } }
+]
+
+# 🚀 Fast test runs (for development)
+# Fast: package mode only, parallel, skip slow tests
+"test:fast" = "pytest -n auto -m 'not slow'"
+# Fast: all three modes, parallel, skip slow tests
+"test:fast:package" = "pytest -n auto -m 'not slow'"
+"test:fast:stitched" = [
+  "build:stitched",
+  { cmd = "pytest -n auto -m 'not slow'", env = { RUNTIME_MODE="stitched" } }
+]
+"test:fast:zipapp" = [
+  "build:zipapp",
+  { cmd = "pytest -n auto -m 'not slow'", env = { RUNTIME_MODE="zipapp" } }
+]
+"test:fast:all" = [
+  "test:fast:package",
+  "test:fast:stitched",
+#  "test:fast:zipapp"
+]
+# Parallel: all three modes with parallel execution
+"test:parallel" = [
+  "test:pytest:package:parallel",
+  "test:pytest:stitched:parallel",
+#  "test:pytest:zipapp:parallel"
 ]
 
 # 📊 Coverage reporting
@@ -96,15 +130,16 @@ test = [
 # 🧹 Automated fixing / formatting
 fix = ["sync:ai:guidance", "fix:ruff:package", "fix:format:package"]
 "fix:dist" = ["fix:ruff:dist", "fix:format:dist"]
-"fix:ruff:package" = "ruff check . --fix"
-"fix:ruff:dist" = { shell = "if [ -d dist ]; then ruff check dist --fix; fi" }
-"fix:format:package" = "ruff format ."
-"fix:format:dist" = { shell = "if [ -d dist ]; then ruff format dist; fi" }
+"fix:ruff:package" = "ruff check . --fix -q"
+"fix:ruff:dist" = { shell = "if [ -d dist ]; then ruff check dist --fix -q; fi" }
+"fix:format:package" = "ruff format . -q"
+"fix:format:dist" = { shell = "if [ -d dist ]; then ruff format dist -q; fi" }
 
 # 🧩 Build and license
 "sync:ai:guidance" = "python -m sync_ai_guidance --quiet"
-"build:stitched" = "python -m serger"
-"build:zipapp" = "python -m zipbundler -m apathetic_logging.__main__:main -c -o dist/apathetic_logging.pyz src --quiet"
+# this creates the stitched script from the module, it need to use serger not zipbundler to do that
+"build:stitched" = "python -m serger --quiet"
+"build:zipapp" = "python -m zipbundler -m serger.__main__:main -c -o dist/serger.pyz src --quiet"
 
 # 🚀 Release management (semantic-release)
 "release:version" = "semantic-release version --noop"
@@ -112,7 +147,7 @@ fix = ["sync:ai:guidance", "fix:ruff:package", "fix:format:package"]
 "release:changelog" = "semantic-release changelog"
 
 # 🔧 Setup and installation
-"pre-commit:install" = { shell = "if [ ! -f .git/hooks/pre-commit ] || ! grep -q 'pre-commit' .git/hooks/pre-commit 2>/dev/null; then poetry run pre-commit install --install-hooks && poetry run pre-commit install --hook-type pre-push; fi" }
+"pre-commit:install" = "bash dev/install_pre_commit_hooks.sh"
 
 # 🐍 Python version management
 "env:py310" = "bash dev/env_use_py310.sh"
@@ -121,17 +156,23 @@ fix = ["sync:ai:guidance", "fix:ruff:package", "fix:format:package"]
 "env:py3x" = "bash dev/env_use_py3x.sh"
 "test:py310" = [
   "env:py310",
-  "test",
+  "test:parallel",
   "env:py3x"
 ]
 "test:py311" = [
   "env:py311",
-  "test",
+  "test:parallel",
   "env:py3x"
 ]
 "test:py312" = [
   "env:py312",
-  "test",
+  "test:parallel",
+  "env:py3x"
+]
+"test:py310:zipapp" = [
+  "env:py310",
+  "build:zipapp",
+  { cmd = "pytest -n auto", env = { RUNTIME_MODE="zipapp" } },
   "env:py3x"
 ]
 
@@ -152,20 +193,22 @@ dev = [
     "ruff (>=0.14.0,<0.15.0)",
     "mypy (>=1.18.2,<2.0.0)",
     "pytest (>=9.0.0,<10.0.0)",
-    "poethepoet (>=0.37.0,<0.39.0)",
+    "poethepoet (>=0.37.0,<1.0.0)",
     "pre-commit (>=4.3.0,<5.0.0)",
     "colorama (>=0.4.6,<0.5.0)",
     "pytest-dependency (>=0.6.0,<0.7.0)",
     "pytest-timeout (>=2.4.0,<3.0.0)",
     "pytest-benchmark (>=5.1.0,<6.0.0)",
     "pytest-cov (>=7.0.0,<8.0.0)",
+    "pytest-xdist (>=3.8.0,<4.0.0)",
     "pyright (>=1.1.407,<2.0.0)",
     "python-semantic-release (>=10.0.0,<11.0.0)",
     "trove-classifiers (>=2025.11.14.15,<2026.0.0.0)",
     "apathetic-utils (>=0.2.0,<2.0.0)",
+    "sheave (>=0.3.0,<2.0.0)",    
     "zipbundler (>=0.1.0,<2.0.0)",
     "serger (>=0.1.0,<2.0.0)",
-    "sheave (>=0.3.0,<2.0.0)",
+
 ]
 
 # --- Ruff: formatter and linter ---
@@ -345,6 +388,7 @@ commit_message = "chore: release v{version} [skip ci]"
 allow_zero_version = true  # Required for major_on_zero to work (defaults to false in v10.0.0+)
 major_on_zero = false
 upload_to_pypi = false  # We handle PyPI publishing in GitHub Actions
+upload_to_release = true
 hvcs = "github"
 remote = { name = "origin" }
 tag_commit = true
