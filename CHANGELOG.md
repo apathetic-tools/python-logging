@@ -2,6 +2,30 @@
 
 <!-- version list -->
 
+## v0.6.1 (2025-12-08)
+
+### Bug Fixes
+
+- **tests**: Resolve stitched build test failures with updated patch_everywhere
+  ([`8821205`](https://github.com/apathetic-tools/python-logging/commit/88212051feb429ed2223d7a42530225ff957b163))
+
+### Continuous Integration
+
+- **release**: Install package root in workflow
+  ([`face149`](https://github.com/apathetic-tools/python-logging/commit/face14909777abc15fe8760a78df10b8304a79b0))
+
+- **release**: Make .py and .pyz file attachments optional
+  ([`440f168`](https://github.com/apathetic-tools/python-logging/commit/440f168b2afe76893ca74d6ccc05d049988def06))
+
+### Documentation
+
+- Update warning note style and add to index page
+  ([`0447182`](https://github.com/apathetic-tools/python-logging/commit/0447182dfb6649d7d1bfe71c724fb9ac4151c118))
+
+- **api**: Update safeTrace and SAFE_TRACE_ENABLED documentation
+  ([`97a2888`](https://github.com/apathetic-tools/python-logging/commit/97a2888eddbfd7faf0b0c9e33e9a86fcf93af204))
+
+
 ## v0.6.0 (2025-12-05)
 
 ### Features
