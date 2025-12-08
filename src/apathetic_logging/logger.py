@@ -196,7 +196,7 @@ class ApatheticLogging_Internal_LoggerCore(logging.Logger):  # noqa: N801  # pyr
         # may be stale (e.g., if level was TRACE and cached isEnabledFor(TRACE)=True,
         # then changing to DEBUG should invalidate that cache entry)
         if hasattr(self, "_cache"):
-            self._cache.clear()  # pyright: ignore[reportAttributeAccessIssue, reportUnknownMemberType]
+            self._cache.clear()  # pyright: ignore[reportAttributeAccessIssue,reportUnknownMemberType]
 
     @classmethod
     def determineColorEnabled(cls) -> bool:
