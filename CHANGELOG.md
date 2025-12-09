@@ -2,6 +2,19 @@
 
 <!-- version list -->
 
+## v0.8.0 (2025-12-09)
+
+### Features
+
+- **logger**: Rename ensureHandlers to manageHandlers and add handler management
+  ([`0daafc3`](https://github.com/apathetic-tools/python-logging/commit/0daafc3e41132202e1e6ce52cac1c98a121623c4))
+
+### Refactoring
+
+- **core**: Update logger implementation and tests
+  ([`988c159`](https://github.com/apathetic-tools/python-logging/commit/988c1596bad187ebb3c5e6135b11ff64c4632412))
+
+
 ## v0.7.0 (2025-12-09)
 
 ### Build System
