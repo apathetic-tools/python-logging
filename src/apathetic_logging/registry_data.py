@@ -50,7 +50,8 @@ class ApatheticLogging_Internal_RegistryData:  # noqa: N801  # pyright: ignore[r
     """Propagate setting for loggers.
 
     If None, falls back to DEFAULT_PROPAGATE from constants.py.
-    When False, loggers do not propagate messages to parent loggers.
+    When True, loggers propagate messages to parent loggers, allowing
+    centralized control via root logger.
     """
     registered_internal_compatibility_mode: bool | None = None
     """Compatibility mode setting for stdlib drop-in replacement.

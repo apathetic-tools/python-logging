@@ -1,6 +1,13 @@
 # src/apathetic_logging/logging_std_camel.py
 """Camel case convenience functions for standard logging module.
 
+This module provides direct wrappers for stdlib logging.* namespace functions
+with no additional logic or "smarts". These are simple pass-through functions
+that maintain camelCase naming for compatibility.
+
+For utility functions with additional logic (e.g., setRootLevel), see
+logging_utils.py instead.
+
 Docstrings are adapted from the standard library logging module documentation
 licensed under the Python Software Foundation License Version 2.
 """
@@ -12,15 +19,6 @@ from collections.abc import Callable
 from types import FrameType
 from typing import Any
 
-from .constants import (
-    ApatheticLogging_Internal_Constants,
-)
-from .get_logger import (
-    ApatheticLogging_Internal_GetLogger,
-)
-from .logger_namespace import (
-    ApatheticLogging_Internal_Logger,
-)
 from .logging_utils import (
     ApatheticLogging_Internal_LoggingUtils,
 )
@@ -399,110 +397,6 @@ class ApatheticLogging_Internal_StdCamelCase:  # noqa: N801  # pyright: ignore[r
         https://docs.python.org/3.10/library/logging.html#logging.warning
         """
         logging.warning(msg, *args, **kwargs)  # noqa: LOG015
-
-    # --- Custom Level Functions ---
-
-    @staticmethod
-    def trace(msg: str, *args: Any, **kwargs: Any) -> None:
-        """Log a message with severity 'TRACE' on the root logger.
-
-        TRACE is more verbose than DEBUG. If the logger has no handlers,
-        call basicConfig() to add a console handler with a pre-defined format.
-
-        This function gets an apathetic_logging.Logger instance (ensuring
-        the root logger is an apathetic logger) and calls its trace() method.
-        """
-        _get_logger = ApatheticLogging_Internal_GetLogger
-        _logger = ApatheticLogging_Internal_Logger
-        _constants = ApatheticLogging_Internal_Constants
-        # Ensure logging module is extended
-        _logger.Logger.extendLoggingModule()
-        # Get root logger - it should be an apathetic logger now
-        logger = _get_logger.getLogger("", extend=True)
-        # Check if logger has trace method (it should if it's an apathetic logger)
-        if hasattr(logger, "trace"):
-            logger.trace(msg, *args, **kwargs)
-        # Fallback: if root logger is still a standard logger, use _log directly
-        # This can happen if root logger was created before extendLoggingModule
-        elif logger.isEnabledFor(_constants.TRACE_LEVEL):
-            logger._log(_constants.TRACE_LEVEL, msg, args, **kwargs)  # noqa: SLF001  # pyright: ignore[reportPrivateUsage]
-
-    @staticmethod
-    def detail(msg: str, *args: Any, **kwargs: Any) -> None:
-        """Log a message with severity 'DETAIL' on the root logger.
-
-        DETAIL is more detailed than INFO. If the logger has no handlers,
-        call basicConfig() to add a console handler with a pre-defined format.
-
-        This function gets an apathetic_logging.Logger instance (ensuring
-        the root logger is an apathetic logger) and calls its detail() method.
-        """
-        _get_logger = ApatheticLogging_Internal_GetLogger
-        _logger = ApatheticLogging_Internal_Logger
-        _constants = ApatheticLogging_Internal_Constants
-        # Ensure logging module is extended
-        _logger.Logger.extendLoggingModule()
-        # Get root logger - it should be an apathetic logger now
-        logger = _get_logger.getLogger("", extend=True)
-        # Check if logger has detail method (it should if it's an apathetic logger)
-        if hasattr(logger, "detail"):
-            logger.detail(msg, *args, **kwargs)
-        # Fallback: if root logger is still a standard logger, use _log directly
-        elif logger.isEnabledFor(_constants.DETAIL_LEVEL):
-            logger._log(_constants.DETAIL_LEVEL, msg, args, **kwargs)  # noqa: SLF001  # pyright: ignore[reportPrivateUsage]
-
-    @staticmethod
-    def brief(msg: str, *args: Any, **kwargs: Any) -> None:
-        """Log a message with severity 'BRIEF' on the root logger.
-
-        BRIEF is less detailed than INFO. If the logger has no handlers,
-        call basicConfig() to add a console handler with a pre-defined format.
-
-        This function gets an apathetic_logging.Logger instance (ensuring
-        the root logger is an apathetic logger) and calls its brief() method.
-        """
-        _get_logger = ApatheticLogging_Internal_GetLogger
-        _logger = ApatheticLogging_Internal_Logger
-        _constants = ApatheticLogging_Internal_Constants
-        # Ensure logging module is extended
-        _logger.Logger.extendLoggingModule()
-        # Get root logger - it should be an apathetic logger now
-        logger = _get_logger.getLogger("", extend=True)
-        # Check if logger has brief method (it should if it's an apathetic logger)
-        if hasattr(logger, "brief"):
-            logger.brief(msg, *args, **kwargs)
-        # Fallback: if root logger is still a standard logger, use _log directly
-        elif logger.isEnabledFor(_constants.BRIEF_LEVEL):
-            logger._log(_constants.BRIEF_LEVEL, msg, args, **kwargs)  # noqa: SLF001  # pyright: ignore[reportPrivateUsage]
-
-    @staticmethod
-    def minimal(msg: str, *args: Any, **kwargs: Any) -> None:
-        """Log a message with severity 'MINIMAL' on the root logger (deprecated).
-
-        .. deprecated::
-            This function is deprecated and will be removed once sibling tools
-            have upgraded. Use :func:`brief` instead. Functionally equivalent
-            to :func:`brief`.
-
-        MINIMAL is less detailed than INFO. If the logger has no handlers,
-        call basicConfig() to add a console handler with a pre-defined format.
-
-        This function gets an apathetic_logging.Logger instance (ensuring
-        the root logger is an apathetic logger) and calls its minimal() method.
-        """
-        _get_logger = ApatheticLogging_Internal_GetLogger
-        _logger = ApatheticLogging_Internal_Logger
-        _constants = ApatheticLogging_Internal_Constants
-        # Ensure logging module is extended
-        _logger.Logger.extendLoggingModule()
-        # Get root logger - it should be an apathetic logger now
-        logger = _get_logger.getLogger("", extend=True)
-        # Check if logger has minimal method (it should if it's an apathetic logger)
-        if hasattr(logger, "minimal"):
-            logger.minimal(msg, *args, **kwargs)
-        # Fallback: if root logger is still a standard logger, use _log directly
-        elif logger.isEnabledFor(_constants.MINIMAL_LEVEL):
-            logger._log(_constants.MINIMAL_LEVEL, msg, args, **kwargs)  # noqa: SLF001  # pyright: ignore[reportPrivateUsage]
 
     # --- Utility Functions ---
 

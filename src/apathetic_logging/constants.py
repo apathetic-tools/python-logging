@@ -102,9 +102,24 @@ class ApatheticLogging_Internal_Constants:  # noqa: N801  # pyright: ignore[repo
     If None, target version checks are disabled by default.
     """
 
-    DEFAULT_PROPAGATE: bool = False
+    DEFAULT_PROPAGATE: bool = True
     """Default propagate setting for loggers.
 
-    When False, loggers do not propagate messages to parent loggers,
-    avoiding duplicate root logs.
+    When True, loggers propagate messages to parent loggers, allowing
+    centralized control via root logger. Only root logger has handlers
+    to avoid duplicate messages.
+    """
+
+    ROOT_LOGGER_KEY: str = ""
+    """Key used to retrieve the root logger via logging.getLogger("").
+
+    The root logger is retrieved using an empty string as the logger name.
+    """
+
+    ROOT_LOGGER_NAME: str = "root"
+    """Name attribute of the root logger instance.
+
+    Note: logging.getLogger("") returns the root logger, but its .name
+    attribute is "root" (not ""). This constant represents the actual
+    name attribute value of the root logger instance.
     """

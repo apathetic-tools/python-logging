@@ -117,12 +117,20 @@ class ApatheticLogging_Internal_GetLogger:  # noqa: N801  # pyright: ignore[repo
         _constants = ApatheticLogging_Internal_Constants
         _registry_data = ApatheticLogging_Internal_RegistryData
 
-        if _registry_data.registered_internal_propagate is not None:
-            # Use registered value
-            logger.propagate = _registry_data.registered_internal_propagate
-        else:
-            # Use default from constants
-            logger.propagate = _constants.DEFAULT_PROPAGATE
+        # Only set if not already explicitly set in __init__
+        if not getattr(logger, "_propagate_set", False):
+            if _registry_data.registered_internal_propagate is not None:
+                # Use registered value
+                propagate_value = _registry_data.registered_internal_propagate
+            else:
+                # Use default from constants
+                propagate_value = _constants.DEFAULT_PROPAGATE
+
+            # Use setPropagate if available (apathetic logger), otherwise set directly
+            if hasattr(logger, "setPropagate"):
+                logger.setPropagate(propagate_value)  # pyright: ignore[reportAttributeAccessIssue,reportUnknownMemberType]
+            else:
+                logger.propagate = propagate_value
 
     @staticmethod
     def getLogger(
@@ -248,7 +256,11 @@ class ApatheticLogging_Internal_GetLogger:  # noqa: N801  # pyright: ignore[repo
 
         # In compatibility mode, getLogger(None) returns root logger (stdlib behavior)
         if name is None and compatibility_mode:
-            register_name: str = ""
+            from .constants import (  # noqa: PLC0415
+                ApatheticLogging_Internal_Constants,
+            )
+
+            register_name: str = ApatheticLogging_Internal_Constants.ROOT_LOGGER_KEY
         else:
             # Resolve logger name (with inference if needed)
             # Note: Empty string ("") is a special case - getDefaultLoggerName

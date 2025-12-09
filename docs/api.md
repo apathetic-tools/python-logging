@@ -103,7 +103,7 @@ Complete API documentation for Apathetic Python Logger.
 | [`getLevelName()`](#getlevelname) | Return the explicit level name set on this logger |
 | [`getEffectiveLevelName()`](#geteffectivelevelname) | Return the effective level name (what's actually used) |
 | [`ensureHandlers()`](#ensurehandlers) | Ensure handlers are attached to this logger |
-| [`validateLevelPositive()`](#validatelevelpositive) | Validate that a level value is positive (> 0) (staticmethod) |
+| [`validateLevel()`](#validatelevel) | Validate that a level value is positive (> 0) (staticmethod) |
 
 ### Changed Methods
 
@@ -1165,12 +1165,12 @@ Logger class for all Apathetic tools. Extends Python's standard `logging.Logger`
 ### setLevel
 
 ```python
-setLevel(level: int | str, *, minimum: bool | None = False) -> None
+setLevel(level: int | str, *, minimum: bool | None = False, allow_notset: bool = False) -> None
 ```
 
 Set the logging level. Accepts both string names (case-insensitive) and numeric values.
 
-**Changed from stdlib:** Accepts string level names and has a `minimum` parameter.
+**Changed from stdlib:** Accepts string level names and has `minimum` and `allow_notset` parameters. In improved mode (default), validates that levels are > 0 to prevent accidental NOTSET inheritance. In compatibility mode, accepts any level value (including 0 and negative) matching stdlib behavior.
 
 **Parameters:**
 
@@ -1178,11 +1178,25 @@ Set the logging level. Accepts both string names (case-insensitive) and numeric 
 |-----------|------|-------------|
 | `level` | int \| str | Log level name or numeric value |
 | `minimum` | bool \| None | If True, only set the level if it's more verbose (lower numeric value) than the current level. Defaults to False. |
+| `allow_notset` | bool | If True, allows setting level to 0 (NOTSET) in improved mode. In compatibility mode, this parameter is ignored and 0 is always accepted. Defaults to False. |
+
+**Behavior:**
+
+- **Improved mode (default):** Rejects level 0 (NOTSET) unless `allow_notset=True` is explicitly provided. This prevents accidental NOTSET inheritance from custom levels that accidentally evaluate to 0.
+- **Compatibility mode:** Accepts any level value (including 0 and negative) matching stdlib behavior. The `allow_notset` parameter is ignored in this mode.
 
 **Example:**
 ```python
 logger.setLevel("debug")
 logger.setLevel(logging.DEBUG)
+
+# Set to NOTSET (inherits from parent) - requires explicit allow_notset=True
+logger.setLevel(0, allow_notset=True)
+
+# In compatibility mode, NOTSET is accepted without allow_notset
+from apathetic_logging import registerCompatibilityMode
+registerCompatibilityMode(compat_mode=True)
+logger.setLevel(0)  # Works in compat mode
 ```
 
 ### determineLogLevel
@@ -1603,16 +1617,16 @@ Ensure handlers are attached to this logger.
 DualStreamHandler is what will ensure logs go to the write channel.
 Rebuilds handlers if they're missing or if stdout/stderr have changed.
 
-### validateLevelPositive
+### validateLevel
 
 ```python
-validateLevelPositive(level: int, *, level_name: str | None = None) -> None
+validateLevel(level: int, *, level_name: str | None = None, allow_notset: bool = False) -> None
 ```
 
 Validate that a level value is positive (> 0). (staticmethod)
 
 Custom levels with values <= 0 will inherit from the root logger,
-causing NOTSET inheritance issues.
+causing NOTSET inheritance issues. In compatibility mode, validation is skipped.
 
 **Parameters:**
 
@@ -1620,15 +1634,19 @@ causing NOTSET inheritance issues.
 |-----------|------|-------------|
 | `level` | int | The numeric level value to validate |
 | `level_name` | str \| None | Optional name for the level (for error messages). If None, will attempt to get from getLevelName() |
+| `allow_notset` | bool | If True, allows level 0 (NOTSET). Defaults to False. |
 
 **Raises:**
-- `ValueError`: If level <= 0
+- `ValueError`: If level <= 0 (or level == 0 without `allow_notset=True`)
 
 **Example:**
 ```python
-Logger.validateLevelPositive(5, level_name="TRACE")
-Logger.validateLevelPositive(0, level_name="TEST")
-# ValueError: Level 'TEST' has value 0...
+Logger.validateLevel(5, level_name="TRACE")
+Logger.validateLevel(0, level_name="TEST")
+# ValueError: setLevel(0) sets the logger to NOTSET...
+
+Logger.validateLevel(0, level_name="TEST", allow_notset=True)
+# Passes validation
 ```
 
 ### _log

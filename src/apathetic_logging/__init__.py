@@ -95,6 +95,7 @@ brief = apathetic_logging.brief
 minimal = apathetic_logging.minimal
 setLogRecordFactory = apathetic_logging.setLogRecordFactory
 setLoggerClass = apathetic_logging.setLoggerClass
+setRootLevel = apathetic_logging.setRootLevel
 shutdown = apathetic_logging.shutdown
 trace = apathetic_logging.trace
 warn = apathetic_logging.warn
@@ -187,6 +188,7 @@ __all__ = [
     "safeTrace",
     "setLogRecordFactory",
     "setLoggerClass",
+    "setRootLevel",
     "shutdown",
     "trace",
     "warn",

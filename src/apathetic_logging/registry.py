@@ -274,11 +274,11 @@ class ApatheticLogging_Internal_Registry:  # noqa: N801  # pyright: ignore[repor
         """Register the propagate setting for loggers.
 
         This sets the default propagate value that will be used when creating
-        loggers. If not set, the library defaults to DEFAULT_PROPAGATE (False)
+        loggers. If not set, the library defaults to DEFAULT_PROPAGATE (True)
         from constants.py.
 
-        When propagate is False, loggers do not propagate messages to parent
-        loggers, avoiding duplicate root logs.
+        When propagate is True, loggers propagate messages to parent loggers,
+        allowing centralized control via root logger.
 
         Args:
             propagate: Propagate setting (True or False). If None, returns
@@ -459,17 +459,16 @@ class ApatheticLogging_Internal_Registry:  # noqa: N801  # pyright: ignore[repor
         """Get the default propagate setting.
 
         Returns the registered propagate setting, or the module default
-        if none is registered.
+        (DEFAULT_PROPAGATE) from constants.py if not registered.
 
         Returns:
             Default propagate setting (True or False).
-            Defaults to False if not registered.
 
         Example:
             >>> from apathetic_logging import getDefaultPropagate
             >>> propagate = getDefaultPropagate()
             >>> print(propagate)
-            False
+            True
         """
         from .constants import (  # noqa: PLC0415
             ApatheticLogging_Internal_Constants,

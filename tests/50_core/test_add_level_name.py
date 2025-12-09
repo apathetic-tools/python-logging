@@ -16,35 +16,41 @@ else:
 
 
 # ---------------------------------------------------------------------------
-# Tests for validateLevelPositive()
+# Tests for validateLevel()
 # ---------------------------------------------------------------------------
 
 
-def testvalidate_level_positive_valid_level() -> None:
-    """validateLevelPositive() should pass for valid levels (> 0)."""
+def test_validate_level_valid_level() -> None:
+    """validateLevel() should pass for valid levels (> 0)."""
     # Should not raise for valid levels
-    mod_alogs.Logger.validateLevelPositive(1, level_name="TEST")
-    mod_alogs.Logger.validateLevelPositive(5, level_name="TRACE")
-    mod_alogs.Logger.validateLevelPositive(10, level_name="DEBUG")
-    mod_alogs.Logger.validateLevelPositive(100, level_name="CUSTOM")
+    mod_alogs.Logger.validateLevel(1, level_name="TEST")
+    mod_alogs.Logger.validateLevel(5, level_name="TRACE")
+    mod_alogs.Logger.validateLevel(10, level_name="DEBUG")
+    mod_alogs.Logger.validateLevel(100, level_name="CUSTOM")
 
 
-def testvalidate_level_positive_zero_raises() -> None:
-    """validateLevelPositive() should raise ValueError for level 0."""
-    with pytest.raises(ValueError, match=r"<= 0.*NOTSET inheritance"):
-        mod_alogs.Logger.validateLevelPositive(0, level_name="TEST")
+def test_validate_level_zero_raises() -> None:
+    """validateLevel() should raise ValueError for level 0."""
+    with pytest.raises(ValueError, match=r"setLevel\(0\).*NOTSET"):
+        mod_alogs.Logger.validateLevel(0, level_name="TEST")
 
 
-def testvalidate_level_positive_negative_raises() -> None:
-    """validateLevelPositive() should raise ValueError for negative levels."""
-    with pytest.raises(ValueError, match=r"<= 0.*NOTSET inheritance"):
-        mod_alogs.Logger.validateLevelPositive(-5, level_name="NEGATIVE")
+def test_validate_level_zero_with_allow_notset_passes() -> None:
+    """validateLevel() should pass for level 0 with allow_notset=True."""
+    # Should not raise when allow_notset=True
+    mod_alogs.Logger.validateLevel(0, level_name="TEST", allow_notset=True)
 
 
-def testvalidate_level_positive_auto_detects_name() -> None:
-    """validateLevelPositive() should auto-detect level name if None."""
-    with pytest.raises(ValueError, match=r"NOTSET.*<= 0"):
-        mod_alogs.Logger.validateLevelPositive(0, level_name=None)
+def test_validate_level_negative_raises() -> None:
+    """validateLevel() should raise ValueError for negative levels."""
+    with pytest.raises(ValueError, match=r"<= 0"):
+        mod_alogs.Logger.validateLevel(-5, level_name="NEGATIVE")
+
+
+def test_validate_level_auto_detects_name() -> None:
+    """validateLevel() should auto-detect level name if None."""
+    with pytest.raises(ValueError, match=r"setLevel\(0\).*NOTSET"):
+        mod_alogs.Logger.validateLevel(0, level_name=None)
 
 
 # ---------------------------------------------------------------------------
@@ -106,13 +112,13 @@ def test_add_level_name_sets_convenience_attribute() -> None:
 
 def test_add_level_name_zero_raises() -> None:
     """addLevelName() should raise ValueError for level 0."""
-    with pytest.raises(ValueError, match=r"<= 0.*NOTSET inheritance"):
+    with pytest.raises(ValueError, match=r"setLevel\(0\).*NOTSET"):
         mod_alogs.Logger.addLevelName(0, "ZERO_LEVEL")
 
 
 def test_add_level_name_negative_raises() -> None:
     """addLevelName() should raise ValueError for negative levels."""
-    with pytest.raises(ValueError, match=r"<= 0.*NOTSET inheritance"):
+    with pytest.raises(ValueError, match=r"<= 0.*PEP 282"):
         mod_alogs.Logger.addLevelName(-10, "NEGATIVE_LEVEL")
 
 
@@ -166,7 +172,7 @@ def test_add_level_name_rejects_invalid_existing_attribute_value() -> None:
     try:
         with pytest.raises(
             ValueError,
-            match=r"<= 0.*NOTSET inheritance",
+            match=r"setLevel\(0\).*NOTSET",
         ):
             mod_alogs.Logger.addLevelName(45, level_name)
     finally:
@@ -283,17 +289,17 @@ def test_set_level_rejects_any_level_zero_or_negative(
     direct_logger: Logger,
 ) -> None:
     """setLevel() should reject ANY level <= 0, not just our custom levels."""
-    # Should reject level 0 (NOTSET)
-    with pytest.raises(ValueError, match=r"<= 0.*NOTSET inheritance"):
+    # Should reject level 0 (NOTSET) - new error message format
+    with pytest.raises(ValueError, match=r"setLevel\(0\).*allow_notset=True"):
         direct_logger.setLevel(0)
 
     # Should reject negative levels
-    with pytest.raises(ValueError, match=r"<= 0.*NOTSET inheritance"):
-        direct_logger.setLevel(-5)
+    with pytest.raises(ValueError, match=r"<= 0.*PEP 282"):
+        direct_logger.setLevel(-10)
 
     # Should reject user's custom level if <= 0
     logging.addLevelName(-10, "USER_BAD")
-    with pytest.raises(ValueError, match=r"<= 0.*NOTSET inheritance"):
+    with pytest.raises(ValueError, match=r"<= 0.*PEP 282"):
         direct_logger.setLevel(-10)
 
 

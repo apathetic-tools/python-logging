@@ -13,8 +13,8 @@ def test_get_default_propagate_returns_default_when_not_registered() -> None:
     _registry = mod_registry.ApatheticLogging_Internal_RegistryData
     _registry.registered_internal_propagate = None
 
-    # Should return module default
-    assert mod_alogs.getDefaultPropagate() is False
+    # Should return module default (True for root logger architecture)
+    assert mod_alogs.getDefaultPropagate() is True
 
 
 def test_get_default_propagate_returns_registered_value() -> None:

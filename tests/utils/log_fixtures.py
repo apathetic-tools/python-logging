@@ -43,6 +43,8 @@ def direct_logger() -> Logger:
     name = f"test_logger{_suffix()}"
     logger = mod_alogs.Logger(name)
     logger.setLevel("test")
+    # Set propagate=False so logger gets its own handler for isolated testing
+    logger.setPropagate(False)
     return logger
 
 
@@ -65,7 +67,7 @@ def module_logger(
     original_logger_name = PROGRAM_PACKAGE
     new_logger = mod_alogs.Logger(original_logger_name)
     new_logger.setLevel("test")
-    new_logger.propagate = False
+    new_logger.setPropagate(propagate=False)
 
     # Replace the logger in the logging registry
     registry = logging.Logger.manager.loggerDict
