@@ -2,6 +2,19 @@
 
 <!-- version list -->
 
+## v0.7.0 (2025-12-09)
+
+### Build System
+
+- **config**: Update tooling scripts and test configuration
+  ([`9ef9d55`](https://github.com/apathetic-tools/python-logging/commit/9ef9d55b8f69ccbdfa07e96ee8554211cf5feb55))
+
+### Features
+
+- **logger**: Add setPropagate method and root logger constants
+  ([`4573e08`](https://github.com/apathetic-tools/python-logging/commit/4573e08dd170e7123ede2dfa72fccd70479d8875))
+
+
 ## v0.6.2 (2025-12-08)
 
 ### Bug Fixes
