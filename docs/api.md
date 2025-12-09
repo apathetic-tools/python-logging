@@ -97,6 +97,8 @@ Complete API documentation for Apathetic Python Logger.
 | [`logDynamic()`](#logdynamic) | Log a message at a dynamically specified level |
 | [`useLevel()`](#uselevel) | Context manager to temporarily change log level |
 | [`usePropagate()`](#usepropagate) | Context manager to temporarily change propagate setting |
+| [`setLevelAndPropagate()`](#setlevelandpropagate) | Set level and propagate together with smart defaults |
+| [`useLevelAndPropagate()`](#uselevelandpropagate) | Context manager to temporarily set level and propagate together |
 | [`levelName`](#levelname) | Return the explicit level name set on this logger (property) |
 | [`effectiveLevel`](#effectivelevel) | Return the effective level (what's actually used) (property) |
 | [`effectiveLevelName`](#effectivelevelname) | Return the effective level name (what's actually used) (property) |
@@ -1468,6 +1470,95 @@ with logger.usePropagate(False):
     # Do something that should not propagate to root
 
 # Propagate setting is restored after the context
+```
+
+### setLevelAndPropagate
+
+```python
+setLevelAndPropagate(
+    level: int | str,
+    *,
+    minimum: bool | None = False,
+    allow_inherit: bool = False,
+    manage_handlers: bool | None = None
+) -> None
+```
+
+Set the logging level and propagate setting together in a smart way.
+
+This convenience method combines `setLevel()` and `setPropagate()` with intelligent defaults:
+- If level is `INHERIT_LEVEL` (NOTSET): sets `propagate=True`
+- If level is a specific level: sets `propagate=False`
+- On root logger: only sets level (propagate is unchanged)
+
+This matches common use cases: when inheriting level, you typically want to propagate to parent handlers. When setting an explicit level, you typically want isolated logging with your own handler.
+
+**Parameters:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `level` | int \| str | Log level name or numeric value. Use `INHERIT_LEVEL` (0) or "NOTSET" to inherit. |
+| `minimum` | bool \| None | If True, only set the level if it's more verbose (lower numeric value) than the current level. Defaults to False. |
+| `allow_inherit` | bool | If True, allows setting level to 0 (INHERIT_LEVEL, i.e. NOTSET) in improved mode. Defaults to False. |
+| `manage_handlers` | bool \| None | If True, automatically manage apathetic handlers based on propagate setting. If None, uses DEFAULT_MANAGE_HANDLERS from constants. If False, only sets propagate without managing handlers. |
+
+**Example:**
+```python
+logger = getLogger("mymodule")
+
+# Set to inherit level and propagate to root
+from apathetic_logging import INHERIT_LEVEL
+logger.setLevelAndPropagate(INHERIT_LEVEL, allow_inherit=True)
+
+# Set explicit level and disable propagation (isolated logging)
+logger.setLevelAndPropagate("debug")
+```
+
+### useLevelAndPropagate
+
+```python
+useLevelAndPropagate(
+    level: str | int,
+    *,
+    minimum: bool = False,
+    manage_handlers: bool | None = None
+) -> ContextManager
+```
+
+Context manager to temporarily set level and propagate together.
+
+This convenience context manager combines `useLevel()` and `usePropagate()` with intelligent defaults:
+- If level is `INHERIT_LEVEL` (NOTSET): sets `propagate=True`
+- If level is a specific level: sets `propagate=False`
+- On root logger: only sets level (propagate is unchanged)
+
+Both settings are restored when the context exits.
+
+**Parameters:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `level` | str \| int | Log level to use (string name or numeric value). Use `INHERIT_LEVEL` (0) or "NOTSET" to inherit. |
+| `minimum` | bool | If True, only set the level if it's more verbose (lower numeric value) than the current effective level. Prevents downgrading from a more verbose level. Defaults to False. |
+| `manage_handlers` | bool \| None | If True, automatically manage apathetic handlers based on propagate setting. If None, uses DEFAULT_MANAGE_HANDLERS from constants. If False, only sets propagate without managing handlers. |
+
+**Returns:**
+- Context manager that restores both the previous level and propagate setting on exit
+
+**Example:**
+```python
+logger = getLogger("mymodule")
+
+# Temporarily inherit level and propagate
+from apathetic_logging import INHERIT_LEVEL
+with logger.useLevelAndPropagate(INHERIT_LEVEL):
+    logger.info("This propagates to root")
+
+# Temporarily set explicit level with isolated logging
+with logger.useLevelAndPropagate("debug"):
+    logger.debug("This only goes to logger's handlers")
+
+# Both level and propagate are restored after the context
 ```
 
 ### levelName

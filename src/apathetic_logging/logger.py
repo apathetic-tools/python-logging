@@ -322,6 +322,78 @@ class ApatheticLogging_Internal_LoggerCore(logging.Logger):  # noqa: N801  # pyr
         # Always call manageHandlers - it will handle the manage_handlers parameter
         self.manageHandlers(manage_handlers=manage_handlers)
 
+    def setLevelAndPropagate(
+        self,
+        level: int | str,
+        *,
+        minimum: bool | None = False,
+        allow_inherit: bool = False,
+        manage_handlers: bool | None = None,
+    ) -> None:
+        """Set the logging level and propagate setting together in a smart way.
+
+        This convenience method combines setLevel() and setPropagate() with
+        intelligent defaults:
+        - If level is INHERIT_LEVEL (NOTSET): sets propagate=True
+        - If level is a specific level: sets propagate=False
+        - On root logger: only sets level (propagate is unchanged)
+
+        This matches common use cases: when inheriting level, you typically
+        want to propagate to parent handlers. When setting an explicit level,
+        you typically want isolated logging with your own handler.
+
+        Args:
+            level: The logging level, either as an integer or a string name
+                (case-insensitive). Standard levels (DEBUG, INFO, WARNING, ERROR,
+                CRITICAL) and custom levels (TEST, TRACE, BRIEF, DETAIL, SILENT)
+                are supported. Use INHERIT_LEVEL (0) or "NOTSET" to inherit.
+            minimum: If True, only set the level if it's more verbose (lower
+                numeric value) than the current level. This prevents downgrading
+                from a more verbose level (e.g., TRACE) to a less verbose one
+                (e.g., DEBUG). Defaults to False. None is accepted and treated
+                as False.
+            allow_inherit: If True, allows setting level to 0 (INHERIT_LEVEL,
+                i.e. NOTSET) in improved mode. In compatibility mode, this
+                parameter is ignored and 0 is always accepted. Defaults to False.
+            manage_handlers: If True, automatically manage apathetic handlers
+                based on propagate setting. If None, uses DEFAULT_MANAGE_HANDLERS
+                from constants. If False, only sets propagate without managing handlers.
+                In compat_mode, this may default to False.
+
+        Example:
+            >>> logger = getLogger("mymodule")
+            >>> # Set to inherit level and propagate to root
+            >>> logger.setLevelAndPropagate(INHERIT_LEVEL, allow_inherit=True)
+            >>> # Set explicit level and disable propagation (isolated logging)
+            >>> logger.setLevelAndPropagate("debug")
+        """
+        from .logging_utils import (  # noqa: PLC0415
+            ApatheticLogging_Internal_LoggingUtils,
+        )
+
+        _logging_utils = ApatheticLogging_Internal_LoggingUtils
+        _constants = ApatheticLogging_Internal_Constants
+
+        # Resolve string to integer if needed using utility function
+        if isinstance(level, str):
+            level_int = _logging_utils.getLevelNumber(level)
+        else:
+            level_int = level
+
+        # Set the level first
+        self.setLevel(level_int, minimum=minimum, allow_inherit=allow_inherit)
+
+        # Determine propagate setting based on level
+        # Only set propagate if not root logger
+        if self.name != _constants.ROOT_LOGGER_KEY:
+            if level_int == _constants.INHERIT_LEVEL:
+                # INHERIT_LEVEL -> propagate=True
+                self.setPropagate(True, manage_handlers=manage_handlers)
+            else:
+                # Specific level -> propagate=False
+                self.setPropagate(False, manage_handlers=manage_handlers)
+        # Root logger: propagate is unchanged (root always has handlers)
+
     @classmethod
     def determineColorEnabled(cls) -> bool:
         """Return True if colored output should be enabled."""
@@ -936,3 +1008,108 @@ class ApatheticLogging_Internal_LoggerCore(logging.Logger):  # noqa: N801  # pyr
         finally:
             # Restore previous propagate setting
             self.setPropagate(prev_propagate, manage_handlers=manage_handlers)
+
+    @contextmanager
+    def useLevelAndPropagate(  # noqa: PLR0912
+        self,
+        level: str | int,
+        *,
+        minimum: bool = False,
+        manage_handlers: bool | None = None,
+    ) -> Generator[None, None, None]:
+        """Use a context to temporarily set level and propagate together.
+
+        This convenience context manager combines useLevel() and usePropagate()
+        with intelligent defaults:
+        - If level is INHERIT_LEVEL (NOTSET): sets propagate=True
+        - If level is a specific level: sets propagate=False
+        - On root logger: only sets level (propagate is unchanged)
+
+        Both settings are restored when the context exits.
+
+        Args:
+            level: Log level to use (string name or numeric value). Use
+                INHERIT_LEVEL (0) or "NOTSET" to inherit.
+            minimum: If True, only set the level if it's more verbose (lower
+                numeric value) than the current effective level. This prevents
+                downgrading from a more verbose level (e.g., TRACE) to a less
+                verbose one (e.g., DEBUG). Compares against effective level
+                (considering parent inheritance), matching setLevel(minimum=True)
+                behavior. Defaults to False.
+            manage_handlers: If True, automatically manage apathetic handlers
+                based on propagate setting. If None, uses DEFAULT_MANAGE_HANDLERS
+                from constants. If False, only sets propagate without managing handlers.
+                In compat_mode, this may default to False.
+
+        Yields:
+            None: Context manager yields control to the with block
+
+        Example:
+            >>> logger = getLogger("mymodule")
+            >>> # Temporarily inherit level and propagate
+            >>> with logger.useLevelAndPropagate(INHERIT_LEVEL, allow_inherit=True):
+            ...     logger.info("This propagates to root")
+            >>> # Temporarily set explicit level with isolated logging
+            >>> with logger.useLevelAndPropagate("debug"):
+            ...     logger.debug("This only goes to logger's handlers")
+        """
+        from .logging_utils import (  # noqa: PLC0415
+            ApatheticLogging_Internal_LoggingUtils,
+        )
+
+        _constants = ApatheticLogging_Internal_Constants
+
+        # Save current settings for restoration
+        prev_level = self.level
+        prev_propagate = self.propagate
+
+        # Resolve level
+        if isinstance(level, str):
+            _logging_utils = ApatheticLogging_Internal_LoggingUtils
+            try:
+                level_no = _logging_utils.getLevelNumber(level)
+            except ValueError:
+                self.error("Unknown log level: %r", level)
+                # Yield control anyway so the 'with' block doesn't explode
+                yield
+                return
+        elif isinstance(level, int):  # pyright: ignore[reportUnnecessaryIsInstance]
+            level_no = level
+        else:
+            self.error("Invalid log level type: %r", type(level))
+            yield
+            return
+
+        # Apply new level (only if more verbose when minimum=True)
+        if minimum:
+            # Compare against effective level (not explicit level) to match
+            # setLevel(minimum=True) behavior. This ensures consistent behavior
+            # when logger inherits level from parent.
+            current_effective_level = self.getEffectiveLevel()
+            # Lower number = more verbose, so only set if new level is more verbose
+            if level_no < current_effective_level:
+                self.setLevel(level_no)
+            # Otherwise keep current level (don't downgrade)
+        # For INHERIT_LEVEL, we need allow_inherit=True
+        elif level_no == _constants.INHERIT_LEVEL:
+            self.setLevel(level_no, allow_inherit=True)
+        else:
+            self.setLevel(level_no)
+
+        # Set propagate based on level (only if not root logger)
+        if self.name != _constants.ROOT_LOGGER_KEY:
+            if level_no == _constants.INHERIT_LEVEL:
+                # INHERIT_LEVEL -> propagate=True
+                self.setPropagate(True, manage_handlers=manage_handlers)
+            else:
+                # Specific level -> propagate=False
+                self.setPropagate(False, manage_handlers=manage_handlers)
+        # Root logger: propagate is unchanged (root always has handlers)
+
+        try:
+            yield
+        finally:
+            # Restore previous settings
+            self.setLevel(prev_level, allow_inherit=True)
+            if self.name != _constants.ROOT_LOGGER_KEY:
+                self.setPropagate(prev_propagate, manage_handlers=manage_handlers)
