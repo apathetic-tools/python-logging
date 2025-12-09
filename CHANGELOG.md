@@ -2,6 +2,14 @@
 
 <!-- version list -->
 
+## v0.9.0 (2025-12-09)
+
+### Features
+
+- **logger**: Register custom levels in apathetic_logging namespace
+  ([`359ef0a`](https://github.com/apathetic-tools/python-logging/commit/359ef0ab36aa15104454f8b3ec2375d916a95d39))
+
+
 ## v0.8.0 (2025-12-09)
 
 ### Features
