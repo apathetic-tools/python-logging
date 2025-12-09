@@ -63,21 +63,27 @@ def test_add_level_name_success() -> None:
     # Use a unique level value to avoid conflicts
     level_value = 25
     level_name = "CUSTOM_TEST"
+    apathetic_level_name = f"{level_name}_LEVEL"
 
     # Clean up if it exists
     if hasattr(logging, level_name):
         delattr(logging, level_name)
+    if hasattr(mod_alogs.apathetic_logging, apathetic_level_name):
+        delattr(mod_alogs.apathetic_logging, apathetic_level_name)
 
     mod_alogs.Logger.addLevelName(level_value, level_name)
 
     # Verify level name is registered
     assert logging.getLevelName(level_value) == level_name
 
-    # Verify convenience attribute is set
+    # Verify convenience attributes are set in both namespaces
     assert getattr(logging, level_name) == level_value
+    assert getattr(mod_alogs.apathetic_logging, apathetic_level_name) == level_value
 
     # Clean up
     delattr(logging, level_name)
+    if hasattr(mod_alogs.apathetic_logging, apathetic_level_name):
+        delattr(mod_alogs.apathetic_logging, apathetic_level_name)
 
 
 def test_add_level_name_sets_convenience_attribute() -> None:
@@ -126,21 +132,28 @@ def test_add_level_name_idempotent() -> None:
     """addLevelName() should be idempotent (can call multiple times)."""
     level_value = 35
     level_name = "IDEMPOTENT_TEST"
+    apathetic_level_name = f"{level_name}_LEVEL"
 
     # Clean up if it exists
     if hasattr(logging, level_name):
         delattr(logging, level_name)
+    if hasattr(mod_alogs.apathetic_logging, apathetic_level_name):
+        delattr(mod_alogs.apathetic_logging, apathetic_level_name)
 
     # First call
     mod_alogs.Logger.addLevelName(level_value, level_name)
     assert getattr(logging, level_name) == level_value
+    assert getattr(mod_alogs.apathetic_logging, apathetic_level_name) == level_value
 
     # Second call with same value (should not raise)
     mod_alogs.Logger.addLevelName(level_value, level_name)
     assert getattr(logging, level_name) == level_value
+    assert getattr(mod_alogs.apathetic_logging, apathetic_level_name) == level_value
 
     # Clean up
     delattr(logging, level_name)
+    if hasattr(mod_alogs.apathetic_logging, apathetic_level_name):
+        delattr(mod_alogs.apathetic_logging, apathetic_level_name)
 
 
 def test_add_level_name_rejects_invalid_existing_attribute_type() -> None:
@@ -202,6 +215,71 @@ def test_add_level_name_rejects_different_existing_value() -> None:
             delattr(logging, level_name)
 
 
+def test_add_level_name_rejects_invalid_apathetic_logging_attribute_type() -> None:
+    """addLevelName() should reject if apathetic_logging attribute exists
+    with non-integer value."""
+    level_name = "INVALID_APATHETIC_TYPE_TEST"
+    apathetic_level_name = f"{level_name}_LEVEL"
+
+    # Set invalid attribute on apathetic_logging namespace class
+    setattr(mod_alogs.apathetic_logging, apathetic_level_name, "not_an_int")
+
+    try:
+        with pytest.raises(
+            ValueError,
+            match=r"non-integer value.*Level attributes must be integers",
+        ):
+            mod_alogs.Logger.addLevelName(70, level_name)
+    finally:
+        # Clean up
+        if hasattr(mod_alogs.apathetic_logging, apathetic_level_name):
+            delattr(mod_alogs.apathetic_logging, apathetic_level_name)
+
+
+def test_add_level_name_rejects_invalid_apathetic_logging_attribute_value() -> None:
+    """addLevelName() should reject if apathetic_logging attribute exists
+    with <= 0 value."""
+    level_name = "INVALID_APATHETIC_VALUE_TEST"
+    apathetic_level_name = f"{level_name}_LEVEL"
+
+    # Set invalid attribute (zero) on apathetic_logging namespace class
+    setattr(mod_alogs.apathetic_logging, apathetic_level_name, 0)
+
+    try:
+        with pytest.raises(
+            ValueError,
+            match=r"setLevel\(0\).*NOTSET",
+        ):
+            mod_alogs.Logger.addLevelName(75, level_name)
+    finally:
+        # Clean up
+        if hasattr(mod_alogs.apathetic_logging, apathetic_level_name):
+            delattr(mod_alogs.apathetic_logging, apathetic_level_name)
+
+
+def test_add_level_name_rejects_different_existing_apathetic_logging_value() -> None:
+    """addLevelName() should reject if apathetic_logging attribute exists
+    with different value."""
+    level_name = "DIFFERENT_APATHETIC_VALUE_TEST"
+    apathetic_level_name = f"{level_name}_LEVEL"
+    existing_value = 80
+    new_value = 85
+
+    # Set existing attribute with different value on apathetic_logging namespace class
+    setattr(mod_alogs.apathetic_logging, apathetic_level_name, existing_value)
+
+    try:
+        with pytest.raises(
+            ValueError,
+            match=r"different value.*must match the level value",
+        ):
+            mod_alogs.Logger.addLevelName(new_value, level_name)
+    finally:
+        # Clean up
+        if hasattr(mod_alogs.apathetic_logging, apathetic_level_name):
+            delattr(mod_alogs.apathetic_logging, apathetic_level_name)
+
+
 def test_add_level_name_works_with_extend_logging_module() -> None:
     """addLevelName() should work correctly when used by extendLoggingModule()."""
     # Reset extension flag
@@ -217,10 +295,16 @@ def test_add_level_name_works_with_extend_logging_module() -> None:
     assert logging.getLevelName(mod_alogs.TRACE_LEVEL) == "TRACE"
     assert logging.getLevelName(mod_alogs.SILENT_LEVEL) == "SILENT"
 
-    # Verify convenience attributes are set
+    # Verify convenience attributes are set in logging namespace
     assert logging.TEST == mod_alogs.TEST_LEVEL  # type: ignore[attr-defined]
     assert logging.TRACE == mod_alogs.TRACE_LEVEL  # type: ignore[attr-defined]
     assert logging.SILENT == mod_alogs.SILENT_LEVEL  # type: ignore[attr-defined]
+
+    # Verify convenience attributes are also set in apathetic_logging namespace
+    # with _LEVEL suffix (these are the same as the constants, so they should match)
+    assert mod_alogs.apathetic_logging.TEST_LEVEL == mod_alogs.TEST_LEVEL
+    assert mod_alogs.apathetic_logging.TRACE_LEVEL == mod_alogs.TRACE_LEVEL
+    assert mod_alogs.apathetic_logging.SILENT_LEVEL == mod_alogs.SILENT_LEVEL
 
 
 def test_add_level_name_matches_builtin_level_pattern() -> None:
@@ -252,6 +336,92 @@ def test_add_level_name_matches_builtin_level_pattern() -> None:
 
     # Clean up
     delattr(logging, level_name)
+
+
+def test_add_level_name_sets_apathetic_logging_attribute() -> None:
+    """addLevelName() should set apathetic_logging.<LEVEL_NAME>_LEVEL attribute."""
+    level_value = 65
+    level_name = "APATHETIC_NAMESPACE_TEST"
+    apathetic_level_name = f"{level_name}_LEVEL"
+
+    # Clean up if it exists
+    if hasattr(logging, level_name):
+        delattr(logging, level_name)
+    if hasattr(mod_alogs.apathetic_logging, apathetic_level_name):
+        delattr(mod_alogs.apathetic_logging, apathetic_level_name)
+
+    mod_alogs.Logger.addLevelName(level_value, level_name)
+
+    # Verify attribute exists in both namespaces
+    assert hasattr(logging, level_name)
+    assert getattr(logging, level_name) == level_value
+    assert hasattr(mod_alogs.apathetic_logging, apathetic_level_name)
+    assert getattr(mod_alogs.apathetic_logging, apathetic_level_name) == level_value
+
+    # Both should be usable in setLevel
+    logger = mod_alogs.getLogger("test")
+    logger.setLevel(getattr(logging, level_name))
+    assert logger.level == level_value
+
+    logger.setLevel(getattr(mod_alogs.apathetic_logging, apathetic_level_name))
+    assert logger.level == level_value
+
+    # Clean up
+    delattr(logging, level_name)
+    if hasattr(mod_alogs.apathetic_logging, apathetic_level_name):
+        delattr(mod_alogs.apathetic_logging, apathetic_level_name)
+
+
+def test_add_level_name_idempotent_with_existing_constant() -> None:
+    """addLevelName() should be idempotent when constant already exists."""
+    # TRACE_LEVEL already exists as a constant, calling addLevelName should work
+    # and set it to the same value (idempotent)
+    mod_alogs.Logger.extendLoggingModule()
+
+    # Verify TRACE_LEVEL constant exists
+    assert hasattr(mod_alogs.apathetic_logging, "TRACE_LEVEL")
+    original_value = mod_alogs.apathetic_logging.TRACE_LEVEL
+
+    # Call addLevelName again (should be idempotent)
+    mod_alogs.Logger.addLevelName(mod_alogs.TRACE_LEVEL, "TRACE")
+
+    # Value should remain the same
+    assert original_value == mod_alogs.apathetic_logging.TRACE_LEVEL
+    assert original_value == logging.TRACE  # type: ignore[attr-defined]
+
+
+def test_add_level_name_both_namespaces_independent() -> None:
+    """addLevelName() should set attributes in both namespaces independently."""
+    level_value = 90
+    level_name = "INDEPENDENT_TEST"
+    apathetic_level_name = f"{level_name}_LEVEL"
+
+    # Clean up if it exists
+    if hasattr(logging, level_name):
+        delattr(logging, level_name)
+    if hasattr(mod_alogs.apathetic_logging, apathetic_level_name):
+        delattr(mod_alogs.apathetic_logging, apathetic_level_name)
+
+    mod_alogs.Logger.addLevelName(level_value, level_name)
+
+    # Verify both namespaces have the correct values
+    assert logging.getLevelName(level_value) == level_name
+    assert getattr(logging, level_name) == level_value
+    assert getattr(mod_alogs.apathetic_logging, apathetic_level_name) == level_value
+
+    # Verify they can be used independently
+    logger1 = logging.getLogger("test1")
+    logger1.setLevel(getattr(logging, level_name))
+    assert logger1.level == level_value
+
+    logger2 = mod_alogs.getLogger("test2")
+    logger2.setLevel(getattr(mod_alogs.apathetic_logging, apathetic_level_name))
+    assert logger2.level == level_value
+
+    # Clean up
+    delattr(logging, level_name)
+    if hasattr(mod_alogs.apathetic_logging, apathetic_level_name):
+        delattr(mod_alogs.apathetic_logging, apathetic_level_name)
 
 
 # ---------------------------------------------------------------------------

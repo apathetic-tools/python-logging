@@ -406,6 +406,9 @@ class ApatheticLogging_Internal_LoggerCore(logging.Logger):  # noqa: N801  # pyr
           inheritance issues
         - Sets logging.<LEVEL_NAME> attribute for convenience, matching the
           pattern of built-in levels (logging.DEBUG, logging.INFO, etc.)
+        - Sets apathetic_logging.<LEVEL_NAME>_LEVEL attribute for consistency
+          with constant naming pattern (e.g., apathetic_logging.TRACE_LEVEL,
+          apathetic_logging.CUSTOM_LEVEL)
         - Validates existing attributes to ensure consistency
 
         Args:
@@ -416,6 +419,9 @@ class ApatheticLogging_Internal_LoggerCore(logging.Logger):  # noqa: N801  # pyr
             ValueError: If level <= 0 (which would cause NOTSET inheritance)
             ValueError: If logging.<LEVEL_NAME> already exists with an invalid value
                 (not a positive integer, or different from the provided level)
+            ValueError: If apathetic_logging.<LEVEL_NAME>_LEVEL already exists
+                with an invalid value (not a positive integer, or different
+                from the provided level)
 
         Wrapper for logging.addLevelName.
 
@@ -424,7 +430,7 @@ class ApatheticLogging_Internal_LoggerCore(logging.Logger):  # noqa: N801  # pyr
         # Validate level is positive
         ApatheticLogging_Internal_LoggerCore.validateLevel(level, level_name=level_name)
 
-        # Check if attribute already exists and validate it
+        # Check if attribute already exists in logging namespace and validate it
         existing_value = getattr(logging, level_name, None)
         if existing_value is not None:
             # If it exists, it must be a valid level value (positive integer)
@@ -449,9 +455,55 @@ class ApatheticLogging_Internal_LoggerCore(logging.Logger):  # noqa: N801  # pyr
                 raise ValueError(msg)
             # If it exists and matches, we can proceed (idempotent)
 
+        # Get apathetic_logging namespace class
+        namespace_module = sys.modules.get("apathetic_logging")
+        namespace_class = None
+        if namespace_module is not None:
+            namespace_class = getattr(namespace_module, "apathetic_logging", None)
+
+        # Use _LEVEL suffix for apathetic_logging namespace to match constant pattern
+        # (e.g., apathetic_logging.TRACE_LEVEL instead of apathetic_logging.TRACE)
+        apathetic_level_name = f"{level_name}_LEVEL"
+
+        # Check if attribute already exists in apathetic_logging namespace
+        # and validate it
+        if namespace_class is not None:
+            existing_apathetic_value = getattr(
+                namespace_class, apathetic_level_name, None
+            )
+            if existing_apathetic_value is not None:
+                # If it exists, it must be a valid level value (positive integer)
+                if not isinstance(existing_apathetic_value, int):
+                    msg = (
+                        f"Cannot set apathetic_logging.{apathetic_level_name}: "
+                        f"attribute already exists with non-integer value "
+                        f"{existing_apathetic_value!r}. "
+                        "Level attributes must be integers."
+                    )
+                    raise ValueError(msg)
+                # Validate existing value is positive
+                ApatheticLogging_Internal_LoggerCore.validateLevel(
+                    existing_apathetic_value, level_name=level_name
+                )
+                if existing_apathetic_value != level:
+                    msg = (
+                        f"Cannot set apathetic_logging.{apathetic_level_name}: "
+                        f"attribute already exists with different value "
+                        f"{existing_apathetic_value} (trying to set {level}). "
+                        "Level attributes must match the level value."
+                    )
+                    raise ValueError(msg)
+                # If it exists and matches, we can proceed (idempotent)
+
         logging.addLevelName(level, level_name)
         # Set convenience attribute matching built-in levels (logging.DEBUG, etc.)
         setattr(logging, level_name, level)
+
+        # Set convenience attribute on apathetic_logging namespace class
+        # with _LEVEL suffix to match constant pattern
+        # (e.g., apathetic_logging.TRACE_LEVEL, apathetic_logging.CUSTOM_LEVEL)
+        if namespace_class is not None:
+            setattr(namespace_class, apathetic_level_name, level)
 
     @classmethod
     def extendLoggingModule(
