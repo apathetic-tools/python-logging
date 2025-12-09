@@ -20,10 +20,21 @@ class ApatheticLogging_Internal_Constants:  # noqa: N801  # pyright: ignore[repo
     DEFAULT_APATHETIC_LOG_LEVEL_ENV_VARS: ClassVar[list[str]] = ["LOG_LEVEL"]
     """Default environment variable names to check for log level."""
 
-    NOTSET_LEVEL: int = logging.NOTSET
-    """NOTSET level (0) - logger inherits level from parent."""
+    INHERIT_LEVEL: int = logging.NOTSET
+    """INHERIT level (0) - logger inherits level from parent.
 
-    # levels must be careful not to equal 0 to avoid NOTSET
+    This is the preferred constant name. Use INHERIT_LEVEL in new code.
+    Equivalent to stdlib logging.NOTSET.
+    """
+
+    NOTSET_LEVEL: int = INHERIT_LEVEL
+    """NOTSET level (0) - logger inherits level from parent.
+
+    Alias for INHERIT_LEVEL, kept for compatibility with stdlib
+    logging.NOTSET terminology. Use INHERIT_LEVEL in new code for clarity.
+    """
+
+    # levels must be careful not to equal 0 to avoid INHERIT_LEVEL (i.e. NOTSET)
     TEST_LEVEL: int = logging.DEBUG - 8
     """Most verbose level, bypasses capture."""
 

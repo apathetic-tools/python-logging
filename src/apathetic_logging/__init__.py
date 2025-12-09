@@ -53,6 +53,7 @@ TRACE_LEVEL = apathetic_logging.TRACE_LEVEL
 BRIEF_LEVEL = apathetic_logging.BRIEF_LEVEL
 MINIMAL_LEVEL = apathetic_logging.MINIMAL_LEVEL
 DETAIL_LEVEL = apathetic_logging.DETAIL_LEVEL
+INHERIT_LEVEL = apathetic_logging.INHERIT_LEVEL
 NOTSET_LEVEL = apathetic_logging.NOTSET_LEVEL
 
 # ANSI Colors
@@ -129,6 +130,7 @@ __all__ = [
     "DEFAULT_APATHETIC_LOG_LEVEL",
     "DEFAULT_APATHETIC_LOG_LEVEL_ENV_VARS",
     "DETAIL_LEVEL",
+    "INHERIT_LEVEL",
     "LEVEL_ORDER",
     "MINIMAL_LEVEL",
     "NOTSET_LEVEL",

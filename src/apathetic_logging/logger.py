@@ -56,22 +56,23 @@ class ApatheticLogging_Internal_LoggerCore(logging.Logger):  # noqa: N801  # pyr
     def __init__(
         self,
         name: str,
-        level: int | None = ApatheticLogging_Internal_Constants.NOTSET_LEVEL,
+        level: int | None = ApatheticLogging_Internal_Constants.INHERIT_LEVEL,
         *,
         enable_color: bool | None = None,
         propagate: bool | None = None,
     ) -> None:
         """Initialize the logger.
 
-        Sets up color support and log propagation. Loggers default to NOTSET
-        to inherit level from root logger. Defaults to propagate=True for
+        Sets up color support and log propagation. Loggers default to INHERIT_LEVEL
+        (i.e. NOTSET) to inherit level from root logger. Defaults to propagate=True for
         root logger architecture.
 
         Args:
             name: Logger name
             level: Initial logging level. If None, auto-resolves via
-                determineLogLevel(). If NOTSET_LEVEL (default), inherits from
-                root logger. Otherwise, sets explicit level.
+                determineLogLevel(). If INHERIT_LEVEL (i.e. NOTSET)
+                (default), inherits from root logger. Otherwise, sets
+                explicit level.
             enable_color: Force color output on/off, or None for auto-detect
             propagate: Propagate setting. If None, uses registered setting or
                 defaults to True. If True, messages propagate to parent loggers.
@@ -79,11 +80,11 @@ class ApatheticLogging_Internal_LoggerCore(logging.Logger):  # noqa: N801  # pyr
         # it is too late to call extendLoggingModule
 
         _constants = ApatheticLogging_Internal_Constants
-        super().__init__(name, _constants.NOTSET_LEVEL if level is None else level)
+        super().__init__(name, _constants.INHERIT_LEVEL if level is None else level)
 
         # Handle None level - auto-resolve via determineLogLevel
         if level is None:
-            # Initialize with NOTSET first, then resolve
+            # Initialize with INHERIT_LEVEL (i.e. NOTSET) first, then resolve
             self.setLevel(self.determineLogLevel())
 
         # detect color support once per instance
@@ -163,7 +164,7 @@ class ApatheticLogging_Internal_LoggerCore(logging.Logger):  # noqa: N801  # pyr
         level: int | str,
         *,
         minimum: bool | None = False,
-        allow_notset: bool = False,
+        allow_inherit: bool = False,
     ) -> None:
         """Set the logging level of this logger.
 
@@ -172,14 +173,15 @@ class ApatheticLogging_Internal_LoggerCore(logging.Logger):  # noqa: N801  # pyr
         - Automatically resolves string level names to numeric values
         - Supports custom level names (TEST, TRACE, BRIEF, DETAIL, SILENT)
         - In improved mode (default), validates that levels are > 0 to prevent
-          accidental NOTSET inheritance. Use `allow_notset=True` to explicitly
-          set to NOTSET (0) for inheritance.
+          accidental INHERIT_LEVEL (i.e. NOTSET) inheritance. Use
+          `allow_inherit=True` to explicitly set to INHERIT_LEVEL (i.e. NOTSET)
+          (0) for inheritance.
         - In compatibility mode, accepts any level value (including 0 and negative)
           matching stdlib behavior.
         - Added `minimum` parameter: if True, only sets the level if it's more
           verbose (lower numeric value) than the current level
-        - Added `allow_notset` parameter: if True, allows setting level to 0
-          (NOTSET) in improved mode. Ignored in compatibility mode.
+        - Added `allow_inherit` parameter: if True, allows setting level to 0
+          (INHERIT_LEVEL, i.e. NOTSET) in improved mode. Ignored in compatibility mode.
 
         Args:
             level: The logging level, either as an integer or a string name
@@ -191,9 +193,9 @@ class ApatheticLogging_Internal_LoggerCore(logging.Logger):  # noqa: N801  # pyr
                 from a more verbose level (e.g., TRACE) to a less verbose one
                 (e.g., DEBUG). Defaults to False. None is accepted and treated
                 as False.
-            allow_notset: If True, allows setting level to 0 (NOTSET) in improved
-                mode. In compatibility mode, this parameter is ignored and 0 is
-                always accepted. Defaults to False.
+            allow_inherit: If True, allows setting level to 0 (INHERIT_LEVEL,
+                i.e. NOTSET) in improved mode. In compatibility mode, this
+                parameter is ignored and 0 is always accepted. Defaults to False.
 
         Wrapper for logging.Logger.setLevel.
 
@@ -220,10 +222,10 @@ class ApatheticLogging_Internal_LoggerCore(logging.Logger):  # noqa: N801  # pyr
                 # Don't downgrade - keep current level
                 return
 
-        # Validate any level <= 0 (prevents NOTSET inheritance)
+        # Validate any level <= 0 (prevents INHERIT_LEVEL (i.e. NOTSET) inheritance)
         # Built-in levels (DEBUG=10, INFO=20, etc.) are all > 0, so they pass
         # validateLevel() will raise if level <= 0
-        self.validateLevel(level, level_name=level_name, allow_notset=allow_notset)
+        self.validateLevel(level, level_name=level_name, allow_inherit=allow_inherit)
 
         super().setLevel(level)
         # Clear the isEnabledFor cache when level changes, as cached values
@@ -270,30 +272,31 @@ class ApatheticLogging_Internal_LoggerCore(logging.Logger):  # noqa: N801  # pyr
         level: int,
         *,
         level_name: str | None = None,
-        allow_notset: bool | None = None,
+        allow_inherit: bool | None = None,
     ) -> None:
         """Validate that a level value is positive (> 0).
 
         Custom levels with values <= 0 will inherit from the root logger,
-        causing NOTSET inheritance issues. In compatibility mode, validation
-        is skipped (all levels are accepted).
+        causing INHERIT_LEVEL (i.e. NOTSET) inheritance issues. In
+        compatibility mode, validation is skipped (all levels are accepted).
 
         Args:
             level: The numeric level value to validate
             level_name: Optional name for the level (for error messages).
                 If None, will attempt to get from getLevelName()
-            allow_notset: If True, allows level 0 (NOTSET). If None (default),
-                error message doesn't mention allow_notset parameter. If False,
-                error message includes allow_notset hint. Ignored in compatibility mode.
+            allow_inherit: If True, allows level 0 (INHERIT_LEVEL, i.e. NOTSET).
+                If None (default), error message doesn't mention allow_inherit
+                parameter. If False, error message includes allow_inherit hint.
+                Ignored in compatibility mode.
 
         Raises:
-            ValueError: If level <= 0 (or level == 0 without allow_notset=True)
+            ValueError: If level <= 0 (or level == 0 without allow_inherit=True)
 
         Example:
             >>> Logger.validateLevel(5, level_name="TRACE")
             >>> Logger.validateLevel(0, level_name="TEST")
-            ValueError: setLevel(0) sets the logger to NOTSET...
-            >>> Logger.validateLevel(0, level_name="TEST", allow_notset=True)
+            ValueError: setLevel(0) sets the logger to INHERIT_LEVEL (i.e. NOTSET)...
+            >>> Logger.validateLevel(0, level_name="TEST", allow_inherit=True)
         """
         from .logging_utils import (  # noqa: PLC0415
             ApatheticLogging_Internal_LoggingUtils,
@@ -308,13 +311,16 @@ class ApatheticLogging_Internal_LoggerCore(logging.Logger):  # noqa: N801  # pyr
         if compat_mode:
             return
 
-        if not allow_notset and level == _constants.NOTSET_LEVEL:
-            msg = "setLevel(0) sets the logger to NOTSET (inherits from parent). "
-            if allow_notset is not None:
-                msg += " Use allow_notset=True to explicitly set to inheritance."
+        if not allow_inherit and level == _constants.INHERIT_LEVEL:
+            msg = (
+                "setLevel(0) sets the logger to INHERIT_LEVEL (i.e. NOTSET) "
+                "(inherits from parent). "
+            )
+            if allow_inherit is not None:
+                msg += " Use allow_inherit=True to explicitly set to inheritance."
             raise ValueError(msg)
 
-        if level < _constants.NOTSET_LEVEL:
+        if level < _constants.INHERIT_LEVEL:
             if level_name is None:
                 level_name = _logging_utils.getLevelNameStr(level)
             msg = (
@@ -778,4 +784,4 @@ class ApatheticLogging_Internal_LoggerCore(logging.Logger):  # noqa: N801  # pyr
         try:
             yield
         finally:
-            self.setLevel(prev_level, allow_notset=True)
+            self.setLevel(prev_level, allow_inherit=True)

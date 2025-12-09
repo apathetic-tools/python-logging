@@ -98,9 +98,9 @@ def test_nested_loggers_inherit_chain() -> None:
     assert child.effectiveLevel == logging.INFO  # From parent
     assert parent.effectiveLevel == logging.INFO
 
-    # If parent is also NOTSET, child inherits from root
+    # If parent is also INHERIT_LEVEL (i.e. NOTSET), child inherits from root
     _constants = mod_alogs.apathetic_logging
-    parent.setLevel(_constants.NOTSET_LEVEL, allow_notset=True)
+    parent.setLevel(_constants.INHERIT_LEVEL, allow_inherit=True)
     assert child.effectiveLevel == logging.DEBUG  # From root
 
     # --- cleanup ---

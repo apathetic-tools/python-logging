@@ -1159,18 +1159,18 @@ Logger class for all Apathetic tools. Extends Python's standard `logging.Logger`
 | Parameter | Type | Description |
 |-----------|------|-------------|
 | `name` | str | Logger name |
-| `level` | int | Initial log level (defaults to `logging.NOTSET`) |
+| `level` | int | Initial log level (defaults to `INHERIT_LEVEL` (i.e. `logging.NOTSET`)) |
 | `enable_color` | bool \| None | Whether to enable colorized output. If None, auto-detects based on TTY and environment variables. |
 
 ### setLevel
 
 ```python
-setLevel(level: int | str, *, minimum: bool | None = False, allow_notset: bool = False) -> None
+setLevel(level: int | str, *, minimum: bool | None = False, allow_inherit: bool = False) -> None
 ```
 
 Set the logging level. Accepts both string names (case-insensitive) and numeric values.
 
-**Changed from stdlib:** Accepts string level names and has `minimum` and `allow_notset` parameters. In improved mode (default), validates that levels are > 0 to prevent accidental NOTSET inheritance. In compatibility mode, accepts any level value (including 0 and negative) matching stdlib behavior.
+**Changed from stdlib:** Accepts string level names and has `minimum` and `allow_inherit` parameters. In improved mode (default), validates that levels are > 0 to prevent accidental INHERIT_LEVEL (i.e. NOTSET) inheritance. In compatibility mode, accepts any level value (including 0 and negative) matching stdlib behavior.
 
 **Parameters:**
 
@@ -1178,22 +1178,22 @@ Set the logging level. Accepts both string names (case-insensitive) and numeric 
 |-----------|------|-------------|
 | `level` | int \| str | Log level name or numeric value |
 | `minimum` | bool \| None | If True, only set the level if it's more verbose (lower numeric value) than the current level. Defaults to False. |
-| `allow_notset` | bool | If True, allows setting level to 0 (NOTSET) in improved mode. In compatibility mode, this parameter is ignored and 0 is always accepted. Defaults to False. |
+| `allow_inherit` | bool | If True, allows setting level to 0 (INHERIT_LEVEL, i.e. NOTSET) in improved mode. In compatibility mode, this parameter is ignored and 0 is always accepted. Defaults to False. |
 
 **Behavior:**
 
-- **Improved mode (default):** Rejects level 0 (NOTSET) unless `allow_notset=True` is explicitly provided. This prevents accidental NOTSET inheritance from custom levels that accidentally evaluate to 0.
-- **Compatibility mode:** Accepts any level value (including 0 and negative) matching stdlib behavior. The `allow_notset` parameter is ignored in this mode.
+- **Improved mode (default):** Rejects level 0 (INHERIT_LEVEL, i.e. NOTSET) unless `allow_inherit=True` is explicitly provided. This prevents accidental INHERIT_LEVEL (i.e. NOTSET) inheritance from custom levels that accidentally evaluate to 0.
+- **Compatibility mode:** Accepts any level value (including 0 and negative) matching stdlib behavior. The `allow_inherit` parameter is ignored in this mode.
 
 **Example:**
 ```python
 logger.setLevel("debug")
 logger.setLevel(logging.DEBUG)
 
-# Set to NOTSET (inherits from parent) - requires explicit allow_notset=True
-logger.setLevel(0, allow_notset=True)
+# Set to INHERIT_LEVEL (i.e. NOTSET) (inherits from parent) - requires explicit allow_inherit=True
+logger.setLevel(0, allow_inherit=True)
 
-# In compatibility mode, NOTSET is accepted without allow_notset
+# In compatibility mode, INHERIT_LEVEL (i.e. NOTSET) is accepted without allow_inherit
 from apathetic_logging import registerCompatibilityMode
 registerCompatibilityMode(compat_mode=True)
 logger.setLevel(0)  # Works in compat mode
@@ -1477,7 +1477,7 @@ parent = getLogger("parent")
 parent.setLevel("info")
 
 child = getLogger("parent.child")
-print(child.level)  # 0 (NOTSET - explicit)
+print(child.level)  # 0 (INHERIT_LEVEL, i.e. NOTSET - explicit)
 print(child.effectiveLevel)  # 20 (INFO - effective, from parent)
 ```
 
@@ -1500,7 +1500,7 @@ parent = getLogger("parent")
 parent.setLevel("info")
 
 child = getLogger("parent.child")
-print(child.levelName)  # "NOTSET" (explicit)
+print(child.levelName)  # "NOTSET" (explicit - INHERIT_LEVEL, i.e. NOTSET)
 print(child.effectiveLevelName)  # "INFO" (effective, from parent)
 ```
 
@@ -1620,13 +1620,13 @@ Rebuilds handlers if they're missing or if stdout/stderr have changed.
 ### validateLevel
 
 ```python
-validateLevel(level: int, *, level_name: str | None = None, allow_notset: bool = False) -> None
+validateLevel(level: int, *, level_name: str | None = None, allow_inherit: bool = False) -> None
 ```
 
 Validate that a level value is positive (> 0). (staticmethod)
 
 Custom levels with values <= 0 will inherit from the root logger,
-causing NOTSET inheritance issues. In compatibility mode, validation is skipped.
+causing INHERIT_LEVEL (i.e. NOTSET) inheritance issues. In compatibility mode, validation is skipped.
 
 **Parameters:**
 
@@ -1634,18 +1634,18 @@ causing NOTSET inheritance issues. In compatibility mode, validation is skipped.
 |-----------|------|-------------|
 | `level` | int | The numeric level value to validate |
 | `level_name` | str \| None | Optional name for the level (for error messages). If None, will attempt to get from getLevelName() |
-| `allow_notset` | bool | If True, allows level 0 (NOTSET). Defaults to False. |
+| `allow_inherit` | bool | If True, allows level 0 (INHERIT_LEVEL, i.e. NOTSET). Defaults to False. |
 
 **Raises:**
-- `ValueError`: If level <= 0 (or level == 0 without `allow_notset=True`)
+- `ValueError`: If level <= 0 (or level == 0 without `allow_inherit=True`)
 
 **Example:**
 ```python
 Logger.validateLevel(5, level_name="TRACE")
 Logger.validateLevel(0, level_name="TEST")
-# ValueError: setLevel(0) sets the logger to NOTSET...
+# ValueError: setLevel(0) sets the logger to INHERIT_LEVEL (i.e. NOTSET)...
 
-Logger.validateLevel(0, level_name="TEST", allow_notset=True)
+Logger.validateLevel(0, level_name="TEST", allow_inherit=True)
 # Passes validation
 ```
 
@@ -1676,7 +1676,7 @@ addLevelName(level: int, level_name: str) -> None
 
 Associate a level name with a numeric level. (staticmethod)
 
-**Changed from stdlib:** Validates that level value is positive (> 0) to prevent NOTSET
+**Changed from stdlib:** Validates that level value is positive (> 0) to prevent INHERIT_LEVEL (i.e. NOTSET)
 inheritance issues. Sets `logging.<LEVEL_NAME>` attribute for convenience.
 
 **Parameters:**
@@ -1687,7 +1687,7 @@ inheritance issues. Sets `logging.<LEVEL_NAME>` attribute for convenience.
 | `level_name` | str | The name to associate with this level |
 
 **Raises:**
-- `ValueError`: If level <= 0 (which would cause NOTSET inheritance)
+- `ValueError`: If level <= 0 (which would cause INHERIT_LEVEL (i.e. NOTSET) inheritance)
 - `ValueError`: If `logging.<LEVEL_NAME>` already exists with an invalid value
 
 ## Classes

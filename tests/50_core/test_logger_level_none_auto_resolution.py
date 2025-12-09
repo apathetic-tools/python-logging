@@ -114,7 +114,8 @@ def test_level_none_falls_back_to_default() -> None:
     root = logging.getLogger("")
     original_root_level = root.level
     _constants = mod_alogs.apathetic_logging
-    root.setLevel(_constants.NOTSET_LEVEL)  # Root also NOTSET (stdlib accepts 0)
+    # Root also INHERIT_LEVEL (i.e. NOTSET) (stdlib accepts 0)
+    root.setLevel(_constants.INHERIT_LEVEL)
 
     original_env = os.environ.get("LOG_LEVEL")
     if "LOG_LEVEL" in os.environ:

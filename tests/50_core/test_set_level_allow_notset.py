@@ -1,5 +1,5 @@
 # tests/50_core/test_set_level_allow_notset.py
-"""Tests for setLevel() allow_notset parameter."""
+"""Tests for setLevel() allow_inherit parameter."""
 
 from __future__ import annotations
 
@@ -18,8 +18,8 @@ else:
     Logger = mod_alogs.Logger
 
 
-def test_set_level_notset_without_allow_notset_raises(direct_logger: Logger) -> None:
-    """setLevel(0) should raise ValueError in improved mode without allow_notset."""
+def test_set_level_notset_without_allow_inherit_raises(direct_logger: Logger) -> None:
+    """setLevel(0) should raise ValueError in improved mode without allow_inherit."""
     # --- setup ---
     _constants = mod_alogs.apathetic_logging
     _registry = mod_registry.ApatheticLogging_Internal_RegistryData
@@ -28,17 +28,17 @@ def test_set_level_notset_without_allow_notset_raises(direct_logger: Logger) -> 
     try:
         mod_alogs.registerCompatibilityMode(compat_mode=False)
         # --- execute and verify ---
-        with pytest.raises(ValueError, match=r"setLevel\(0\).*allow_notset=True"):
+        with pytest.raises(ValueError, match=r"setLevel\(0\).*allow_inherit=True"):
             direct_logger.setLevel(0)
 
-        with pytest.raises(ValueError, match=r"setLevel\(0\).*allow_notset=True"):
-            direct_logger.setLevel(_constants.NOTSET_LEVEL)
+        with pytest.raises(ValueError, match=r"setLevel\(0\).*allow_inherit=True"):
+            direct_logger.setLevel(_constants.INHERIT_LEVEL)
     finally:
         _registry.registered_internal_compatibility_mode = original_compat_mode
 
 
-def test_set_level_notset_with_allow_notset_succeeds(direct_logger: Logger) -> None:
-    """setLevel(0, allow_notset=True) should succeed in improved mode."""
+def test_set_level_notset_with_allow_inherit_succeeds(direct_logger: Logger) -> None:
+    """setLevel(0, allow_inherit=True) should succeed in improved mode."""
     # --- setup ---
     _constants = mod_alogs.apathetic_logging
     _registry = mod_registry.ApatheticLogging_Internal_RegistryData
@@ -50,17 +50,17 @@ def test_set_level_notset_with_allow_notset_succeeds(direct_logger: Logger) -> N
     try:
         mod_alogs.registerCompatibilityMode(compat_mode=False)
         # --- execute ---
-        direct_logger.setLevel(0, allow_notset=True)
+        direct_logger.setLevel(0, allow_inherit=True)
 
         # --- verify ---
-        assert direct_logger.level == _constants.NOTSET_LEVEL
+        assert direct_logger.level == _constants.INHERIT_LEVEL
         assert direct_logger.levelName == "NOTSET"
     finally:
         _registry.registered_internal_compatibility_mode = original_compat_mode
 
 
 def test_set_level_notset_in_compat_mode_succeeds(direct_logger: Logger) -> None:
-    """setLevel(0) should succeed in compatibility mode without allow_notset."""
+    """setLevel(0) should succeed in compatibility mode without allow_inherit."""
     # --- setup ---
     _constants = mod_alogs.apathetic_logging
     _registry = mod_registry.ApatheticLogging_Internal_RegistryData
@@ -73,12 +73,12 @@ def test_set_level_notset_in_compat_mode_succeeds(direct_logger: Logger) -> None
         mod_alogs.registerCompatibilityMode(compat_mode=True)
         # --- execute ---
         direct_logger.setLevel(0)
-        # allow_notset parameter should be ignored in compat mode
+        # allow_inherit parameter should be ignored in compat mode
         direct_logger.setLevel("WARNING")
-        direct_logger.setLevel(0, allow_notset=False)  # Should still work
+        direct_logger.setLevel(0, allow_inherit=False)  # Should still work
 
         # --- verify ---
-        assert direct_logger.level == _constants.NOTSET_LEVEL
+        assert direct_logger.level == _constants.INHERIT_LEVEL
         assert direct_logger.levelName == "NOTSET"
     finally:
         _registry.registered_internal_compatibility_mode = original_compat_mode
@@ -125,8 +125,8 @@ def test_set_level_negative_in_improved_mode_raises(direct_logger: Logger) -> No
         _registry.registered_internal_compatibility_mode = original_compat_mode
 
 
-def test_set_level_notset_with_allow_notset_inherits_from_parent() -> None:
-    """setLevel(0, allow_notset=True) should cause inheritance from parent."""
+def test_set_level_notset_with_allow_inherit_inherits_from_parent() -> None:
+    """setLevel(0, allow_inherit=True) should cause inheritance from parent."""
     # --- setup ---
     _constants = mod_alogs.apathetic_logging
     _registry = mod_registry.ApatheticLogging_Internal_RegistryData
@@ -144,10 +144,10 @@ def test_set_level_notset_with_allow_notset_inherits_from_parent() -> None:
     try:
         mod_alogs.registerCompatibilityMode(compat_mode=False)
         # --- execute ---
-        logger.setLevel(0, allow_notset=True)
+        logger.setLevel(0, allow_inherit=True)
 
         # --- verify ---
-        assert logger.level == _constants.NOTSET_LEVEL
+        assert logger.level == _constants.INHERIT_LEVEL
         assert logger.levelName == "NOTSET"
         # Should now inherit from root
         assert logger.effectiveLevel == logging.WARNING
@@ -157,8 +157,10 @@ def test_set_level_notset_with_allow_notset_inherits_from_parent() -> None:
         root.setLevel(original_root_level)
 
 
-def test_set_level_notset_with_allow_notset_clears_cache(direct_logger: Logger) -> None:
-    """setLevel(0, allow_notset=True) should clear isEnabledFor cache."""
+def test_set_level_notset_with_allow_inherit_clears_cache(
+    direct_logger: Logger,
+) -> None:
+    """setLevel(0, allow_inherit=True) should clear isEnabledFor cache."""
     # --- setup ---
     _registry = mod_registry.ApatheticLogging_Internal_RegistryData
     original_compat_mode = _registry.registered_internal_compatibility_mode
@@ -176,7 +178,7 @@ def test_set_level_notset_with_allow_notset_clears_cache(direct_logger: Logger) 
     try:
         mod_alogs.registerCompatibilityMode(compat_mode=False)
         # --- execute ---
-        direct_logger.setLevel(0, allow_notset=True)
+        direct_logger.setLevel(0, allow_inherit=True)
 
         # --- verify ---
         cache_after = getattr(direct_logger, "_cache", None)
@@ -190,7 +192,7 @@ def test_set_level_notset_with_allow_notset_clears_cache(direct_logger: Logger) 
 
 
 def test_set_level_notset_with_minimum_parameter(direct_logger: Logger) -> None:
-    """setLevel(0, allow_notset=True) should work with minimum parameter."""
+    """setLevel(0, allow_inherit=True) should work with minimum parameter."""
     # --- setup ---
     _constants = mod_alogs.apathetic_logging
     _registry = mod_registry.ApatheticLogging_Internal_RegistryData
@@ -202,19 +204,23 @@ def test_set_level_notset_with_minimum_parameter(direct_logger: Logger) -> None:
     try:
         mod_alogs.registerCompatibilityMode(compat_mode=False)
         # --- execute ---
-        # minimum=True should allow setting to NOTSET when allow_notset=True
-        # because NOTSET (0) is more verbose than WARNING (30), so it's an upgrade
-        direct_logger.setLevel(0, allow_notset=True, minimum=True)
+        # minimum=True should allow setting to INHERIT_LEVEL (i.e. NOTSET)
+        # when allow_inherit=True because INHERIT_LEVEL (i.e. NOTSET) (0) is
+        # more verbose than WARNING (30), so it's an upgrade
+        direct_logger.setLevel(0, allow_inherit=True, minimum=True)
 
         # --- verify ---
-        # Should have set to NOTSET since it's more verbose
-        assert direct_logger.level == _constants.NOTSET_LEVEL
+        # Should have set to INHERIT_LEVEL (i.e. NOTSET) since it's more
+        # verbose
+        assert direct_logger.level == _constants.INHERIT_LEVEL
 
-        # Now test that minimum=True prevents downgrading to less verbose levels
-        # Set to a less verbose level (ERROR) - should be prevented by minimum=True
+        # Now test that minimum=True prevents downgrading to less verbose
+        # levels. Set to a less verbose level (ERROR) - should be prevented by
+        # minimum=True
         direct_logger.setLevel("ERROR", minimum=True)
-        # Should not have changed because ERROR (40) is less verbose than NOTSET (0)
-        # (effective level might be from parent, but explicit level should stay NOTSET)
-        assert direct_logger.level == _constants.NOTSET_LEVEL
+        # Should not have changed because ERROR (40) is less verbose than
+        # INHERIT_LEVEL (i.e. NOTSET) (0). (effective level might be from
+        # parent, but explicit level should stay INHERIT_LEVEL (i.e. NOTSET))
+        assert direct_logger.level == _constants.INHERIT_LEVEL
     finally:
         _registry.registered_internal_compatibility_mode = original_compat_mode

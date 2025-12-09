@@ -35,10 +35,10 @@ def test_validate_level_zero_raises() -> None:
         mod_alogs.Logger.validateLevel(0, level_name="TEST")
 
 
-def test_validate_level_zero_with_allow_notset_passes() -> None:
-    """validateLevel() should pass for level 0 with allow_notset=True."""
-    # Should not raise when allow_notset=True
-    mod_alogs.Logger.validateLevel(0, level_name="TEST", allow_notset=True)
+def test_validate_level_zero_with_allow_inherit_passes() -> None:
+    """validateLevel() should pass for level 0 with allow_inherit=True."""
+    # Should not raise when allow_inherit=True
+    mod_alogs.Logger.validateLevel(0, level_name="TEST", allow_inherit=True)
 
 
 def test_validate_level_negative_raises() -> None:
@@ -290,7 +290,7 @@ def test_set_level_rejects_any_level_zero_or_negative(
 ) -> None:
     """setLevel() should reject ANY level <= 0, not just our custom levels."""
     # Should reject level 0 (NOTSET) - new error message format
-    with pytest.raises(ValueError, match=r"setLevel\(0\).*allow_notset=True"):
+    with pytest.raises(ValueError, match=r"setLevel\(0\).*allow_inherit=True"):
         direct_logger.setLevel(0)
 
     # Should reject negative levels

@@ -597,17 +597,24 @@ class ApatheticLogging_Internal_LoggingUtils:  # noqa: N801  # pyright: ignore[r
                     is_child = logger_name.startswith(root_name + ".")
 
                 _constants = ApatheticLogging_Internal_Constants
-                if is_child and logger.level != _constants.NOTSET_LEVEL:
+                if is_child and logger.level != _constants.INHERIT_LEVEL:
                     # This child has an explicit level set
                     if set_children_to_level:
                         # Set child to same level as root
                         logger.setLevel(level_int)
                     else:
-                        # Set child to NOTSET so it inherits from root
-                        # Check if logger supports allow_notset parameter
+                        # Set child to INHERIT_LEVEL (i.e. NOTSET) so it
+                        # inherits from root
+                        # Check if logger supports allow_inherit parameter
                         sig = inspect.signature(logger.setLevel)
-                        if "allow_notset" in sig.parameters:
-                            logger.setLevel(_constants.NOTSET_LEVEL, allow_notset=True)  # type: ignore[call-arg]
+                        if "allow_inherit" in sig.parameters:
+                            # Type ignore needed because logger might be stdlib
+                            # Logger which doesn't have allow_inherit, but we
+                            # checked the signature above
+                            logger.setLevel(
+                                _constants.INHERIT_LEVEL,
+                                allow_inherit=True,  # pyright: ignore[reportCallIssue]
+                            )  # type: ignore[call-arg]
                         else:
                             # Fallback for stdlib loggers - use direct assignment
-                            logger.level = _constants.NOTSET_LEVEL
+                            logger.level = _constants.INHERIT_LEVEL
