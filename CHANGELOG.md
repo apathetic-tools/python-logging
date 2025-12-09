@@ -2,6 +2,14 @@
 
 <!-- version list -->
 
+## v0.10.0 (2025-12-09)
+
+### Features
+
+- **logger**: Add usePropagate context manager
+  ([`3425260`](https://github.com/apathetic-tools/python-logging/commit/3425260fb1370021a321986d2338db54771b9ce1))
+
+
 ## v0.9.0 (2025-12-09)
 
 ### Features
