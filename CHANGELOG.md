@@ -2,6 +2,14 @@
 
 <!-- version list -->
 
+## v0.11.0 (2025-12-09)
+
+### Features
+
+- **logger**: Add set_level_and_propagate and use_level_and_propagate methods
+  ([`4afb61c`](https://github.com/apathetic-tools/python-logging/commit/4afb61c572d56638669fe60769f8f07196c1f554))
+
+
 ## v0.10.0 (2025-12-09)
 
 ### Features
