@@ -1,5 +1,5 @@
-# tests/50_core/test_ensure_handlers_propagate.py
-"""Tests for ensureHandlers() behavior with propagate settings."""
+# tests/50_core/test_manage_handlers_propagate.py
+"""Tests for manageHandlers() behavior with propagate settings."""
 
 from __future__ import annotations
 
@@ -22,15 +22,15 @@ def test_root_logger_always_gets_handler() -> None:
     root.handlers.clear()
 
     # --- execute ---
-    # Trigger ensureHandlers by logging (handlers are attached in _log())
+    # Trigger manageHandlers by logging (handlers are attached in _log())
     # Only works if root is an apathetic logger
     root.info("test message")
 
     # --- verify ---
     # If root is an apathetic logger, it should have a handler
     # If it's a standard RootLogger, it won't (this is a known limitation)
-    # Check if it's an apathetic logger by checking for the ensureHandlers method
-    if hasattr(root, "ensureHandlers"):
+    # Check if it's an apathetic logger by checking for the manageHandlers method
+    if hasattr(root, "manageHandlers"):
         assert len(root.handlers) > 0
         assert any(isinstance(h, mod_alogs.DualStreamHandler) for h in root.handlers)
     # If root is standard RootLogger, handlers might be empty (known limitation)
@@ -47,7 +47,7 @@ def test_child_logger_with_propagate_true_no_handler() -> None:
     child.handlers.clear()
 
     # --- execute ---
-    # Trigger ensureHandlers by logging
+    # Trigger manageHandlers by logging
     child.info("test message")
 
     # --- verify ---
@@ -64,7 +64,7 @@ def test_child_logger_with_propagate_false_gets_handler() -> None:
     child.handlers.clear()
 
     # --- execute ---
-    # Trigger ensureHandlers by logging
+    # Trigger manageHandlers by logging
     child.info("test message")
 
     # --- verify ---
@@ -109,7 +109,7 @@ def test_child_logger_propagate_false_messages_stay_local() -> None:
     child.setLevel("DEBUG")
 
     # --- execute ---
-    # Trigger ensureHandlers by logging
+    # Trigger manageHandlers by logging
     child.info("child message")
 
     # --- verify ---
@@ -118,8 +118,8 @@ def test_child_logger_propagate_false_messages_stay_local() -> None:
     assert any(isinstance(h, mod_alogs.DualStreamHandler) for h in child.handlers)
 
 
-def test_ensure_handlers_rebuilds_when_streams_change() -> None:
-    """Test that ensureHandlers rebuilds handlers when stdout/stderr change."""
+def test_manage_handlers_rebuilds_when_streams_change() -> None:
+    """Test that manageHandlers rebuilds handlers when stdout/stderr change."""
     # --- setup ---
     # Use apathetic logger, not standard root logger
     root = mod_alogs.getLogger("")
@@ -140,7 +140,7 @@ def test_ensure_handlers_rebuilds_when_streams_change() -> None:
     # --- verify ---
     # Handler should still exist (may be rebuilt)
     # Only works if root is an apathetic logger
-    if hasattr(root, "ensureHandlers"):
+    if hasattr(root, "manageHandlers"):
         assert len(root.handlers) > 0
 
     # --- cleanup ---

@@ -14,7 +14,7 @@ Rule: All function and method names must be camelCase:
 Examples:
   ✅ getLogger
   ✅ getLoggerOfType
-  ✅ ensureHandlers
+  ✅ manageHandlers
   ✅ setLevel
   ✅ determineColorEnabled
   ❌ get_logger (snake_case)
@@ -174,7 +174,7 @@ def test_camelcase_functions_and_methods() -> None:
     Examples:
       ✅ getLogger
       ✅ getLoggerOfType
-      ✅ ensureHandlers
+      ✅ manageHandlers
       ✅ setLevel
       ✅ determineColorEnabled
       ❌ get_logger (snake_case)
@@ -214,7 +214,7 @@ def test_camelcase_functions_and_methods() -> None:
             "\nExamples:"
             "\n  ✅ getLogger"
             "\n  ✅ getLoggerOfType"
-            "\n  ✅ ensureHandlers"
+            "\n  ✅ manageHandlers"
             "\n  ✅ setLevel"
             "\n  ✅ determineColorEnabled"
             "\n  ❌ get_logger (snake_case)"

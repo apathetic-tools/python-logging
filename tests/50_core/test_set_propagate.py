@@ -65,7 +65,7 @@ def test_set_propagate_can_be_called_multiple_times() -> None:
 
 
 def test_set_propagate_affects_handler_attachment() -> None:
-    """setPropagate() should affect handler attachment via ensureHandlers()."""
+    """setPropagate() should automatically manage handlers via manageHandlers()."""
     # --- setup ---
     _constants = mod_alogs.apathetic_logging
     child = mod_alogs.Logger("test_set_propagate_handler")
@@ -73,16 +73,16 @@ def test_set_propagate_affects_handler_attachment() -> None:
 
     # --- execute ---
     # With propagate=True, child should not get handler
+    # setPropagate should automatically call manageHandlers()
     child.setPropagate(propagate=True)
-    child.ensureHandlers()
 
     # --- verify ---
     # Child with propagate=True should not have handler (propagates to root)
     assert len(child.handlers) == 0
 
     # With propagate=False, child should get handler
+    # setPropagate should automatically call manageHandlers()
     child.setPropagate(propagate=False)
-    child.ensureHandlers()
 
     # --- verify ---
     # Child with propagate=False should have handler

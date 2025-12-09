@@ -121,6 +121,14 @@ class ApatheticLogging_Internal_Constants:  # noqa: N801  # pyright: ignore[repo
     to avoid duplicate messages.
     """
 
+    DEFAULT_MANAGE_HANDLERS: bool = True
+    """Default value for manage_handlers parameter in setPropagate().
+
+    When True (default), setPropagate() automatically manages apathetic
+    handlers based on propagate setting. When False, only sets propagate
+    without managing handlers. In compat_mode, this may default to False.
+    """
+
     ROOT_LOGGER_KEY: str = ""
     """Key used to retrieve the root logger via logging.getLogger("").
 

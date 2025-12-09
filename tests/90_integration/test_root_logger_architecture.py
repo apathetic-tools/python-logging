@@ -181,7 +181,7 @@ def test_root_has_handler_children_dont_when_propagating() -> None:
 
     # --- verify ---
     # Root should have handler (if it's an apathetic logger)
-    if hasattr(root, "ensureHandlers"):
+    if hasattr(root, "manageHandlers"):
         assert len(root.handlers) > 0
     # Children should not have handlers (propagating)
     assert len(child1.handlers) == 0

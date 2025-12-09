@@ -100,42 +100,100 @@ class ApatheticLogging_Internal_LoggerCore(logging.Logger):  # noqa: N801  # pyr
         else:
             self._propagate_set = False  # Will be set by _applyPropagateSetting
 
-        # handler attachment will happen in _log() with ensureHandlers()
+        # handler attachment will happen in _log() with manageHandlers()
 
-    def ensureHandlers(self) -> None:
-        """Ensure handlers are attached to this logger.
+    def manageHandlers(self, *, manage_handlers: bool | None = None) -> None:
+        """Manage apathetic handlers for this logger.
 
-        Root logger always gets a handler. Child loggers only get handlers
-        if they're not propagating (propagate=False), otherwise they rely on
-        root logger's handler via propagation.
+        Root logger always gets an apathetic handler. Child loggers only get
+        apathetic handlers if they're not propagating (propagate=False),
+        otherwise they rely on root logger's handler via propagation.
+
+        Only manages DualStreamHandler instances. User-added handlers are
+        left untouched.
 
         Rebuilds handlers if they're missing or if stdout/stderr have changed.
+
+        Args:
+            manage_handlers: If True, manage handlers (even in compat mode).
+                If None, checks compatibility mode: in compat mode, handlers are
+                not managed unless explicitly enabled. If False, returns early
+                without managing handlers. Defaults to None.
         """
         _constants = ApatheticLogging_Internal_Constants
-        # Skip handler attachment for child loggers that propagate to root
-        if self.name != _constants.ROOT_LOGGER_KEY and self.propagate:
-            # Child logger propagating to root - no handler needed
+
+        # Resolve manage_handlers parameter
+        if manage_handlers is None:
+            # Check compatibility mode - in compat mode, don't manage handlers
+            # unless explicitly requested
+            from .logging_utils import (  # noqa: PLC0415
+                ApatheticLogging_Internal_LoggingUtils,
+            )
+
+            _logging_utils = ApatheticLogging_Internal_LoggingUtils
+            compat_mode = _logging_utils._getCompatibilityMode()  # noqa: SLF001  # pyright: ignore[reportPrivateUsage]
+
+            if compat_mode:
+                # In compat mode, don't manage handlers by default
+                return
+
+            # Not in compat mode, use default from constants
+            manage_handlers = _constants.DEFAULT_MANAGE_HANDLERS
+
+        # Return early if management is disabled
+        if not manage_handlers:
             return
 
-        # Root logger or non-propagating child logger - ensure it has a handler
         _dual_stream_handler = ApatheticLogging_Internal_DualStreamHandler
         _tag_formatter = ApatheticLogging_Internal_TagFormatter
         _safe_logging = ApatheticLogging_Internal_SafeLogging
-        if self._last_stream_ids is None or not self.handlers:
-            rebuild = True
-        else:
-            last_stdout, last_stderr = self._last_stream_ids
-            rebuild = last_stdout is not sys.stdout or last_stderr is not sys.stderr
 
-        if rebuild:
-            self.handlers.clear()
+        # Identify apathetic handlers
+        apathetic_handlers = [
+            h
+            for h in self.handlers
+            if isinstance(h, _dual_stream_handler.DualStreamHandler)
+        ]
+
+        # Propagating child loggers should not have apathetic handlers
+        # Only remove handlers if we previously managed them (indicated by
+        # _last_stream_ids being set), to avoid removing manually-added handlers
+        if self.name != _constants.ROOT_LOGGER_KEY and self.propagate:
+            # Only remove apathetic handlers if we previously managed them
+            # (indicated by _last_stream_ids being set)
+            if self._last_stream_ids is not None and apathetic_handlers:
+                # We previously managed handlers for this logger, remove them
+                for handler in apathetic_handlers:
+                    self.removeHandler(handler)
+            return
+
+        # Root logger or non-propagating child logger - ensure it has an
+        # apathetic handler. Check if rebuild is needed (missing handler or
+        # streams changed)
+        needs_rebuild = False
+        if not apathetic_handlers:
+            needs_rebuild = True
+        elif self._last_stream_ids is not None:
+            last_stdout, last_stderr = self._last_stream_ids
+            if last_stdout is not sys.stdout or last_stderr is not sys.stderr:
+                needs_rebuild = True
+        else:
+            # _last_stream_ids is None but we have handlers - rebuild to set it
+            needs_rebuild = True
+
+        if needs_rebuild:
+            # Remove existing apathetic handlers (there should only be one, but be safe)
+            for handler in apathetic_handlers:
+                self.removeHandler(handler)
+
+            # Add new apathetic handler
             h = _dual_stream_handler.DualStreamHandler()
             h.setFormatter(_tag_formatter.TagFormatter("%(message)s"))
             h.enable_color = self.enable_color
             self.addHandler(h)
             self._last_stream_ids = (sys.stdout, sys.stderr)
             _safe_logging.safeTrace(
-                "ensureHandlers()", f"rebuilt_handlers={self.handlers}"
+                "manageHandlers()", f"rebuilt_handlers={self.handlers}"
             )
 
     def _log(  # type: ignore[override]
@@ -144,7 +202,7 @@ class ApatheticLogging_Internal_LoggerCore(logging.Logger):  # noqa: N801  # pyr
         """Log a message with the specified level.
 
         Changed:
-        - Automatically ensures handlers are attached via ensureHandlers()
+        - Automatically manages handlers via manageHandlers()
 
         Args:
             level: The numeric logging level
@@ -156,7 +214,7 @@ class ApatheticLogging_Internal_LoggerCore(logging.Logger):  # noqa: N801  # pyr
 
         https://docs.python.org/3.10/library/logging.html#logging.Logger._log
         """
-        self.ensureHandlers()
+        self.manageHandlers()
         super()._log(level, msg, args, **kwargs)
 
     def setLevel(
@@ -234,19 +292,25 @@ class ApatheticLogging_Internal_LoggerCore(logging.Logger):  # noqa: N801  # pyr
         if hasattr(self, "_cache"):
             self._cache.clear()  # pyright: ignore[reportAttributeAccessIssue,reportUnknownMemberType]
 
-    def setPropagate(self, propagate: bool) -> None:  # noqa: FBT001
+    def setPropagate(
+        self,
+        propagate: bool,  # noqa: FBT001
+        *,
+        manage_handlers: bool | None = None,
+    ) -> None:
         """Set the propagate setting for this logger.
 
         When propagate is True, messages are passed to handlers of higher level
         (ancestor) loggers, in addition to any handlers attached to this logger.
         When False, messages are not passed to handlers of ancestor loggers.
 
-        This method provides a centralized way to set propagate, allowing for
-        future enhancements such as automatic handler management.
-
         Args:
             propagate: If True, messages propagate to parent loggers. If False,
                 messages only go to this logger's handlers.
+            manage_handlers: If True, automatically manage apathetic handlers
+                based on propagate setting. If None, uses DEFAULT_MANAGE_HANDLERS
+                from constants. If False, only sets propagate without managing handlers.
+                In compat_mode, this may default to False.
 
         Wrapper for logging.Logger.propagate attribute.
 
@@ -254,6 +318,9 @@ class ApatheticLogging_Internal_LoggerCore(logging.Logger):  # noqa: N801  # pyr
         """
         self.propagate = propagate
         self._propagate_set = True  # Mark as explicitly set
+
+        # Always call manageHandlers - it will handle the manage_handlers parameter
+        self.manageHandlers(manage_handlers=manage_handlers)
 
     @classmethod
     def determineColorEnabled(cls) -> bool:
