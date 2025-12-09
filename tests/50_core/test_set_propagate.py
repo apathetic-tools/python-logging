@@ -131,3 +131,88 @@ def test_set_propagate_works_with_standard_logger() -> None:
     # (but might be False if it wasn't explicitly set)
     propagate_set = getattr(logger, "_propagate_set", None)
     assert propagate_set is not None  # Should exist
+
+
+def test_use_propagate_context_manager_changes_temporarily() -> None:
+    """usePropagate() should temporarily change the logger propagate setting."""
+    # --- setup ---
+    logger = mod_alogs.Logger("test_use_propagate_temp")
+    orig_propagate = logger.propagate
+
+    # --- execute and verify ---
+    with logger.usePropagate(not orig_propagate):
+        assert logger.propagate is not orig_propagate
+    assert logger.propagate == orig_propagate
+
+
+def test_use_propagate_restores_original_setting() -> None:
+    """usePropagate() should restore the original propagate setting on exit."""
+    # --- setup ---
+    logger = mod_alogs.Logger("test_use_propagate_restore")
+    logger.setPropagate(True)
+    assert logger.propagate is True
+
+    # --- execute ---
+    with logger.usePropagate(False):
+        assert logger.propagate is False
+
+    # --- verify ---
+    # Should restore to original True
+    assert logger.propagate is True
+
+
+def test_use_propagate_with_manage_handlers() -> None:
+    """usePropagate() should pass manage_handlers parameter to setPropagate()."""
+    # --- setup ---
+    logger = mod_alogs.Logger("test_use_propagate_manage_handlers")
+    logger.handlers.clear()
+    orig_propagate = logger.propagate
+
+    # --- execute ---
+    # Test with manage_handlers=True
+    with logger.usePropagate(False, manage_handlers=True):
+        assert logger.propagate is False
+        # With propagate=False, logger should have handler
+        assert len(logger.handlers) > 0
+
+    # --- verify ---
+    # Should restore to original propagate setting
+    assert logger.propagate == orig_propagate
+
+
+def test_use_propagate_affects_handler_attachment() -> None:
+    """usePropagate() should affect handler attachment during context."""
+    # --- setup ---
+    child = mod_alogs.Logger("test_use_propagate_handler")
+    child.handlers.clear()
+    child.setPropagate(True)  # Start with propagate=True (no handler)
+    assert len(child.handlers) == 0
+
+    # --- execute ---
+    with child.usePropagate(False):
+        # With propagate=False, child should have handler
+        assert len(child.handlers) > 0
+
+    # --- verify ---
+    # After context, should restore to propagate=True (no handler)
+    assert child.propagate is True
+    # Handler should be removed when propagate is restored to True
+    assert len(child.handlers) == 0
+
+
+def test_use_propagate_nested_contexts() -> None:
+    """usePropagate() should work correctly with nested contexts."""
+    # --- setup ---
+    logger = mod_alogs.Logger("test_use_propagate_nested")
+    logger.setPropagate(True)
+    orig_propagate = logger.propagate
+
+    # --- execute ---
+    with logger.usePropagate(False):
+        assert logger.propagate is False
+        with logger.usePropagate(True):
+            assert logger.propagate is True
+        # Should restore to False (inner context)
+        assert logger.propagate is False
+    # Should restore to True (outer context / original)
+    assert logger.propagate == orig_propagate

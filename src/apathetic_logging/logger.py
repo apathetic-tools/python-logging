@@ -904,3 +904,35 @@ class ApatheticLogging_Internal_LoggerCore(logging.Logger):  # noqa: N801  # pyr
             yield
         finally:
             self.setLevel(prev_level, allow_inherit=True)
+
+    @contextmanager
+    def usePropagate(
+        self,
+        propagate: bool,  # noqa: FBT001
+        *,
+        manage_handlers: bool | None = None,
+    ) -> Generator[None, None, None]:
+        """Use a context to temporarily change propagate setting.
+
+        Args:
+            propagate: If True, messages propagate to parent loggers. If False,
+                messages only go to this logger's handlers.
+            manage_handlers: If True, automatically manage apathetic handlers
+                based on propagate setting. If None, uses DEFAULT_MANAGE_HANDLERS
+                from constants. If False, only sets propagate without managing handlers.
+                In compat_mode, this may default to False.
+
+        Yields:
+            None: Context manager yields control to the with block
+        """
+        # Save current propagate setting for restoration
+        prev_propagate = self.propagate
+
+        # Apply new propagate setting
+        self.setPropagate(propagate, manage_handlers=manage_handlers)
+
+        try:
+            yield
+        finally:
+            # Restore previous propagate setting
+            self.setPropagate(prev_propagate, manage_handlers=manage_handlers)

@@ -96,6 +96,7 @@ Complete API documentation for Apathetic Python Logger.
 | [`colorize()`](#colorize) | Apply ANSI color codes to text |
 | [`logDynamic()`](#logdynamic) | Log a message at a dynamically specified level |
 | [`useLevel()`](#uselevel) | Context manager to temporarily change log level |
+| [`usePropagate()`](#usepropagate) | Context manager to temporarily change propagate setting |
 | [`levelName`](#levelname) | Return the explicit level name set on this logger (property) |
 | [`effectiveLevel`](#effectivelevel) | Return the effective level (what's actually used) (property) |
 | [`effectiveLevelName`](#effectivelevelname) | Return the effective level name (what's actually used) (property) |
@@ -1439,6 +1440,34 @@ with logger.useLevel("debug"):
     logger.debug("This will be shown")
 
 # Level is restored after the context
+```
+
+### usePropagate
+
+```python
+usePropagate(propagate: bool, *, manage_handlers: bool | None = None) -> ContextManager
+```
+
+Context manager to temporarily change propagate setting.
+
+**Parameters:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `propagate` | bool | If True, messages propagate to parent loggers. If False, messages only go to this logger's handlers. |
+| `manage_handlers` | bool \| None | If True, automatically manage apathetic handlers based on propagate setting. If None, uses DEFAULT_MANAGE_HANDLERS from constants. If False, only sets propagate without managing handlers. In compat_mode, this may default to False. |
+
+**Returns:**
+- Context manager that restores the previous propagate setting on exit
+
+**Example:**
+```python
+# Temporarily disable propagation to capture logs locally
+with logger.usePropagate(False):
+    logger.info("This message only goes to logger's handlers")
+    # Do something that should not propagate to root
+
+# Propagate setting is restored after the context
 ```
 
 ### levelName
