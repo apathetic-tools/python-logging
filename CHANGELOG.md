@@ -2,6 +2,14 @@
 
 <!-- version list -->
 
+## v0.12.0 (2025-12-10)
+
+### Features
+
+- **api**: Add test() module-level function
+  ([`6ca9fb1`](https://github.com/apathetic-tools/python-logging/commit/6ca9fb1ce405c8a8a87e3b5411684c1c0721761b))
+
+
 ## v0.11.0 (2025-12-09)
 
 ### Features
