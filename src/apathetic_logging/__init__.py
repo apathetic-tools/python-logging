@@ -98,6 +98,7 @@ setLogRecordFactory = apathetic_logging.setLogRecordFactory
 setLoggerClass = apathetic_logging.setLoggerClass
 setRootLevel = apathetic_logging.setRootLevel
 shutdown = apathetic_logging.shutdown
+test = apathetic_logging.test
 trace = apathetic_logging.trace
 warn = apathetic_logging.warn
 warning = apathetic_logging.warning
@@ -192,6 +193,7 @@ __all__ = [
     "setLoggerClass",
     "setRootLevel",
     "shutdown",
+    "test",
     "trace",
     "warn",
     "warning",
