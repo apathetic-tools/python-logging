@@ -39,6 +39,7 @@ Complete API documentation for Apathetic Python Logger.
 | [`getDefaultPropagate()`](#getdefaultpropagate) | Get the default propagate setting |
 | [`getLevelNumber()`](#getlevelnumber) | Convert a log level name to its numeric value |
 | [`getLevelNameStr()`](#getlevelnamestr) | Convert a log level to its string name (always returns string) |
+| [`test()`](#test) | Log a message at TEST level |
 
 ### Changed Functions
 
@@ -70,6 +71,7 @@ Complete API documentation for Apathetic Python Logger.
 | [`info()`](#info) | Log a message with severity INFO |
 | [`log()`](#log) | Log a message with an explicit level |
 | [`brief()`](#brief) | Log a message with severity BRIEF |
+| [`test()`](#test) | Log a message with severity TEST |
 | [`trace()`](#trace) | Log a message with severity TRACE |
 | [`warn()`](#warn) | Log a message with severity WARNING |
 | [`warning()`](#warning) | Log a message with severity WARNING |
@@ -96,9 +98,12 @@ Complete API documentation for Apathetic Python Logger.
 | [`colorize()`](#colorize) | Apply ANSI color codes to text |
 | [`logDynamic()`](#logdynamic) | Log a message at a dynamically specified level |
 | [`useLevel()`](#uselevel) | Context manager to temporarily change log level |
+| [`useLevelMinimum()`](#uselevelminimum) | Context manager to temporarily change log level (only if more verbose) |
 | [`usePropagate()`](#usepropagate) | Context manager to temporarily change propagate setting |
 | [`setLevelAndPropagate()`](#setlevelandpropagate) | Set level and propagate together with smart defaults |
 | [`useLevelAndPropagate()`](#uselevelandpropagate) | Context manager to temporarily set level and propagate together |
+| [`setLevelMinimum()`](#setlevelminimum) | Set level only if it's more verbose than current level |
+| [`setLevelInherit()`](#setlevelinherit) | Set logger to inherit level from parent |
 | [`levelName`](#levelname) | Return the explicit level name set on this logger (property) |
 | [`effectiveLevel`](#effectivelevel) | Return the effective level (what's actually used) (property) |
 | [`effectiveLevelName`](#effectivelevelname) | Return the effective level name (what's actually used) (property) |
@@ -1090,6 +1095,32 @@ import apathetic_logging
 apathetic_logging.brief("brief information: %s", summary)
 ```
 
+### test
+
+```python
+test(msg: str, *args: Any, **kwargs: Any) -> None
+```
+
+Log a message at TEST level.
+
+TEST is the most verbose level and bypasses capture. This function gets an `apathetic_logging.Logger` instance (ensuring the root logger is an apathetic logger) and calls its `test()` method.
+
+**Parameters:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `msg` | str | Message to log |
+| `*args` | Any | Format arguments |
+| `**kwargs` | Any | Additional keyword arguments |
+
+**Example:**
+```python
+import apathetic_logging
+
+# Log a test message
+apathetic_logging.test("Test message: %s", variable)
+```
+
 ### getHandlerByName
 
 ```python
@@ -1200,6 +1231,54 @@ logger.setLevel(0, allow_inherit=True)
 from apathetic_logging import registerCompatibilityMode
 registerCompatibilityMode(compat_mode=True)
 logger.setLevel(0)  # Works in compat mode
+```
+
+### setLevelMinimum
+
+```python
+setLevelMinimum(level: int | str) -> None
+```
+
+Set the logging level only if it's more verbose than the current level.
+
+This convenience method is equivalent to calling `setLevel(level, minimum=True)`. It prevents downgrading from a more verbose level (e.g., TRACE) to a less verbose one (e.g., DEBUG).
+
+**Parameters:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `level` | int \| str | Log level name or numeric value. Only set if it's more verbose (lower numeric value) than the current effective level. |
+
+**Example:**
+```python
+logger.setLevel("TRACE")
+# This won't downgrade from TRACE to DEBUG
+logger.setLevelMinimum("DEBUG")
+assert logger.levelName == "TRACE"  # Still TRACE
+
+# This will upgrade from INFO to DEBUG
+logger.setLevel("INFO")
+logger.setLevelMinimum("DEBUG")
+assert logger.levelName == "DEBUG"  # Upgraded to DEBUG
+```
+
+### setLevelInherit
+
+```python
+setLevelInherit() -> None
+```
+
+Set the logger to inherit its level from the parent logger.
+
+This convenience method is equivalent to calling `setLevel(NOTSET, allow_inherit=True)`. It explicitly sets the logger to INHERIT_LEVEL (i.e. NOTSET) so it inherits its effective level from the root logger or parent logger.
+
+**Example:**
+```python
+logger.setLevel("DEBUG")
+# Set to inherit from root logger
+logger.setLevelInherit()
+assert logger.levelName == "NOTSET"
+assert logger.effectiveLevel == root.level  # Inherits from root
 ```
 
 ### determineLogLevel
@@ -1442,6 +1521,38 @@ with logger.useLevel("debug"):
     logger.debug("This will be shown")
 
 # Level is restored after the context
+```
+
+### useLevelMinimum
+
+```python
+useLevelMinimum(level: str | int) -> ContextManager
+```
+
+Context manager to temporarily change log level, only if it's more verbose than the current level.
+
+This convenience method is equivalent to calling `useLevel(level, minimum=True)`. It prevents downgrading from a more verbose level (e.g., TRACE) to a less verbose one (e.g., DEBUG).
+
+**Parameters:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `level` | str \| int | Log level to use. Only applied if it's more verbose than the current effective level. |
+
+**Returns:**
+- Context manager that restores the previous level on exit
+
+**Example:**
+```python
+logger.setLevel("TRACE")
+# This won't downgrade from TRACE to DEBUG
+with logger.useLevelMinimum("DEBUG"):
+    assert logger.levelName == "TRACE"  # Still TRACE
+
+# This will upgrade from INFO to DEBUG
+logger.setLevel("INFO")
+with logger.useLevelMinimum("DEBUG"):
+    assert logger.levelName == "DEBUG"  # Upgraded to DEBUG
 ```
 
 ### usePropagate

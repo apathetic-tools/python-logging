@@ -292,6 +292,51 @@ class ApatheticLogging_Internal_LoggerCore(logging.Logger):  # noqa: N801  # pyr
         if hasattr(self, "_cache"):
             self._cache.clear()  # pyright: ignore[reportAttributeAccessIssue,reportUnknownMemberType]
 
+    def setLevelMinimum(self, level: int | str) -> None:
+        """Set the logging level only if it's more verbose than the current level.
+
+        This convenience method is equivalent to calling
+        ``setLevel(level, minimum=True)``. It prevents downgrading from a more
+        verbose level (e.g., TRACE) to a less verbose one (e.g., DEBUG).
+
+        Args:
+            level: The logging level, either as an integer or a string name
+                (case-insensitive). Standard levels (DEBUG, INFO, WARNING, ERROR,
+                CRITICAL) and custom levels (TEST, TRACE, BRIEF, DETAIL, SILENT)
+                are supported.
+
+        Example:
+            >>> logger = getLogger("mymodule")
+            >>> logger.setLevel("TRACE")
+            >>> # This won't downgrade from TRACE to DEBUG
+            >>> logger.setLevelMinimum("DEBUG")
+            >>> assert logger.levelName == "TRACE"  # Still TRACE
+            >>> # This will upgrade from INFO to DEBUG
+            >>> logger.setLevel("INFO")
+            >>> logger.setLevelMinimum("DEBUG")
+            >>> assert logger.levelName == "DEBUG"  # Upgraded to DEBUG
+        """
+        self.setLevel(level, minimum=True)
+
+    def setLevelInherit(self) -> None:
+        """Set the logger to inherit its level from the parent logger.
+
+        This convenience method is equivalent to calling
+        ``setLevel(NOTSET, allow_inherit=True)``. It explicitly sets the logger
+        to INHERIT_LEVEL (i.e. NOTSET) so it inherits its effective level from
+        the root logger or parent logger.
+
+        Example:
+            >>> logger = getLogger("mymodule")
+            >>> logger.setLevel("DEBUG")
+            >>> # Set to inherit from root logger
+            >>> logger.setLevelInherit()
+            >>> assert logger.levelName == "NOTSET"
+            >>> assert logger.effectiveLevel == root.level  # Inherits from root
+        """
+        _constants = ApatheticLogging_Internal_Constants
+        self.setLevel(_constants.INHERIT_LEVEL, allow_inherit=True)
+
     def setPropagate(
         self,
         propagate: bool,  # noqa: FBT001
@@ -976,6 +1021,39 @@ class ApatheticLogging_Internal_LoggerCore(logging.Logger):  # noqa: N801  # pyr
             yield
         finally:
             self.setLevel(prev_level, allow_inherit=True)
+
+    @contextmanager
+    def useLevelMinimum(self, level: str | int) -> Generator[None, None, None]:
+        """Use a context to temporarily log with a different log-level.
+
+        Only applies if the level is more verbose than the current level.
+
+        This convenience context manager is equivalent to calling
+        ``useLevel(level, minimum=True)``. It temporarily sets the logger level
+        only if the requested level is more verbose (lower numeric value) than
+        the current effective level, preventing downgrades from more verbose
+        levels.
+
+        Args:
+            level: Log level to use (string name or numeric value). Only applied
+                if it's more verbose than the current effective level.
+
+        Yields:
+            None: Context manager yields control to the with block
+
+        Example:
+            >>> logger = getLogger("mymodule")
+            >>> logger.setLevel("TRACE")
+            >>> # This won't downgrade from TRACE to DEBUG
+            >>> with logger.useLevelMinimum("DEBUG"):
+            ...     assert logger.levelName == "TRACE"  # Still TRACE
+            >>> # This will upgrade from INFO to DEBUG
+            >>> logger.setLevel("INFO")
+            >>> with logger.useLevelMinimum("DEBUG"):
+            ...     assert logger.levelName == "DEBUG"  # Upgraded to DEBUG
+        """
+        with self.useLevel(level, minimum=True):
+            yield
 
     @contextmanager
     def usePropagate(

@@ -22,6 +22,7 @@ else:
 
 def test_module_custom_level_functions_exist() -> None:
     """Verify custom level module functions exist on apathetic_logging."""
+    assert hasattr(mod_alogs, "test"), "Function test should exist on apathetic_logging"
     assert hasattr(mod_alogs, "trace"), (
         "Function trace should exist on apathetic_logging"
     )
@@ -240,3 +241,63 @@ def test_custom_level_functions_work_with_format_args(
     assert "test trace message with 2 args" in err_output
     assert "test detail message with 2 args" in out_output
     assert "test brief message with 2 args" in out_output
+
+
+def test_test_logs_to_root_logger(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Test that test() logs to root logger at TEST level."""
+    # --- setup ---
+    # Capture output
+    out_buf = io.StringIO()
+    err_buf = io.StringIO()
+    monkeypatch.setattr(sys, "stdout", out_buf)
+    monkeypatch.setattr(sys, "stderr", err_buf)
+
+    # Get root logger and configure it
+    root_logger = mod_alogs.getLogger("")
+    root_logger.setLevel("TEST")
+    # Clear any existing handlers
+    root_logger.handlers.clear()
+    # Add a handler to capture output
+    handler = mod_alogs.DualStreamHandler()
+    root_logger.addHandler(handler)
+
+    # --- execute ---
+    mod_alogs.test("test test message")
+
+    # --- verify ---
+    output = err_buf.getvalue()
+    assert "test test message" in output
+    # Tag might not be present if formatter isn't fully configured,
+    # but message should be there. The important thing is that the
+    # function works and logs at TEST level
+
+
+def test_test_logs_at_most_verbose_level(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Test that test() logs at TEST level (most verbose)."""
+    # --- setup ---
+    # Capture output
+    out_buf = io.StringIO()
+    err_buf = io.StringIO()
+    monkeypatch.setattr(sys, "stdout", out_buf)
+    monkeypatch.setattr(sys, "stderr", err_buf)
+
+    # Get root logger and configure it
+    root_logger = mod_alogs.getLogger("")
+    root_logger.setLevel("TEST")  # Set to TEST level so TEST messages will log
+    # Clear any existing handlers
+    root_logger.handlers.clear()
+    # Add a handler to capture output
+    handler = mod_alogs.DualStreamHandler()
+    handler.setFormatter(mod_alogs.TagFormatter())
+    root_logger.addHandler(handler)
+
+    # --- execute ---
+    mod_alogs.test("test test message - should appear")
+
+    # --- verify ---
+    output = err_buf.getvalue()
+    assert "test test message - should appear" in output
