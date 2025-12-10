@@ -2,6 +2,14 @@
 
 <!-- version list -->
 
+## v0.13.0 (2025-12-10)
+
+### Features
+
+- **api**: Add set_level_convenience and use_level_minimum functions
+  ([`173120d`](https://github.com/apathetic-tools/python-logging/commit/173120d25a4fa23a1852e1c8bf07afe22298962b))
+
+
 ## v0.12.0 (2025-12-10)
 
 ### Features
