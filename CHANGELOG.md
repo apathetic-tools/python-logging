@@ -2,6 +2,14 @@
 
 <!-- version list -->
 
+## v0.15.0 (2025-12-10)
+
+### Features
+
+- **logger**: Implement root logger replacement with handler/level porting
+  ([`9baa0da`](https://github.com/apathetic-tools/python-logging/commit/9baa0da16fa207dcbdd35c3441d7c80e9d01f669))
+
+
 ## v0.14.0 (2025-12-10)
 
 ### Features
