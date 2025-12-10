@@ -84,16 +84,75 @@ class ApatheticLogging_Internal_GetLogger:  # noqa: N801  # pyright: ignore[repo
         _logging_utils = ApatheticLogging_Internal_LoggingUtils
 
         logger: logging.Logger | None = None
+        old_logger: logging.Logger | None = None
         registered = _logging_utils.hasLogger(register_name)
         if registered:
             logger = logging.getLogger(register_name, *args, **kwargs)
             if not isinstance(logger, class_type):
+                # Save reference to old logger before removing it
+                old_logger = logger
                 _logging_utils.removeLogger(register_name)
                 registered = False
         if not registered:  # may have changed above
+            # Save the parent that Python's logging module assigned before creating
+            # logger. This is important because when we create a new logger, Python's
+            # logging module might assign it a parent (e.g., old root logger or
+            # intermediate logger)
+            from .constants import (  # noqa: PLC0415
+                ApatheticLogging_Internal_Constants,
+            )
+
+            _constants = ApatheticLogging_Internal_Constants
+
+            # Get the parent that would be assigned by Python's logging module
+            # We do this by temporarily creating the logger to see what parent it gets
+            # But we can't do that without side effects, so we'll check after creation
             logger = ApatheticLogging_Internal_GetLogger._setLoggerClassTemporarily(
                 class_type, register_name
             )
+
+            # Save the parent that was assigned
+            old_parent = logger.parent
+
+            # Reconnect child loggers if we replaced an existing logger
+            if old_logger is not None:
+                _logging_utils.reconnectChildLoggers(old_logger, logger)
+
+            # Fix parent if it points to old root logger
+            # Only fix if this is not the root logger itself
+            if logger.name not in {
+                _constants.ROOT_LOGGER_KEY,
+                _constants.ROOT_LOGGER_NAME,
+            }:
+                # Check if old parent was the old root logger (has no parent itself)
+                # Root logger is the only logger that has no parent
+                if old_parent is not None:
+                    # Check if old_parent might be the old root logger
+                    # Root logger has no parent, and its name is "" or "root"
+                    old_parent_might_be_old_root = (
+                        old_parent.name
+                        in {
+                            _constants.ROOT_LOGGER_KEY,
+                            _constants.ROOT_LOGGER_NAME,
+                        }
+                        and old_parent.parent is None
+                    )
+
+                    if old_parent_might_be_old_root:
+                        # Get current root logger to check if it's different
+                        # Only call logging.getLogger() when we actually need to fix
+                        current_root = logging.getLogger(_constants.ROOT_LOGGER_KEY)
+                        if old_parent is not current_root:
+                            # Old parent was the old root logger - set to new root
+                            logger.parent = current_root
+                    # else: old parent was an intermediate logger - keep it
+                    # (preserve hierarchy)
+                else:
+                    # No old parent (shouldn't happen for non-root loggers, but be safe)
+                    # Get current root logger and set as parent
+                    current_root = logging.getLogger(_constants.ROOT_LOGGER_KEY)
+                    logger.parent = current_root
+
         typed_logger = cast("ApatheticLogging_Internal_GetLogger._LoggerType", logger)
         return typed_logger
 
@@ -200,6 +259,7 @@ class ApatheticLogging_Internal_GetLogger:  # noqa: N801  # pyright: ignore[repo
         level: str | int | None = None,
         minimum: bool | None = None,
         extend: bool | None = True,
+        replace_root: bool | None = None,
         **kwargs: Any,
     ) -> ApatheticLogging_Internal_GetLogger._LoggerType:
         """Get a logger of the specified type, creating it if necessary.
@@ -231,6 +291,9 @@ class ApatheticLogging_Internal_GetLogger:  # noqa: N801  # pyright: ignore[repo
                 (e.g., DEBUG). If None, defaults to False. Only used when
                 `level` is provided.
             extend: If True (default), extend the logging module.
+            replace_root: Whether to replace the root logger if it's not the correct
+                type. If None (default), uses registry setting or constant default.
+                Only used when extend=True.
             **kwargs: Additional keyword arguments (for future-proofing)
 
         Returns:
@@ -286,7 +349,7 @@ class ApatheticLogging_Internal_GetLogger:  # noqa: N801  # pyright: ignore[repo
 
         # extend logging module
         if extend and hasattr(class_type, "extendLoggingModule"):
-            class_type.extendLoggingModule()  # type: ignore[attr-defined]
+            class_type.extendLoggingModule(replace_root=replace_root)  # type: ignore[attr-defined]
 
         # Get or create logger of the correct type
         logger = ApatheticLogging_Internal_GetLogger._getOrCreateLoggerOfType(

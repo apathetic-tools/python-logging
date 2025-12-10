@@ -26,6 +26,7 @@ Complete API documentation for Apathetic Python Logger.
 | [`registerDefaultLogLevel()`](#registerdefaultloglevel) | Register the default log level to use when no other source is found |
 | [`registerTargetPythonVersion()`](#registertargetpythonversion) | Register the target Python version for compatibility checking |
 | [`registerPropagate()`](#registerpropagate) | Register the propagate setting for loggers |
+| [`registerReplaceRootLogger()`](#registerreplacerootlogger) | Register whether to replace root logger if it's not the correct type |
 | [`safeLog()`](#safelog) | Emergency logger that never fails |
 | [`safeTrace()`](#safetrace) | Debug tracing function for test development |
 | [`makeSafeTrace()`](#makesafetrace) | Create a test trace function with a custom icon |
@@ -275,7 +276,8 @@ registerLogger(
     log_level_env_vars: list[str] | None = None,
     default_log_level: str | None = None,
     propagate: bool | None = None,
-    compat_mode: bool | None = None
+    compat_mode: bool | None = None,
+    replace_root: bool | None = None
 ) -> None
 ```
 
@@ -296,6 +298,7 @@ If `logger_class` is provided and has an `extendLoggingModule()` method, it will
 | `default_log_level` | str \| None | Optional default log level name. If provided, sets the default log level in the registry permanently. Defaults to None (no change). |
 | `propagate` | bool \| None | Optional propagate setting. If provided, sets the propagate value in the registry permanently. If None, uses registered propagate setting or falls back to DEFAULT_PROPAGATE from constants.py. Defaults to None (no change). |
 | `compat_mode` | bool \| None | Optional compatibility mode setting. If provided, sets the compatibility mode in the registry permanently. When `True`, enables stdlib-compatible behavior with no breaking changes (e.g., `getLogger(None)` returns root logger). When `False` (default), uses improved behavior with enhancements. If `None`, uses registered compatibility mode setting or defaults to `False`. Defaults to `None` (no change). |
+| `replace_root` | bool \| None | Optional setting for whether to replace root logger. If provided, passes this value to `extendLoggingModule()` when extending the logging module. If None, uses registry setting or constant default. Only used when `logger_class` has an `extendLoggingModule()` method. Defaults to None (no change). |
 
 **Example:**
 ```python
@@ -1365,7 +1368,7 @@ Checks:
 ### extendLoggingModule
 
 ```python
-extendLoggingModule() -> bool
+extendLoggingModule(*, replace_root: bool | None = None) -> bool
 ```
 
 Extend Python's logging module with TRACE and SILENT levels. (classmethod)
@@ -1374,9 +1377,18 @@ This method:
 - Sets `apathetic_logging.Logger` as the default logger class
 - Adds `TRACE` and `SILENT` level names
 - Adds `logging.TRACE` and `logging.SILENT` constants
+- Optionally replaces the root logger if it's not the correct type
+
+**Parameters:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `replace_root` | bool \| None | Whether to replace the root logger if it's not the correct type. If None (default), checks the registry setting (set via `registerReplaceRootLogger()`). If not set in registry, defaults to True for backward compatibility. When False, the root logger will not be replaced, allowing applications to use their own custom logger class for the root logger. |
 
 **Returns:**
 - `bool`: True if the extension ran, False if it was already extended
+
+**Note:** When the root logger is replaced, its state (level, handlers, propagate, disabled) is preserved, and child loggers are automatically reconnected to the new root logger instance.
 
 ### trace
 

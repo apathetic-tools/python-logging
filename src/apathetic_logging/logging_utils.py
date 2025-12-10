@@ -279,6 +279,53 @@ class ApatheticLogging_Internal_LoggingUtils:  # noqa: N801  # pyright: ignore[r
         return logger_name in logging.Logger.manager.loggerDict
 
     @staticmethod
+    def reconnectChildLoggers(
+        old_logger: logging.Logger,
+        new_logger: logging.Logger,
+    ) -> None:
+        """Reconnect child loggers from old logger to new logger.
+
+        When a logger is replaced, child loggers maintain a direct reference
+        to their parent. This function updates all child loggers to point to
+        the new logger instance.
+
+        Args:
+            old_logger: The logger being replaced.
+            new_logger: The new logger that should become the parent.
+        """
+        _constants = ApatheticLogging_Internal_Constants
+
+        for logger_name, logger in logging.Logger.manager.loggerDict.items():
+            # Skip if not a Logger instance
+            if not isinstance(logger, logging.Logger):
+                continue
+
+            # Skip the new logger itself
+            if logger is new_logger:
+                continue
+
+            # For root logger replacement, skip if logger name is root logger
+            # key/name (shouldn't happen, but be safe)
+            old_logger_name = old_logger.name
+            root_names = {_constants.ROOT_LOGGER_KEY, _constants.ROOT_LOGGER_NAME}
+            if old_logger_name in root_names and logger_name in root_names:
+                continue
+
+            # Check if this logger's parent is the old logger
+            # For root logger, any logger with a name is a child
+            # For named loggers, children have names starting with parent_name + "."
+            is_child = False
+            if old_logger_name in root_names:
+                # Root logger - any logger with a name is a child
+                is_child = logger_name not in root_names
+            else:
+                # Named logger - child names start with parent_name + "."
+                is_child = logger_name.startswith(old_logger_name + ".")
+
+            if is_child and logger.parent is old_logger:
+                logger.parent = new_logger
+
+    @staticmethod
     def removeLogger(logger_name: str) -> None:
         """Remove a logger from the logging manager's registry.
 

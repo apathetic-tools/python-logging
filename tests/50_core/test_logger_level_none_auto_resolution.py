@@ -115,7 +115,15 @@ def test_level_none_falls_back_to_default() -> None:
     original_root_level = root.level
     _constants = mod_alogs.apathetic_logging
     # Root also INHERIT_LEVEL (i.e. NOTSET) (stdlib accepts 0)
-    root.setLevel(_constants.INHERIT_LEVEL)
+    # If root is an apathetic logger, need allow_inherit=True
+    has_allow_inherit = (
+        hasattr(root, "setLevel")
+        and "allow_inherit" in root.setLevel.__code__.co_varnames
+    )
+    if has_allow_inherit:
+        root.setLevel(_constants.INHERIT_LEVEL, allow_inherit=True)  # type: ignore[call-arg]
+    else:
+        root.setLevel(_constants.INHERIT_LEVEL)
 
     original_env = os.environ.get("LOG_LEVEL")
     if "LOG_LEVEL" in os.environ:

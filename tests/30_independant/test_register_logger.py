@@ -154,13 +154,15 @@ def test_register_logger_with_custom_class() -> None:
         @classmethod
         def extendLoggingModule(
             cls,
+            *,
+            replace_root: bool | None = None,
         ) -> bool:
             """Custom extend that sets a flag."""
             if cls._logging_module_extended:
                 return False
             cls._logging_module_extended = True
             # Call parent to actually extend
-            return super().extendLoggingModule()
+            return super().extendLoggingModule(replace_root=replace_root)
 
     # --- execute ---
     mod_alogs.registerLogger("test_custom", CustomLogger)
@@ -227,6 +229,25 @@ def test_register_logger_with_propagate() -> None:
     _registry = mod_registry.ApatheticLogging_Internal_RegistryData
     assert _registry.registered_internal_propagate == propagate
     assert _registry.registered_internal_logger_name == "test"
+
+
+def test_register_logger_with_replace_root() -> None:
+    """registerLogger() should register replace_root setting."""
+    # --- setup ---
+    _registry = mod_registry.ApatheticLogging_Internal_RegistryData
+    original_replace_root = _registry.registered_internal_replace_root_logger
+
+    # --- execute ---
+    mod_alogs.registerLogger("test_replace_root", replace_root=False)
+
+    # --- verify ---
+    # Should have registered replace_root setting
+    assert _registry.registered_internal_replace_root_logger is False
+    # Should also have registered logger name
+    assert _registry.registered_internal_logger_name == "test_replace_root"
+
+    # --- cleanup ---
+    _registry.registered_internal_replace_root_logger = original_replace_root
 
 
 def test_register_logger_with_all_convenience_parameters() -> None:

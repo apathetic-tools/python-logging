@@ -4,7 +4,7 @@
 Some of these we just want to consider, and may not want to implement.
 
 ## 🎯 Core Features
-- Ensure root logger is always an apathetic logger: Currently, if the root logger is created before `extendLoggingModule()` is called (e.g., if stdlib `logging` is imported first), the root logger will be a standard `logging.Logger` instead of an `apathetic_logging.Logger`. This means it won't have `manageHandlers()` to attach the DualStreamHandler, and won't have custom methods like `trace()`, `detail()`, etc. Custom levels still work (they're registered globally), but the handler won't be attached automatically. Need to add logic to detect and upgrade/replace the root logger if it's a standard logger, or ensure `extendLoggingModule()` runs before any logger creation.
+- None currently
 
 ## 🧪 Tests
 - Tests are slow, when to run what?
@@ -23,6 +23,12 @@ Some of these we just want to consider, and may not want to implement.
 
 ## 🔌 API
 - Evaluate `_applyPropagateSetting()` and its relationship with `__init__`: Currently, `Logger.__init__()` sets `_propagate_set = False` when `propagate=None`, indicating that `_applyPropagateSetting()` will set it later. This creates a two-phase initialization where propagate can be set either in `__init__` or later via `_applyPropagateSetting()`. Evaluate whether this split responsibility is clear and maintainable, or if propagate should always be set in `__init__` with the registry/default value passed directly. Consider the complexity of tracking `_propagate_set` flag and whether there are edge cases where the propagate value might be inconsistent or set at unexpected times.
+- **Root logger replacement: porting handlers and level:** When `extendLoggingModule()` replaces the root logger with an apathetic logger, we currently preserve the old root logger's level, handlers, propagate, and disabled state. Evaluate whether this behavior should be configurable:
+  - Should we port handlers by default, or should the new apathetic root logger start fresh with its own handlers (via `manageHandlers()`)?
+  - Should we port the level by default, or should the new root logger use a default level (NOTSET/INHERIT)?
+  - If we make this configurable, do we need keyword arguments to `extendLoggingModule()`, registry settings, or constants for these scenarios?
+  - Should users be able to specify they want handlers/level ported, or does porting them not make good sense at all (e.g., because apathetic loggers should manage their own handlers)?
+  - Consider edge cases: What if the old root logger has incompatible handlers? What if the level was set to a custom value that doesn't exist in apathetic logging?
 
 
 ## 📚 Documentation

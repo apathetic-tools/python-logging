@@ -61,3 +61,12 @@ class ApatheticLogging_Internal_RegistryData:  # noqa: N801  # pyright: ignore[r
     (e.g., getLogger(None) returns root logger).
     Set via registerCompatibilityMode() or register_compatibility_mode().
     """
+    registered_internal_replace_root_logger: bool | None = None
+    """Whether to replace root logger if it's not the correct type.
+
+    If None, defaults to DEFAULT_REPLACE_ROOT_LOGGER from constants.py
+    (True by default - replace root logger to ensure it's an apathetic logger).
+    When False, extendLoggingModule() will not replace the root logger, allowing
+    applications to use their own custom logger class for the root logger.
+    Set via registerReplaceRootLogger() or register_replace_root_logger().
+    """

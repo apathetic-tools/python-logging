@@ -103,6 +103,7 @@ class ApatheticLogging_Internal_Registry:  # noqa: N801  # pyright: ignore[repor
         default_log_level: str | None = None,
         propagate: bool | None = None,
         compat_mode: bool | None = None,
+        replace_root: bool | None = None,
     ) -> None:
         """Register a logger for use by getLogger().
 
@@ -153,6 +154,10 @@ class ApatheticLogging_Internal_Registry:  # noqa: N801  # pyright: ignore[repor
                 stdlib-compatible behavior where possible (e.g., getLogger(None) returns
                 root logger). If None, uses registered compatibility mode setting or
                 defaults to False (improved behavior). Defaults to None (no change).
+            replace_root: Optional setting for whether to replace root logger.
+                If provided, passes this value to extendLoggingModule() when extending
+                the logging module. If None, uses registry setting or constant default.
+                Only used when logger_class has an extendLoggingModule() method.
 
         Example:
             >>> # Explicit registration with default Logger (already extended)
@@ -188,6 +193,7 @@ class ApatheticLogging_Internal_Registry:  # noqa: N801  # pyright: ignore[repor
         _registry.registerDefaultLogLevel(default_log_level)
         _registry.registerPropagate(propagate=propagate)
         _registry.registerCompatibilityMode(compat_mode=compat_mode)
+        _registry.registerReplaceRootLogger(replace_root=replace_root)
 
         # Import Logger locally to avoid circular import
 
@@ -213,7 +219,7 @@ class ApatheticLogging_Internal_Registry:  # noqa: N801  # pyright: ignore[repor
         if logger_class is not None:
             # extendLoggingModule will call setLoggerClass for those that support it
             if hasattr(logger_class, "extendLoggingModule"):
-                logger_class.extendLoggingModule()  # type: ignore[attr-defined]
+                logger_class.extendLoggingModule(replace_root=replace_root)  # type: ignore[attr-defined]
             else:
                 # stdlib unwrapped
                 logging.setLoggerClass(logger_class)
@@ -330,6 +336,45 @@ class ApatheticLogging_Internal_Registry:  # noqa: N801  # pyright: ignore[repor
         _safe_logging.safeTrace(
             "registerCompatibilityMode() called",
             f"compat_mode={compat_mode}",
+        )
+
+    @staticmethod
+    def registerReplaceRootLogger(*, replace_root: bool | None) -> None:
+        """Register whether to replace root logger if it's not the correct type.
+
+        This sets whether extendLoggingModule() should replace the root logger
+        if it's not an instance of the apathetic logger class. If not set, the
+        library defaults to DEFAULT_REPLACE_ROOT_LOGGER from constants.py
+        (True by default - replace root logger to ensure it's an apathetic logger).
+
+        When replace_root is False, extendLoggingModule() will not replace the
+        root logger, allowing applications to use their own custom logger class
+        for the root logger. This is useful when:
+        - Using apathetic logging through a library (like utils) but wanting a
+          different logger class for the root logger
+        - Having your own custom logger class that inherits from logging.Logger
+          and wanting to use it for the root logger
+
+        Args:
+            replace_root: Whether to replace root logger (True or False). If None,
+                returns immediately without making any changes.
+
+        Example:
+            >>> from apathetic_logging import registerReplaceRootLogger
+            >>> # Disable root logger replacement to use your own logger class
+            >>> registerReplaceRootLogger(replace_root=False)
+            >>> # Now extendLoggingModule() won't replace the root logger
+        """
+        if replace_root is None:
+            return
+
+        _registry_data = ApatheticLogging_Internal_RegistryData
+        _safe_logging = ApatheticLogging_Internal_SafeLogging
+
+        _registry_data.registered_internal_replace_root_logger = replace_root
+        _safe_logging.safeTrace(
+            "registerReplaceRootLogger() called",
+            f"replace_root={replace_root}",
         )
 
     @staticmethod

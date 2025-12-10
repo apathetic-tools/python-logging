@@ -122,6 +122,7 @@ registerLogLevelEnvVars = apathetic_logging.registerLogLevelEnvVars
 registerLogger = apathetic_logging.registerLogger
 registerCompatibilityMode = apathetic_logging.registerCompatibilityMode
 registerPropagate = apathetic_logging.registerPropagate
+registerReplaceRootLogger = apathetic_logging.registerReplaceRootLogger
 registerTargetPythonVersion = apathetic_logging.registerTargetPythonVersion
 removeLogger = apathetic_logging.removeLogger
 safeLog = apathetic_logging.safeLog
@@ -187,6 +188,7 @@ __all__ = [
     "registerLogLevelEnvVars",
     "registerLogger",
     "registerPropagate",
+    "registerReplaceRootLogger",
     "registerTargetPythonVersion",
     "removeLogger",
     "safeLog",

@@ -160,7 +160,12 @@ class ApatheticLogging_Internal_LoggerCore(logging.Logger):  # noqa: N801  # pyr
         # Propagating child loggers should not have apathetic handlers
         # Only remove handlers if we previously managed them (indicated by
         # _last_stream_ids being set), to avoid removing manually-added handlers
-        if self.name != _constants.ROOT_LOGGER_KEY and self.propagate:
+        # Root logger can have name "" (ROOT_LOGGER_KEY) or "root" (ROOT_LOGGER_NAME)
+        is_root = self.name in {
+            _constants.ROOT_LOGGER_KEY,
+            _constants.ROOT_LOGGER_NAME,
+        }
+        if not is_root and self.propagate:
             # Only remove apathetic handlers if we previously managed them
             # (indicated by _last_stream_ids being set)
             if self._last_stream_ids is not None and apathetic_handlers:
@@ -443,7 +448,12 @@ class ApatheticLogging_Internal_LoggerCore(logging.Logger):  # noqa: N801  # pyr
 
         # Determine propagate setting based on level
         # Only set propagate if not root logger
-        if self.name != _constants.ROOT_LOGGER_KEY:
+        # Root logger can have name "" (ROOT_LOGGER_KEY) or "root" (ROOT_LOGGER_NAME)
+        is_root = self.name in {
+            _constants.ROOT_LOGGER_KEY,
+            _constants.ROOT_LOGGER_NAME,
+        }
+        if not is_root:
             if level_int == _constants.INHERIT_LEVEL:
                 # INHERIT_LEVEL -> propagate=True
                 self.setPropagate(True, manage_handlers=manage_handlers)
@@ -644,10 +654,20 @@ class ApatheticLogging_Internal_LoggerCore(logging.Logger):  # noqa: N801  # pyr
     @classmethod
     def extendLoggingModule(
         cls,
+        *,
+        replace_root: bool | None = None,
     ) -> bool:
         """The return value tells you if we ran or not.
         If it is False and you're calling it via super(),
         you can likely skip your code too.
+
+        Args:
+            replace_root: Whether to replace the root logger if it's not the correct
+                type. If None (default), checks the registry setting (set via
+                registerReplaceRootLogger()). If not set in registry, defaults to True
+                for backward compatibility. When False, the root logger will not be
+                replaced, allowing applications to use their own custom logger class
+                for the root logger.
 
         Note for tests:
             When testing isinstance checks on logger instances, use
@@ -675,6 +695,98 @@ class ApatheticLogging_Internal_LoggerCore(logging.Logger):  # noqa: N801  # pyr
         # This allows subclasses to override the logger class.
         # stdlib unwrapped
         logging.setLoggerClass(cls)
+
+        # Check if root logger exists and needs to be replaced
+        # This handles the case where root logger was created before
+        # extendLoggingModule() was called (e.g., if stdlib logging was imported first)
+        # We always check if root logger needs replacement (even if already_extended),
+        # but only replace on first call OR if root logger is wrong type
+        # Determine if we should replace the root logger
+        # Check parameter first, then registry, then default from constants
+        if replace_root is None:
+            from .registry_data import (  # noqa: PLC0415
+                ApatheticLogging_Internal_RegistryData,
+            )
+
+            _registry_data = ApatheticLogging_Internal_RegistryData
+            _registered_replace_root = (
+                _registry_data.registered_internal_replace_root_logger
+            )
+            replace_root = (
+                _registered_replace_root
+                if _registered_replace_root is not None
+                else _constants.DEFAULT_REPLACE_ROOT_LOGGER
+            )
+
+        # Get root logger directly (logging.root or from registry)
+        root_logger = logging.getLogger(_constants.ROOT_LOGGER_KEY)
+        # Check if root logger is the correct type - use cls directly for isinstance
+        # (getLoggerClass() would return cls, but using cls directly is clearer)
+        # Replace if: (not already_extended) OR (root logger is wrong type)
+        # This ensures we replace on first call, and also fix root logger if it
+        # becomes wrong type later (e.g., in tests that create standard root logger)
+        if replace_root and (not already_extended or not isinstance(root_logger, cls)):
+            # Root logger is wrong type - need to replace it
+            # Save state from old root logger
+            old_level = root_logger.level
+            old_handlers = list(root_logger.handlers)  # Copy list
+            old_propagate = root_logger.propagate
+            old_disabled = root_logger.disabled
+
+            # Remove old root logger from registry
+            from .logging_utils import (  # noqa: PLC0415
+                ApatheticLogging_Internal_LoggingUtils,
+            )
+
+            _logging_utils = ApatheticLogging_Internal_LoggingUtils
+
+            # Remove from registry
+            _logging_utils.removeLogger(_constants.ROOT_LOGGER_KEY)
+
+            # Clear logging.root (root logger is stored there as a module-level
+            # variable). This is necessary because logging.getLogger("") returns
+            # logging.root directly.
+            if hasattr(logging, "root"):
+                logging.root = None  # type: ignore[assignment]
+
+            # Create new root logger using the manager's getLogger method
+            # The logger class is already set to cls (line 687), so this will create
+            # a logger of type cls. We use the manager directly because it handles
+            # root logger creation properly even when logging.root is None.
+            # Note: We don't use _getOrCreateLoggerOfType() here because:
+            # 1. It would call _setLoggerClassTemporarily() which is unnecessary
+            #    since we've already set the logger class to cls
+            # 2. The manager's getLogger() is the most direct way to create a root
+            #    logger
+            # 3. This avoids any potential issues with logging.root being None
+            new_root_logger = logging.Logger.manager.getLogger(
+                _constants.ROOT_LOGGER_KEY
+            )
+
+            # Ensure root logger has correct name ("root" not "")
+            # Python's logging module sets root logger name to "root" even though
+            # it's retrieved with "". We need to ensure our replacement maintains
+            # this behavior.
+            if new_root_logger.name != _constants.ROOT_LOGGER_NAME:
+                new_root_logger.name = _constants.ROOT_LOGGER_NAME
+
+            # Update logging.root to point to the new root logger
+            # This is necessary because logging.getLogger("") returns logging.root
+            # directly, and we want to ensure it points to our new logger instance.
+            if hasattr(logging, "root"):
+                logging.root = new_root_logger  # type: ignore[assignment]
+
+            # Restore state from old root logger
+            new_root_logger.setLevel(old_level)
+            new_root_logger.propagate = old_propagate
+            new_root_logger.disabled = old_disabled
+            # Restore handlers (they were attached to old logger, so we need to
+            # re-add them)
+            for handler in old_handlers:
+                new_root_logger.addHandler(handler)
+
+            # Reconnect child loggers to the new root logger
+            _logging_utils.reconnectChildLoggers(root_logger, new_root_logger)
 
         # If already extended, skip the rest (level registration, etc.)
         if already_extended:
@@ -1250,7 +1362,12 @@ class ApatheticLogging_Internal_LoggerCore(logging.Logger):  # noqa: N801  # pyr
             self.setLevel(level_no)
 
         # Set propagate based on level (only if not root logger)
-        if self.name != _constants.ROOT_LOGGER_KEY:
+        # Root logger can have name "" (ROOT_LOGGER_KEY) or "root" (ROOT_LOGGER_NAME)
+        is_root = self.name in {
+            _constants.ROOT_LOGGER_KEY,
+            _constants.ROOT_LOGGER_NAME,
+        }
+        if not is_root:
             if level_no == _constants.INHERIT_LEVEL:
                 # INHERIT_LEVEL -> propagate=True
                 self.setPropagate(True, manage_handlers=manage_handlers)
@@ -1264,5 +1381,5 @@ class ApatheticLogging_Internal_LoggerCore(logging.Logger):  # noqa: N801  # pyr
         finally:
             # Restore previous settings
             self.setLevel(prev_level, allow_inherit=True)
-            if self.name != _constants.ROOT_LOGGER_KEY:
+            if not is_root:
                 self.setPropagate(prev_propagate, manage_handlers=manage_handlers)

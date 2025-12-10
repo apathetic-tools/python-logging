@@ -142,3 +142,13 @@ class ApatheticLogging_Internal_Constants:  # noqa: N801  # pyright: ignore[repo
     attribute is "root" (not ""). This constant represents the actual
     name attribute value of the root logger instance.
     """
+
+    DEFAULT_REPLACE_ROOT_LOGGER: bool = True
+    """Default value for whether to replace root logger if it's not the correct type.
+
+    When True (default), extendLoggingModule() will replace the root logger
+    if it's not an instance of the apathetic logger class, ensuring the root
+    logger has apathetic logger methods like manageHandlers(), trace(), etc.
+    When False, the root logger will not be replaced, allowing applications
+    to use their own custom logger class for the root logger.
+    """
