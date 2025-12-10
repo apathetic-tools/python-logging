@@ -2,6 +2,14 @@
 
 <!-- version list -->
 
+## v0.16.0 (2025-12-10)
+
+### Features
+
+- **porting**: Add state porting when replacing loggers
+  ([`cd2da8f`](https://github.com/apathetic-tools/python-logging/commit/cd2da8f7698b2fd3208a7f7b5161968c773fde40))
+
+
 ## v0.15.0 (2025-12-10)
 
 ### Features
