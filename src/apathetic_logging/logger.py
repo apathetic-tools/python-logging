@@ -76,6 +76,7 @@ class ApatheticLogging_Internal_LoggerCore(logging.Logger):  # noqa: N801  # pyr
             enable_color: Force color output on/off, or None for auto-detect
             propagate: Propagate setting. If None, uses registered setting or
                 defaults to True. If True, messages propagate to parent loggers.
+
         """
         # it is too late to call extendLoggingModule
 
@@ -119,6 +120,7 @@ class ApatheticLogging_Internal_LoggerCore(logging.Logger):  # noqa: N801  # pyr
                 If None, checks compatibility mode: in compat mode, handlers are
                 not managed unless explicitly enabled. If False, returns early
                 without managing handlers. Defaults to None.
+
         """
         _constants = ApatheticLogging_Internal_Constants
 
@@ -193,11 +195,16 @@ class ApatheticLogging_Internal_LoggerCore(logging.Logger):  # noqa: N801  # pyr
             self.addHandler(h)
             self._last_stream_ids = (sys.stdout, sys.stderr)
             _safe_logging.safeTrace(
-                "manageHandlers()", f"rebuilt_handlers={self.handlers}"
+                "manageHandlers()",
+                f"rebuilt_handlers={self.handlers}",
             )
 
     def _log(  # type: ignore[override]
-        self, level: int, msg: str, args: tuple[Any, ...], **kwargs: Any
+        self,
+        level: int,
+        msg: str,
+        args: tuple[Any, ...],
+        **kwargs: Any,
     ) -> None:
         """Log a message with the specified level.
 
@@ -213,6 +220,7 @@ class ApatheticLogging_Internal_LoggerCore(logging.Logger):  # noqa: N801  # pyr
         Wrapper for logging.Logger._log.
 
         https://docs.python.org/3.10/library/logging.html#logging.Logger._log
+
         """
         self.manageHandlers()
         super()._log(level, msg, args, **kwargs)
@@ -258,6 +266,7 @@ class ApatheticLogging_Internal_LoggerCore(logging.Logger):  # noqa: N801  # pyr
         Wrapper for logging.Logger.setLevel.
 
         https://docs.python.org/3.10/library/logging.html#logging.Logger.setLevel
+
         """
         from .logging_utils import (  # noqa: PLC0415
             ApatheticLogging_Internal_LoggingUtils,
@@ -315,6 +324,7 @@ class ApatheticLogging_Internal_LoggerCore(logging.Logger):  # noqa: N801  # pyr
             >>> logger.setLevel("INFO")
             >>> logger.setLevelMinimum("DEBUG")
             >>> assert logger.levelName == "DEBUG"  # Upgraded to DEBUG
+
         """
         self.setLevel(level, minimum=True)
 
@@ -333,6 +343,7 @@ class ApatheticLogging_Internal_LoggerCore(logging.Logger):  # noqa: N801  # pyr
             >>> logger.setLevelInherit()
             >>> assert logger.levelName == "NOTSET"
             >>> assert logger.effectiveLevel == root.level  # Inherits from root
+
         """
         _constants = ApatheticLogging_Internal_Constants
         self.setLevel(_constants.INHERIT_LEVEL, allow_inherit=True)
@@ -360,6 +371,7 @@ class ApatheticLogging_Internal_LoggerCore(logging.Logger):  # noqa: N801  # pyr
         Wrapper for logging.Logger.propagate attribute.
 
         https://docs.python.org/3.10/library/logging.html#logging.Logger.propagate
+
         """
         self.propagate = propagate
         self._propagate_set = True  # Mark as explicitly set
@@ -411,6 +423,7 @@ class ApatheticLogging_Internal_LoggerCore(logging.Logger):  # noqa: N801  # pyr
             >>> logger.setLevelAndPropagate(INHERIT_LEVEL, allow_inherit=True)
             >>> # Set explicit level and disable propagation (isolated logging)
             >>> logger.setLevelAndPropagate("debug")
+
         """
         from .logging_utils import (  # noqa: PLC0415
             ApatheticLogging_Internal_LoggingUtils,
@@ -481,6 +494,7 @@ class ApatheticLogging_Internal_LoggerCore(logging.Logger):  # noqa: N801  # pyr
             >>> Logger.validateLevel(0, level_name="TEST")
             ValueError: setLevel(0) sets the logger to INHERIT_LEVEL (i.e. NOTSET)...
             >>> Logger.validateLevel(0, level_name="TEST", allow_inherit=True)
+
         """
         from .logging_utils import (  # noqa: PLC0415
             ApatheticLogging_Internal_LoggingUtils,
@@ -543,6 +557,7 @@ class ApatheticLogging_Internal_LoggerCore(logging.Logger):  # noqa: N801  # pyr
         Wrapper for logging.addLevelName.
 
         https://docs.python.org/3.10/library/logging.html#logging.addLevelName
+
         """
         # Validate level is positive
         ApatheticLogging_Internal_LoggerCore.validateLevel(level, level_name=level_name)
@@ -560,7 +575,8 @@ class ApatheticLogging_Internal_LoggerCore(logging.Logger):  # noqa: N801  # pyr
                 raise ValueError(msg)
             # Validate existing value is positive
             ApatheticLogging_Internal_LoggerCore.validateLevel(
-                existing_value, level_name=level_name
+                existing_value,
+                level_name=level_name,
             )
             if existing_value != level:
                 msg = (
@@ -586,7 +602,9 @@ class ApatheticLogging_Internal_LoggerCore(logging.Logger):  # noqa: N801  # pyr
         # and validate it
         if namespace_class is not None:
             existing_apathetic_value = getattr(
-                namespace_class, apathetic_level_name, None
+                namespace_class,
+                apathetic_level_name,
+                None,
             )
             if existing_apathetic_value is not None:
                 # If it exists, it must be a valid level value (positive integer)
@@ -600,7 +618,8 @@ class ApatheticLogging_Internal_LoggerCore(logging.Logger):  # noqa: N801  # pyr
                     raise ValueError(msg)
                 # Validate existing value is positive
                 ApatheticLogging_Internal_LoggerCore.validateLevel(
-                    existing_apathetic_value, level_name=level_name
+                    existing_apathetic_value,
+                    level_name=level_name,
                 )
                 if existing_apathetic_value != level:
                     msg = (
@@ -645,6 +664,7 @@ class ApatheticLogging_Internal_LoggerCore(logging.Logger):  # noqa: N801  # pyr
 
                 # ❌ May fail in singlefile mode due to class identity differences
                 assert isinstance(logger, mod_alogs.Logger)
+
         """
         _constants = ApatheticLogging_Internal_Constants
         # Check if this specific class has already extended the module
@@ -782,6 +802,35 @@ class ApatheticLogging_Internal_LoggerCore(logging.Logger):  # noqa: N801  # pyr
         """
         return self.getEffectiveLevelName()
 
+    @property
+    def root(self) -> "ApatheticLogging_Internal_Logger.Logger" | logging.RootLogger:  # type: ignore[override, name-defined]  # noqa: UP037, F821
+        """Return the root logger instance.
+
+        This property overrides the standard library's ``logging.Logger.root``
+        class attribute to provide better type hints. It returns the same root
+        logger instance as the standard library.
+
+        The root logger may be either:
+        - An ``apathetic_logging.Logger`` if it was created after
+          ``extendLoggingModule()`` was called (expected/common case)
+        - A standard ``logging.RootLogger`` if it was created before
+          ``extendLoggingModule()`` was called (fallback, see ROADMAP.md)
+
+        Returns:
+            The root logger instance (either ``apathetic_logging.Logger`` or
+            ``logging.RootLogger``).
+
+        Example:
+            >>> logger = getLogger("mymodule")
+            >>> # Access root logger with better type hints
+            >>> logger.root.setLevel("debug")
+            >>> logger.root.levelName
+            'DEBUG'
+
+        """
+        _constants = ApatheticLogging_Internal_Constants
+        return logging.getLogger(_constants.ROOT_LOGGER_KEY)
+
     def getLevel(self) -> int:
         """Return the explicit level set on this logger.
 
@@ -793,6 +842,7 @@ class ApatheticLogging_Internal_LoggerCore(logging.Logger):  # noqa: N801  # pyr
             The explicit level value (int) set on this logger.
 
         See also: level property, getEffectiveLevel
+
         """
         return self.level
 
@@ -808,6 +858,7 @@ class ApatheticLogging_Internal_LoggerCore(logging.Logger):  # noqa: N801  # pyr
             The explicit level name (str) set on this logger.
 
         See also: levelName property, getEffectiveLevelName
+
         """
         from .logging_utils import (  # noqa: PLC0415
             ApatheticLogging_Internal_LoggingUtils,
@@ -827,41 +878,56 @@ class ApatheticLogging_Internal_LoggerCore(logging.Logger):  # noqa: N801  # pyr
             The effective level name (str) for this logger.
 
         See also: effectiveLevelName property, getEffectiveLevel
+
         """
         from .logging_utils import (  # noqa: PLC0415
             ApatheticLogging_Internal_LoggingUtils,
         )
 
         return ApatheticLogging_Internal_LoggingUtils.getLevelNameStr(
-            self.getEffectiveLevel()
+            self.getEffectiveLevel(),
         )
 
     def errorIfNotDebug(self, msg: str, *args: Any, **kwargs: Any) -> None:
         """Logs an exception with the real traceback starting from the caller.
-        Only shows full traceback if debug/trace is enabled."""
+        Only shows full traceback if debug/trace is enabled.
+        """
         exc_info = kwargs.pop("exc_info", True)
         stacklevel = kwargs.pop("stacklevel", self.DEFAULT_STACKLEVEL)
         if self.isEnabledFor(logging.DEBUG):
             self.exception(
-                msg, *args, exc_info=exc_info, stacklevel=stacklevel, **kwargs
+                msg,
+                *args,
+                exc_info=exc_info,
+                stacklevel=stacklevel,
+                **kwargs,
             )
         else:
             self.error(msg, *args, **kwargs)
 
     def criticalIfNotDebug(self, msg: str, *args: Any, **kwargs: Any) -> None:
         """Logs an exception with the real traceback starting from the caller.
-        Only shows full traceback if debug/trace is enabled."""
+        Only shows full traceback if debug/trace is enabled.
+        """
         exc_info = kwargs.pop("exc_info", True)
         stacklevel = kwargs.pop("stacklevel", self.DEFAULT_STACKLEVEL)
         if self.isEnabledFor(logging.DEBUG):
             self.exception(
-                msg, *args, exc_info=exc_info, stacklevel=stacklevel, **kwargs
+                msg,
+                *args,
+                exc_info=exc_info,
+                stacklevel=stacklevel,
+                **kwargs,
             )
         else:
             self.critical(msg, *args, **kwargs)
 
     def colorize(
-        self, text: str, color: str, *, enable_color: bool | None = None
+        self,
+        text: str,
+        color: str,
+        *,
+        enable_color: bool | None = None,
     ) -> str:
         """Apply ANSI color codes to text.
 
@@ -874,6 +940,7 @@ class ApatheticLogging_Internal_LoggerCore(logging.Logger):  # noqa: N801  # pyr
 
         Returns:
             Colorized text if enabled, otherwise original text
+
         """
         _constants = ApatheticLogging_Internal_Constants
         if enable_color is None:
@@ -943,6 +1010,7 @@ class ApatheticLogging_Internal_LoggerCore(logging.Logger):  # noqa: N801  # pyr
             msg: Message format string
             *args: Arguments for message formatting
             **kwargs: Additional keyword arguments
+
         """
         # Resolve level
         if isinstance(level, str):
@@ -965,7 +1033,10 @@ class ApatheticLogging_Internal_LoggerCore(logging.Logger):  # noqa: N801  # pyr
 
     @contextmanager
     def useLevel(
-        self, level: str | int, *, minimum: bool = False
+        self,
+        level: str | int,
+        *,
+        minimum: bool = False,
     ) -> Generator[None, None, None]:
         """Use a context to temporarily log with a different log-level.
 
@@ -980,6 +1051,7 @@ class ApatheticLogging_Internal_LoggerCore(logging.Logger):  # noqa: N801  # pyr
 
         Yields:
             None: Context manager yields control to the with block
+
         """
         # Save explicit level for restoration (not effective level)
         prev_level = self.level
@@ -1051,6 +1123,7 @@ class ApatheticLogging_Internal_LoggerCore(logging.Logger):  # noqa: N801  # pyr
             >>> logger.setLevel("INFO")
             >>> with logger.useLevelMinimum("DEBUG"):
             ...     assert logger.levelName == "DEBUG"  # Upgraded to DEBUG
+
         """
         with self.useLevel(level, minimum=True):
             yield
@@ -1074,6 +1147,7 @@ class ApatheticLogging_Internal_LoggerCore(logging.Logger):  # noqa: N801  # pyr
 
         Yields:
             None: Context manager yields control to the with block
+
         """
         # Save current propagate setting for restoration
         prev_propagate = self.propagate
@@ -1130,6 +1204,7 @@ class ApatheticLogging_Internal_LoggerCore(logging.Logger):  # noqa: N801  # pyr
             >>> # Temporarily set explicit level with isolated logging
             >>> with logger.useLevelAndPropagate("debug"):
             ...     logger.debug("This only goes to logger's handlers")
+
         """
         from .logging_utils import (  # noqa: PLC0415
             ApatheticLogging_Internal_LoggingUtils,

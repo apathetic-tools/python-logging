@@ -507,6 +507,33 @@ class ApatheticLogging_Internal_LoggingUtils:  # noqa: N801  # pyright: ignore[r
             raise NotImplementedError(msg)
 
     @staticmethod
+    def getRootLogger() -> ApatheticLogging_Internal_Logger.Logger | logging.RootLogger:  # type: ignore[name-defined]  # noqa: F821
+        """Return the root logger instance.
+
+        This is the primary way to access the root logger. It's more explicit
+        and discoverable than using ``logging.getLogger("")`` or
+        ``getLogger("")``.
+
+        The root logger may be either:
+        - An ``apathetic_logging.Logger`` if it was created after
+          ``extendLoggingModule()`` was called (expected/common case)
+        - A standard ``logging.RootLogger`` if it was created before
+          ``extendLoggingModule()`` was called (fallback, see ROADMAP.md)
+
+        Returns:
+            The root logger instance (either ``apathetic_logging.Logger`` or
+            ``logging.RootLogger``).
+
+        Example:
+            >>> from apathetic_logging import getRootLogger
+            >>> root = getRootLogger()
+            >>> root.setLevel("debug")
+            >>> root.info("This logs to the root logger")
+        """
+        _constants = ApatheticLogging_Internal_Constants
+        return logging.getLogger(_constants.ROOT_LOGGER_KEY)
+
+    @staticmethod
     def setRootLevel(  # noqa: PLR0912
         level: str | int,
         *,

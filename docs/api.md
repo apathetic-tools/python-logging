@@ -35,6 +35,7 @@ Complete API documentation for Apathetic Python Logger.
 | [`getLogLevelEnvVars()`](#getloglevelenvvars) | Get the environment variable names to check for log level |
 | [`getDefaultLogLevel()`](#getdefaultloglevel) | Get the default log level |
 | [`getRegisteredLoggerName()`](#getregisteredloggername) | Get the registered logger name |
+| [`getRootLogger()`](#getrootlogger) | Return the root logger instance (primary way to access root logger) |
 | [`getTargetPythonVersion()`](#gettargetpythonversion) | Get the target Python version |
 | [`getDefaultPropagate()`](#getdefaultpropagate) | Get the default propagate setting |
 | [`getLevelNumber()`](#getlevelnumber) | Convert a log level name to its numeric value |
@@ -181,6 +182,36 @@ logger = getLogger("my_app", level="info", minimum=True)  # At least INFO
 
 # To get root logger (use "" instead of None)
 logger = getLogger("")  # Returns root logger
+```
+
+### getRootLogger
+
+```python
+getRootLogger() -> Logger
+```
+
+Return the root logger instance.
+
+This is the **primary way** to access the root logger. It's more explicit and discoverable than using `logging.getLogger("")` or `getLogger("")`.
+
+**Returns:**
+- The root logger instance
+
+**Example:**
+```python
+from apathetic_logging import getRootLogger
+
+# Get root logger
+root = getRootLogger()
+
+# Set root level
+root.setLevel("debug")
+
+# Log to root logger
+root.info("This logs to the root logger")
+
+# Access root properties
+print(root.levelName)
 ```
 
 ### getLoggerOfType
@@ -1734,6 +1765,7 @@ child = getLogger("parent.child")
 print(child.levelName)  # "NOTSET" (explicit - INHERIT_LEVEL, i.e. NOTSET)
 print(child.effectiveLevelName)  # "INFO" (effective, from parent)
 ```
+
 
 ### getLevel
 

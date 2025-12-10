@@ -113,6 +113,7 @@ getLevelNameStr = apathetic_logging.getLevelNameStr
 getLogLevelEnvVars = apathetic_logging.getLogLevelEnvVars
 getLoggerOfType = apathetic_logging.getLoggerOfType
 getRegisteredLoggerName = apathetic_logging.getRegisteredLoggerName
+getRootLogger = apathetic_logging.getRootLogger  # pyright: ignore[reportUnknownVariableType,reportUnknownMemberType]
 getTargetPythonVersion = apathetic_logging.getTargetPythonVersion
 hasLogger = apathetic_logging.hasLogger
 makeSafeTrace = apathetic_logging.makeSafeTrace
@@ -173,6 +174,7 @@ __all__ = [
     "getLoggerClass",
     "getLoggerOfType",
     "getRegisteredLoggerName",
+    "getRootLogger",
     "getTargetPythonVersion",
     "hasLogger",
     "info",
