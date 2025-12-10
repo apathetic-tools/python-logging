@@ -114,9 +114,21 @@ class ApatheticLogging_Internal_GetLogger:  # noqa: N801  # pyright: ignore[repo
             # Save the parent that was assigned
             old_parent = logger.parent
 
-            # Reconnect child loggers if we replaced an existing logger
+            # Port state from old logger if we replaced an existing logger
+            # (also reconnects child loggers internally)
             if old_logger is not None:
-                _logging_utils.reconnectChildLoggers(old_logger, logger)
+                # Port state from old logger, but user-provided kwargs take precedence
+                # Check if level is explicitly provided in kwargs - if so, don't port
+                # level (user's level will be applied later in getLoggerOfType)
+                user_provided_level = kwargs.get("level")
+                # Only port if user didn't provide level
+                port_level = user_provided_level is None
+                _logging_utils.portLoggerState(
+                    old_logger,
+                    logger,
+                    port_handlers=None,  # Use default (True) - port handlers
+                    port_level=port_level,  # Port level only if user didn't provide one
+                )
 
             # Fix parent if it points to old root logger
             # Only fix if this is not the root logger itself

@@ -152,3 +152,21 @@ class ApatheticLogging_Internal_Constants:  # noqa: N801  # pyright: ignore[repo
     When False, the root logger will not be replaced, allowing applications
     to use their own custom logger class for the root logger.
     """
+
+    DEFAULT_PORT_HANDLERS: bool = True
+    """Default value for whether to port handlers when replacing a logger.
+
+    When True (default), handlers from the old logger are ported to the new logger,
+    preserving existing configuration. When False, the new apathetic logger manages
+    its own handlers via manageHandlers() (may conflict with ported handlers).
+    """
+
+    DEFAULT_PORT_LEVEL: bool = True
+    """Default value for whether to port level when replacing a logger.
+
+    When True (default), the log level is ported from the old logger to the new
+    logger, preserving existing configuration. When False, the new logger uses
+    apathetic defaults (determineLogLevel() for root logger, INHERIT_LEVEL for
+    leaf loggers). Note: User-provided level parameters in getLogger/getLoggerOfType
+    take precedence over ported level.
+    """

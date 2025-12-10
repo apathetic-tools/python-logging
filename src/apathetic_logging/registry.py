@@ -378,6 +378,79 @@ class ApatheticLogging_Internal_Registry:  # noqa: N801  # pyright: ignore[repor
         )
 
     @staticmethod
+    def registerPortHandlers(*, port_handlers: bool | None) -> None:
+        """Register whether to port handlers when replacing a logger.
+
+        This sets whether logger replacement should port handlers from the old
+        logger to the new logger. If not set, the library defaults to
+        DEFAULT_PORT_HANDLERS from constants.py (True by default - port handlers
+        to preserve existing configuration).
+
+        When port_handlers is True, handlers from the old logger are ported to
+        the new logger. When False, the new logger manages its own handlers via
+        manageHandlers() (may conflict with ported handlers).
+
+        Args:
+            port_handlers: Whether to port handlers (True or False). If None,
+                returns immediately without making any changes.
+
+        Example:
+            >>> from apathetic_logging import registerPortHandlers
+            >>> # Enable handler porting to preserve existing handlers
+            >>> registerPortHandlers(port_handlers=True)
+            >>> # Now logger replacement will port handlers
+        """
+        if port_handlers is None:
+            return
+
+        _registry_data = ApatheticLogging_Internal_RegistryData
+        _safe_logging = ApatheticLogging_Internal_SafeLogging
+
+        _registry_data.registered_internal_port_handlers = port_handlers
+        _safe_logging.safeTrace(
+            "registerPortHandlers() called",
+            f"port_handlers={port_handlers}",
+        )
+
+    @staticmethod
+    def registerPortLevel(*, port_level: bool | None) -> None:
+        """Register whether to port level when replacing a logger.
+
+        This sets whether logger replacement should port the log level from the
+        old logger to the new logger. If not set, the library defaults to
+        DEFAULT_PORT_LEVEL from constants.py (True by default - port level to
+        preserve existing configuration).
+
+        When port_level is True (default), the log level is ported from the old
+        logger. When False, the new logger uses apathetic defaults:
+        - Root logger: uses determineLogLevel() to get a sensible default
+        - Leaf loggers: use INHERIT_LEVEL (NOTSET) to inherit from parent
+        Note: User-provided level parameters in getLogger/getLoggerOfType take
+        precedence over ported level.
+
+        Args:
+            port_level: Whether to port level (True or False). If None,
+                returns immediately without making any changes.
+
+        Example:
+            >>> from apathetic_logging import registerPortLevel
+            >>> # Enable level porting to preserve existing level
+            >>> registerPortLevel(port_level=True)
+            >>> # Now logger replacement will port level
+        """
+        if port_level is None:
+            return
+
+        _registry_data = ApatheticLogging_Internal_RegistryData
+        _safe_logging = ApatheticLogging_Internal_SafeLogging
+
+        _registry_data.registered_internal_port_level = port_level
+        _safe_logging.safeTrace(
+            "registerPortLevel() called",
+            f"port_level={port_level}",
+        )
+
+    @staticmethod
     def getLogLevelEnvVars() -> list[str]:
         """Get the environment variable names to check for log level.
 

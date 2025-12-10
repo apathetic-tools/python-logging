@@ -121,6 +121,8 @@ registerDefaultLogLevel = apathetic_logging.registerDefaultLogLevel
 registerLogLevelEnvVars = apathetic_logging.registerLogLevelEnvVars
 registerLogger = apathetic_logging.registerLogger
 registerCompatibilityMode = apathetic_logging.registerCompatibilityMode
+registerPortHandlers = apathetic_logging.registerPortHandlers
+registerPortLevel = apathetic_logging.registerPortLevel
 registerPropagate = apathetic_logging.registerPropagate
 registerReplaceRootLogger = apathetic_logging.registerReplaceRootLogger
 registerTargetPythonVersion = apathetic_logging.registerTargetPythonVersion
@@ -187,6 +189,8 @@ __all__ = [
     "registerDefaultLogLevel",
     "registerLogLevelEnvVars",
     "registerLogger",
+    "registerPortHandlers",
+    "registerPortLevel",
     "registerPropagate",
     "registerReplaceRootLogger",
     "registerTargetPythonVersion",

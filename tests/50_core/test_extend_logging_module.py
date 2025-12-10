@@ -352,3 +352,107 @@ def test_extend_logging_module_reconnects_child_loggers() -> None:
     restored_root.handlers.clear()
     for handler in old_handlers:
         restored_root.addHandler(handler)
+
+
+def test_extend_logging_module_port_handlers_parameter() -> None:
+    """extendLoggingModule() should respect port_handlers parameter."""
+    # --- setup ---
+    _logging_utils = mod_alogs.apathetic_logging
+    _constants = mod_alogs.apathetic_logging
+
+    # Save current root logger state
+    old_root = logging.getLogger(_constants.ROOT_LOGGER_KEY)
+    old_level = old_root.level
+    old_handlers = list(old_root.handlers)
+    old_propagate = old_root.propagate
+    old_disabled = old_root.disabled
+
+    # Remove root logger and create a standard one
+    _logging_utils.removeLogger(_constants.ROOT_LOGGER_KEY)
+    if hasattr(logging, "root"):
+        logging.root = None  # type: ignore[assignment]
+
+    logging.setLoggerClass(logging.Logger)
+    standard_root = logging.RootLogger(logging.INFO)
+    logging.Logger.manager.loggerDict[_constants.ROOT_LOGGER_KEY] = standard_root
+    if hasattr(logging, "root"):
+        logging.root = standard_root
+
+    # Set some state on the standard root logger
+    standard_root.setLevel(logging.INFO)
+    test_handler = logging.StreamHandler()
+    standard_root.addHandler(test_handler)
+
+    # --- execute ---
+    # Call with port_handlers=False - should NOT port handlers
+    mod_alogs.Logger.extendLoggingModule(port_handlers=False)
+
+    # --- verify ---
+    new_root = logging.getLogger(_constants.ROOT_LOGGER_KEY)
+    assert isinstance(new_root, mod_alogs.Logger)
+    # Handler should NOT be ported
+    assert test_handler not in new_root.handlers
+
+    # --- cleanup ---
+    _logging_utils.removeLogger(_constants.ROOT_LOGGER_KEY)
+    logging.setLoggerClass(mod_alogs.Logger)
+    mod_alogs.Logger.extendLoggingModule()
+    restored_root = logging.getLogger(_constants.ROOT_LOGGER_KEY)
+    restored_root.setLevel(old_level)
+    restored_root.propagate = old_propagate
+    restored_root.disabled = old_disabled
+    restored_root.handlers.clear()
+    for handler in old_handlers:
+        restored_root.addHandler(handler)
+
+
+def test_extend_logging_module_port_level_parameter() -> None:
+    """extendLoggingModule() should respect port_level parameter."""
+    # --- setup ---
+    _logging_utils = mod_alogs.apathetic_logging
+    _constants = mod_alogs.apathetic_logging
+
+    # Save current root logger state
+    old_root = logging.getLogger(_constants.ROOT_LOGGER_KEY)
+    old_level = old_root.level
+    old_handlers = list(old_root.handlers)
+    old_propagate = old_root.propagate
+    old_disabled = old_root.disabled
+
+    # Remove root logger and create a standard one
+    _logging_utils.removeLogger(_constants.ROOT_LOGGER_KEY)
+    if hasattr(logging, "root"):
+        logging.root = None  # type: ignore[assignment]
+
+    logging.setLoggerClass(logging.Logger)
+    standard_root = logging.RootLogger(logging.WARNING)
+    logging.Logger.manager.loggerDict[_constants.ROOT_LOGGER_KEY] = standard_root
+    if hasattr(logging, "root"):
+        logging.root = standard_root
+
+    # Set level on the standard root logger
+    standard_root.setLevel(logging.WARNING)
+
+    # --- execute ---
+    # Call with port_level=False - should NOT port level, use determineLogLevel()
+    mod_alogs.Logger.extendLoggingModule(port_level=False)
+
+    # --- verify ---
+    new_root = logging.getLogger(_constants.ROOT_LOGGER_KEY)
+    assert isinstance(new_root, mod_alogs.Logger)
+    # Level should NOT be WARNING (should be from determineLogLevel())
+    assert new_root.level != logging.WARNING
+    # Should have a valid level (determineLogLevel() result)
+    assert new_root.level > 0  # Not INHERIT_LEVEL
+
+    # --- cleanup ---
+    _logging_utils.removeLogger(_constants.ROOT_LOGGER_KEY)
+    logging.setLoggerClass(mod_alogs.Logger)
+    mod_alogs.Logger.extendLoggingModule()
+    restored_root = logging.getLogger(_constants.ROOT_LOGGER_KEY)
+    restored_root.setLevel(old_level)
+    restored_root.propagate = old_propagate
+    restored_root.disabled = old_disabled
+    restored_root.handlers.clear()
+    for handler in old_handlers:
+        restored_root.addHandler(handler)

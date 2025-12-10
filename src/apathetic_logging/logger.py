@@ -656,6 +656,8 @@ class ApatheticLogging_Internal_LoggerCore(logging.Logger):  # noqa: N801  # pyr
         cls,
         *,
         replace_root: bool | None = None,
+        port_handlers: bool | None = None,
+        port_level: bool | None = None,
     ) -> bool:
         """The return value tells you if we ran or not.
         If it is False and you're calling it via super(),
@@ -668,6 +670,17 @@ class ApatheticLogging_Internal_LoggerCore(logging.Logger):  # noqa: N801  # pyr
                 for backward compatibility. When False, the root logger will not be
                 replaced, allowing applications to use their own custom logger class
                 for the root logger.
+            port_handlers: Whether to port handlers from the old root logger to the
+                new logger. If None (default), checks the registry setting (set via
+                registerPortHandlers()). If not set in registry, defaults to True
+                (DEFAULT_PORT_HANDLERS from constants.py). When False, the new
+                logger manages its own handlers via manageHandlers().
+            port_level: Whether to port level from the old root logger to the new
+                logger. If None (default), checks the registry setting (set via
+                registerPortLevel()). If not set in registry, defaults to True
+                (DEFAULT_PORT_LEVEL from constants.py). When False, the new root
+                logger uses determineLogLevel() to get a sensible default. When
+                True, the old level is preserved.
 
         Note for tests:
             When testing isinstance checks on logger instances, use
@@ -727,12 +740,6 @@ class ApatheticLogging_Internal_LoggerCore(logging.Logger):  # noqa: N801  # pyr
         # becomes wrong type later (e.g., in tests that create standard root logger)
         if replace_root and (not already_extended or not isinstance(root_logger, cls)):
             # Root logger is wrong type - need to replace it
-            # Save state from old root logger
-            old_level = root_logger.level
-            old_handlers = list(root_logger.handlers)  # Copy list
-            old_propagate = root_logger.propagate
-            old_disabled = root_logger.disabled
-
             # Remove old root logger from registry
             from .logging_utils import (  # noqa: PLC0415
                 ApatheticLogging_Internal_LoggingUtils,
@@ -776,17 +783,14 @@ class ApatheticLogging_Internal_LoggerCore(logging.Logger):  # noqa: N801  # pyr
             if hasattr(logging, "root"):
                 logging.root = new_root_logger  # type: ignore[assignment]
 
-            # Restore state from old root logger
-            new_root_logger.setLevel(old_level)
-            new_root_logger.propagate = old_propagate
-            new_root_logger.disabled = old_disabled
-            # Restore handlers (they were attached to old logger, so we need to
-            # re-add them)
-            for handler in old_handlers:
-                new_root_logger.addHandler(handler)
-
-            # Reconnect child loggers to the new root logger
-            _logging_utils.reconnectChildLoggers(root_logger, new_root_logger)
+            # Port state from old root logger to new root logger
+            # (also reconnects child loggers internally)
+            _logging_utils.portLoggerState(
+                root_logger,
+                new_root_logger,
+                port_handlers=port_handlers,
+                port_level=port_level,
+            )
 
         # If already extended, skip the rest (level registration, etc.)
         if already_extended:

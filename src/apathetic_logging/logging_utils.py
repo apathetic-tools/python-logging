@@ -326,6 +326,187 @@ class ApatheticLogging_Internal_LoggingUtils:  # noqa: N801  # pyright: ignore[r
                 logger.parent = new_logger
 
     @staticmethod
+    def _portPropagateAndDisabled(
+        old_logger: logging.Logger,
+        new_logger: logging.Logger,
+    ) -> None:
+        """Port propagate and disabled state from old logger to new logger."""
+        # Use setPropagate() if available to set the _propagate_set flag
+        # (prevents _applyPropagateSetting() from overriding ported value)
+        if hasattr(new_logger, "setPropagate"):
+            new_logger.setPropagate(old_logger.propagate)  # pyright: ignore[reportAttributeAccessIssue, reportUnknownMemberType]
+        else:
+            new_logger.propagate = old_logger.propagate
+        new_logger.disabled = old_logger.disabled
+
+    @staticmethod
+    def _portHandlers(
+        old_logger: logging.Logger,
+        new_logger: logging.Logger,
+    ) -> None:
+        """Port handlers from old logger to new logger."""
+        old_handlers = list(old_logger.handlers)  # Copy list
+        for handler in old_handlers:
+            new_logger.addHandler(handler)
+
+    @staticmethod
+    def _portLevel(
+        old_logger: logging.Logger,
+        new_logger: logging.Logger,
+        *,
+        constants: Any,
+    ) -> None:
+        """Port level from old logger to new logger."""
+        old_level = old_logger.level
+        # Validate level if it's an apathetic logger (has validateLevel)
+        if hasattr(new_logger, "validateLevel"):
+            try:
+                new_logger.validateLevel(old_level, allow_inherit=True)  # pyright: ignore[reportAttributeAccessIssue, reportUnknownMemberType]
+            except ValueError:
+                # Invalid level - fall back to apathetic default
+                return
+
+        # Use allow_inherit=True if level is INHERIT_LEVEL
+        if old_level == constants.INHERIT_LEVEL:
+            if hasattr(new_logger, "setLevel"):
+                sig = inspect.signature(new_logger.setLevel)
+                if "allow_inherit" in sig.parameters:
+                    new_logger.setLevel(old_level, allow_inherit=True)  # type: ignore[call-arg]
+                else:
+                    new_logger.setLevel(old_level)
+            else:
+                new_logger.level = old_level
+        else:
+            new_logger.setLevel(old_level)
+
+    @staticmethod
+    def _setApatheticDefaults(
+        new_logger: logging.Logger,
+        *,
+        constants: Any,
+    ) -> None:
+        """Set apathetic defaults for logger level."""
+        root_names = {constants.ROOT_LOGGER_KEY, constants.ROOT_LOGGER_NAME}
+        is_root = new_logger.name in root_names
+        if is_root:
+            # Root logger: use determineLogLevel() if available
+            if hasattr(new_logger, "determineLogLevel"):
+                level_name = new_logger.determineLogLevel()  # pyright: ignore[reportAttributeAccessIssue, reportUnknownMemberType, reportUnknownVariableType]
+                new_logger.setLevel(level_name)  # pyright: ignore[reportUnknownArgumentType]
+            else:
+                # Fallback: use INHERIT_LEVEL (though root has no parent)
+                new_logger.setLevel(constants.INHERIT_LEVEL, allow_inherit=True)  # type: ignore[call-arg]
+        # Leaf logger: use INHERIT_LEVEL to inherit from parent
+        elif hasattr(new_logger, "setLevel"):
+            sig = inspect.signature(new_logger.setLevel)
+            if "allow_inherit" in sig.parameters:
+                new_logger.setLevel(
+                    constants.INHERIT_LEVEL,
+                    allow_inherit=True,  # type: ignore[call-arg]
+                )
+            else:
+                new_logger.setLevel(constants.INHERIT_LEVEL)
+        else:
+            new_logger.level = constants.INHERIT_LEVEL
+
+    @staticmethod
+    def portLoggerState(
+        old_logger: logging.Logger,
+        new_logger: logging.Logger,
+        *,
+        port_handlers: bool | None = None,
+        port_level: bool | None = None,
+    ) -> None:
+        """Port state from old logger to new logger.
+
+        Ports propagate and disabled state always. Optionally ports handlers
+        and level based on parameters. When not porting level, uses apathetic
+        defaults: determineLogLevel() for root logger, INHERIT_LEVEL for leaf loggers.
+
+        After porting (or not porting) handlers, calls manageHandlers() if the new
+        logger supports it, to ensure apathetic handlers are set up appropriately
+        based on propagate setting. This ensures root logger always has a handler,
+        and child loggers with propagate=False get handlers as needed. manageHandlers()
+        only manages DualStreamHandler instances, so it won't interfere with ported
+        user handlers.
+
+        Finally, reconnects child loggers from the old logger to the new logger,
+        ensuring child loggers point to the new logger instance after replacement.
+
+        Args:
+            old_logger: The logger being replaced.
+            new_logger: The new logger to port state to.
+            port_handlers: Whether to port handlers. If None, checks registry setting
+                or defaults to True. When True, handlers from old logger are ported.
+                When False, new logger manages its own handlers via manageHandlers().
+                In both cases, manageHandlers() is called to ensure apathetic handlers
+                are set up if needed.
+            port_level: Whether to port level. If None, checks registry setting or
+                defaults to True. When True, level from old logger is ported.
+                When False, uses apathetic defaults (determineLogLevel() for root,
+                INHERIT_LEVEL for leaf loggers). Note: User-provided level parameters
+                in getLogger/getLoggerOfType take precedence over ported level.
+        """
+        from .constants import (  # noqa: PLC0415
+            ApatheticLogging_Internal_Constants,
+        )
+        from .registry_data import (  # noqa: PLC0415
+            ApatheticLogging_Internal_RegistryData,
+        )
+
+        _constants = ApatheticLogging_Internal_Constants
+        _registry_data = ApatheticLogging_Internal_RegistryData
+
+        # Always port propagate and disabled
+        ApatheticLogging_Internal_LoggingUtils._portPropagateAndDisabled(
+            old_logger, new_logger
+        )
+
+        # Resolve port_handlers parameter
+        if port_handlers is None:
+            port_handlers = (
+                _registry_data.registered_internal_port_handlers
+                if _registry_data.registered_internal_port_handlers is not None
+                else _constants.DEFAULT_PORT_HANDLERS
+            )
+
+        # Port handlers if requested
+        if port_handlers:
+            ApatheticLogging_Internal_LoggingUtils._portHandlers(old_logger, new_logger)
+
+        # After porting (or not porting) handlers, ensure apathetic handlers are set up
+        # if the logger supports manageHandlers(). This ensures root logger always has
+        # a handler, and child loggers with propagate=False get handlers as needed.
+        # manageHandlers() only manages DualStreamHandler instances, so it won't
+        # interfere with ported user handlers.
+        if hasattr(new_logger, "manageHandlers"):
+            new_logger.manageHandlers()  # pyright: ignore[reportAttributeAccessIssue, reportUnknownMemberType]
+
+        # Resolve port_level parameter
+        if port_level is None:
+            port_level = (
+                _registry_data.registered_internal_port_level
+                if _registry_data.registered_internal_port_level is not None
+                else _constants.DEFAULT_PORT_LEVEL
+            )
+
+        # Port level if requested, otherwise use apathetic defaults
+        if port_level:
+            ApatheticLogging_Internal_LoggingUtils._portLevel(
+                old_logger, new_logger, constants=_constants
+            )
+        else:
+            ApatheticLogging_Internal_LoggingUtils._setApatheticDefaults(
+                new_logger, constants=_constants
+            )
+
+        # Reconnect child loggers from old logger to new logger
+        # This ensures child loggers point to the new logger instance after replacement
+        ApatheticLogging_Internal_LoggingUtils.reconnectChildLoggers(
+            old_logger, new_logger
+        )
+
+    @staticmethod
     def removeLogger(logger_name: str) -> None:
         """Remove a logger from the logging manager's registry.
 

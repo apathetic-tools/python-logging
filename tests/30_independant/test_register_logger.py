@@ -156,13 +156,19 @@ def test_register_logger_with_custom_class() -> None:
             cls,
             *,
             replace_root: bool | None = None,
+            port_handlers: bool | None = None,
+            port_level: bool | None = None,
         ) -> bool:
             """Custom extend that sets a flag."""
             if cls._logging_module_extended:
                 return False
             cls._logging_module_extended = True
             # Call parent to actually extend
-            return super().extendLoggingModule(replace_root=replace_root)
+            return super().extendLoggingModule(
+                replace_root=replace_root,
+                port_handlers=port_handlers,
+                port_level=port_level,
+            )
 
     # --- execute ---
     mod_alogs.registerLogger("test_custom", CustomLogger)

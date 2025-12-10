@@ -70,3 +70,21 @@ class ApatheticLogging_Internal_RegistryData:  # noqa: N801  # pyright: ignore[r
     applications to use their own custom logger class for the root logger.
     Set via registerReplaceRootLogger() or register_replace_root_logger().
     """
+    registered_internal_port_handlers: bool | None = None
+    """Whether to port handlers when replacing a logger.
+
+    If None, defaults to DEFAULT_PORT_HANDLERS from constants.py
+    (True by default - port handlers to preserve existing configuration).
+    When False, new logger manages its own handlers via manageHandlers().
+    Set via registerPortHandlers() or register_port_handlers().
+    """
+    registered_internal_port_level: bool | None = None
+    """Whether to port level when replacing a logger.
+
+    If None, defaults to DEFAULT_PORT_LEVEL from constants.py
+    (True by default - port level to preserve existing configuration).
+    When False, the new logger uses apathetic defaults (determineLogLevel()
+    for root, INHERIT_LEVEL for leaf loggers). Note: User-provided level
+    parameters in getLogger/getLoggerOfType take precedence over ported level.
+    Set via registerPortLevel() or register_port_level().
+    """
