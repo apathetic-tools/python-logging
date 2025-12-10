@@ -2,6 +2,14 @@
 
 <!-- version list -->
 
+## v0.14.0 (2025-12-10)
+
+### Features
+
+- **api**: Add getRootLogger function
+  ([`6213c19`](https://github.com/apathetic-tools/python-logging/commit/6213c194fb66fd16878a303cd59f79228c1949fe))
+
+
 ## v0.13.0 (2025-12-10)
 
 ### Features
