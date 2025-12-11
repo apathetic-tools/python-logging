@@ -2,6 +2,14 @@
 
 <!-- version list -->
 
+## v0.17.0 (2025-12-11)
+
+### Features
+
+- **api**: Add allow_inherit and replace_root parameters to get_logger
+  ([`a061dcd`](https://github.com/apathetic-tools/python-logging/commit/a061dcd0df8a10c36bc1d87f0897a96af597f99f))
+
+
 ## v0.16.0 (2025-12-10)
 
 ### Features
