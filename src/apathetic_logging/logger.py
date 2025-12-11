@@ -685,17 +685,17 @@ class ApatheticLogging_Internal_LoggerCore(logging.Logger):  # noqa: N801  # pyr
         Note for tests:
             When testing isinstance checks on logger instances, use
             ``logging.getLoggerClass()`` instead of direct class references
-            (e.g., ``mod_alogs.Logger``). This works reliably in both installed
-            and singlefile runtime modes because it uses the actual class object
+            (e.g., ``mod_alogs.Logger``). This works reliably in both package
+            and stitched runtime modes because it uses the actual class object
             that was set via ``logging.setLoggerClass()``, rather than a class
             reference from the import shim which may have different object identity
-            in singlefile mode.
+            in stitched mode.
 
         Example:
-                # ✅ Good: Works in both installed and singlefile modes
+                # ✅ Good: Works in both package and stitched modes
                 assert isinstance(logger, logging.getLoggerClass())
 
-                # ❌ May fail in singlefile mode due to class identity differences
+                # ❌ May fail in stitched mode due to class identity differences
                 assert isinstance(logger, mod_alogs.Logger)
 
         """
@@ -834,7 +834,7 @@ class ApatheticLogging_Internal_LoggerCore(logging.Logger):  # noqa: N801  # pyr
 
         # Check registered environment variables, or fall back to "LOG_LEVEL"
         # Access registry via namespace class MRO to ensure correct resolution
-        # in both installed and stitched builds
+        # in both package and stitched builds
         namespace_module = sys.modules.get("apathetic_logging")
         if namespace_module is not None:
             namespace_class = getattr(namespace_module, "apathetic_logging", None)

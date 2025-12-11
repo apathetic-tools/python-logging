@@ -145,3 +145,70 @@ def test_manage_handlers_rebuilds_when_streams_change() -> None:
 
     # --- cleanup ---
     sys.stdout = original_stdout
+
+
+def test_manually_set_propagate_false_attaches_handler() -> None:
+    """Test that manually setting propagate=False correctly attaches handler."""
+    # --- setup ---
+    child = mod_alogs.getLogger("test_manual_propagate_false")
+    # Start with propagate=True (default for child loggers)
+    child.propagate = True
+    child.handlers.clear()
+    child.setLevel("DEBUG")
+
+    # --- execute ---
+    # Manually set propagate=False
+    child.setPropagate(False)
+
+    # Trigger handler attachment by logging
+    child.info("test message")
+
+    # --- verify ---
+    # With propagate=False, handler should be attached
+    assert child.propagate is False
+    assert len(child.handlers) > 0
+    assert any(isinstance(h, mod_alogs.DualStreamHandler) for h in child.handlers)
+
+
+def test_manually_set_propagate_true_removes_handler() -> None:
+    """Test that manually setting propagate=True removes handler."""
+    # --- setup ---
+    child = mod_alogs.getLogger("test_manual_propagate_true")
+    # Start with propagate=False and handler
+    child.setPropagate(False)
+    child.setLevel("DEBUG")
+    child.handlers.clear()
+
+    # Trigger handler attachment
+    child.info("test message")
+    assert len(child.handlers) > 0  # Should have handler
+
+    # --- execute ---
+    # Manually set propagate=True
+    child.setPropagate(True)
+
+    # --- verify ---
+    # With propagate=True, handler should be removed
+    assert child.propagate is True
+    assert len(child.handlers) == 0
+
+
+def test_default_propagate_true_no_handler_on_new_logger() -> None:
+    """Test that new loggers with default propagate=True don't have handlers."""
+    # --- setup ---
+    # Create a new logger (defaults to propagate=True)
+    child = mod_alogs.getLogger("test_default_propagate")
+    child.handlers.clear()
+    child.setLevel("DEBUG")
+
+    # --- verify ---
+    # Should be propagating by default
+    assert child.propagate is True
+
+    # --- execute ---
+    # Log a message
+    child.info("test message")
+
+    # --- verify ---
+    # Should not have handler (propagates to root)
+    assert len(child.handlers) == 0

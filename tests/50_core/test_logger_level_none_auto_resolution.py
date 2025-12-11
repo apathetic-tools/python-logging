@@ -142,3 +142,69 @@ def test_level_none_falls_back_to_default() -> None:
     root.setLevel(original_root_level)
     if original_env is not None:
         os.environ["LOG_LEVEL"] = original_env
+
+
+def test_get_logger_with_level_none_does_not_set_level() -> None:
+    """Test getLogger() with level=None does NOT set level."""
+    # --- setup ---
+    root = logging.getLogger("")
+    original_root_level = root.level
+    root.setLevel("WARNING")
+
+    # Set environment variable (should be ignored - level=None doesn't set level)
+    original_env = os.environ.get("LOG_LEVEL")
+    os.environ["LOG_LEVEL"] = "DEBUG"
+
+    # --- execute ---
+    # getLogger() with level=None should NOT set level (unlike Logger constructor)
+    logger = mod_alogs.getLogger("test_get_logger_level_none", level=None)
+
+    # --- verify ---
+    # Should be NOTSET (inherits from root), not auto-resolved from env
+    assert logger.level == logging.NOTSET
+    assert logger.levelName == "NOTSET"
+    assert logger.effectiveLevel == logging.WARNING  # Inherits from root
+
+    # --- cleanup ---
+    root.setLevel(original_root_level)
+    if original_env is None:
+        os.environ.pop("LOG_LEVEL", None)
+    else:
+        os.environ["LOG_LEVEL"] = original_env
+
+
+def test_get_logger_without_level_vs_level_none_same_behavior() -> None:
+    """Test that getLogger() without level and with level=None behave the same.
+
+    - Without level parameter: defaults to INHERIT_LEVEL (explicitly set)
+    - With level=None: does NOT set level (inherits current state)
+    Both result in NOTSET, but default explicitly sets it.
+    """
+    # --- setup ---
+    root = logging.getLogger("")
+    original_root_level = root.level
+    root.setLevel("INFO")
+
+    original_env = os.environ.get("LOG_LEVEL")
+    os.environ["LOG_LEVEL"] = "ERROR"
+
+    # --- execute ---
+    # Without level parameter: defaults to INHERIT_LEVEL (explicitly set)
+    logger_notset = mod_alogs.getLogger("test_no_level_param")
+    # With level=None: does NOT set level (inherits current state)
+    logger_none = mod_alogs.getLogger("test_level_none_param", level=None)
+
+    # --- verify ---
+    # Both should be NOTSET and inherit from root
+    assert logger_notset.level == logging.NOTSET
+    assert logger_notset.effectiveLevel == logging.INFO  # From root
+
+    assert logger_none.level == logging.NOTSET  # Not set, inherits
+    assert logger_none.effectiveLevel == logging.INFO  # From root (not env var)
+
+    # --- cleanup ---
+    root.setLevel(original_root_level)
+    if original_env is None:
+        os.environ.pop("LOG_LEVEL", None)
+    else:
+        os.environ["LOG_LEVEL"] = original_env

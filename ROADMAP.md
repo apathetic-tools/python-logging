@@ -7,14 +7,7 @@ Some of these we just want to consider, and may not want to implement.
 - None currently
 
 ## 🧪 Tests
-- Tests are slow, when to run what?
-- **Update tests for root logger architecture changes:**
-  - Tests expecting loggers to have explicit levels: Loggers now default to `NOTSET` (inherit from root) unless `level=None` is passed
-  - Tests checking handler attachment: Child loggers with `propagate=True` no longer have handlers (they propagate to root)
-  - Tests that manually set `propagate=False`: May need to verify handlers are attached correctly
-  - Tests using `module_logger` fixture: Sets `propagate=False` explicitly (line 68), which is fine, but verify behavior
-  - Tests that expect auto-level resolution: Only happens when `level=None` is passed, not by default
-
+- None currently
 
 ## 🧑‍💻 Development
 - Beta phase, we need to use the library more to identify further improvements or problems

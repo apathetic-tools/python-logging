@@ -204,12 +204,12 @@ def test_dual_stream_handler_test_level_bypasses_capture(
     logger = logging.getLogger(logger_name)
     # Ensure it's our Logger class.
     # Use logging.getLoggerClass() which works in both modes. This is necessary
-    # because in singlefile mode, direct class references (e.g., mod_alogs.Logger)
+    # because in stitched mode, direct class references (e.g., mod_alogs.Logger)
     # may have different object identity than the actual class used to create logger
     # instances, even though they're functionally the same. Using
     # logging.getLoggerClass() uses the actual class object that was set via
     # logging.setLoggerClass() in extendLoggingModule(), which works reliably
-    # in both installed and singlefile runtime modes.
+    # in both package and stitched runtime modes.
     # See extendLoggingModule() docstring for more details.
     if not isinstance(logger, logging.getLoggerClass()):
         # Create a new logger if it's not our type

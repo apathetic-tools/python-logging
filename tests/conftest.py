@@ -22,17 +22,7 @@ from tests.utils import (
     PROJ_ROOT,
     make_safe_trace,
 )
-from tests.utils.log_fixtures import (
-    direct_logger,
-    module_logger,
-)
 
-
-# These fixtures are intentionally re-exported so pytest can discover them.
-__all__ = [
-    "direct_logger",
-    "module_logger",
-]
 
 safe_trace = make_safe_trace("⚡️")
 
@@ -46,6 +36,19 @@ apathetic_utils.runtime_swap(
 # Import after runtime_swap to ensure we get the right module
 import apathetic_logging as mod_alogs  # noqa: E402
 import apathetic_logging.registry_data as mod_registry  # noqa: E402
+
+# Import fixtures after runtime_swap so they use the correct module version
+from tests.utils.log_fixtures import (  # noqa: E402
+    direct_logger,
+    module_logger,
+)
+
+
+# These fixtures are intentionally re-exported so pytest can discover them.
+__all__ = [
+    "direct_logger",
+    "module_logger",
+]
 
 
 @pytest.fixture(autouse=True)

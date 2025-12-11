@@ -50,7 +50,7 @@ def list_important_modules() -> list[str]:
     """Return all importable submodules under the package, if available."""
     important: list[str] = []
     if not hasattr(app_package, "__path__"):
-        SAFE_TRACE("pkgutil.walk_packages skipped — stitched runtime (no __path__)")
+        SAFE_TRACE("pkgutil.walk_packages skipped — stitched mode (no __path__)")
         important.append(app_package.__name__)
     else:
         for _, name, _ in pkgutil.walk_packages(
@@ -116,7 +116,7 @@ def test_pytest_runtime_cache_integrity() -> None:
     # In stitched mode, get the module from sys.modules to ensure we're using
     # the version from the stitched script (which was loaded by runtime_swap)
     # rather than the one imported at the top of this file (which might be from
-    # the installed package if it was imported before runtime_swap ran)
+    # the package if it was imported before runtime_swap ran)
     if mode == "stitched" and PROGRAM_PACKAGE in sys.modules:
         # Use the module from sys.modules, which should be from the stitched script
         app_package_actual = sys.modules[PROGRAM_PACKAGE]
@@ -149,7 +149,7 @@ def test_pytest_runtime_cache_integrity() -> None:
 
         # exists
         assert expected_script.exists(), (
-            f"Expected standalone script at {expected_script}"
+            f"Expected stitched script at {expected_script}"
         )
 
         # path peeks - in stitched mode, the package module might be

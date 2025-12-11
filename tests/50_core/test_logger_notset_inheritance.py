@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import logging
+import os
 
 import apathetic_logging as mod_alogs
 
@@ -139,3 +140,33 @@ def test_set_root_level_affects_all_notset_children() -> None:
     # --- cleanup ---
     root.setLevel(original_root_level)
     # Loggers will be cleaned up by test fixture
+
+
+def test_get_logger_without_level_defaults_to_notset() -> None:
+    """Test getLogger() without level defaults to NOTSET (not auto-resolving)."""
+    # --- setup ---
+    root = logging.getLogger("")
+    original_root_level = root.level
+    root.setLevel("INFO")
+
+    # Set environment variable (should be ignored when level is not passed)
+    original_env = os.environ.get("LOG_LEVEL")
+    os.environ["LOG_LEVEL"] = "DEBUG"
+
+    # --- execute ---
+    # getLogger() without level parameter should default to NOTSET
+    logger = mod_alogs.getLogger("test_get_logger_no_level")
+
+    # --- verify ---
+    # Should be NOTSET, not auto-resolved from env
+    assert logger.level == logging.NOTSET
+    assert logger.levelName == "NOTSET"
+    # Effective level inherits from root
+    assert logger.effectiveLevel == logging.INFO
+
+    # --- cleanup ---
+    root.setLevel(original_root_level)
+    if original_env is None:
+        os.environ.pop("LOG_LEVEL", None)
+    else:
+        os.environ["LOG_LEVEL"] = original_env

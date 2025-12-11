@@ -1280,7 +1280,7 @@ If `logger_name` is not provided, the top-level package is automatically extract
 
 If `logger_class` is provided and has an `extendLoggingModule()` method, it will be called to extend the logging module with custom levels and set the logger class. If `logger_class` is provided but does not have `extendLoggingModule()`, `logging.setLoggerClass()` will be called directly to set the logger class. If `logger_class` is not provided, nothing is done with the logger class (the default `Logger` is already extended at import time).
 
-**Important**: If you're using a custom logger class that has `extendLoggingModule()`, do not call `logging.setLoggerClass()` directly. Instead, pass the class to `registerLogger()` and let `extendLoggingModule()` handle setting the logger class. This ensures consistent behavior and avoids class identity issues in singlefile mode.
+**Important**: If you're using a custom logger class that has `extendLoggingModule()`, do not call `logging.setLoggerClass()` directly. Instead, pass the class to `registerLogger()` and let `extendLoggingModule()` handle setting the logger class. This ensures consistent behavior and avoids class identity issues in stitched mode.
 
 **Parameters:**
 

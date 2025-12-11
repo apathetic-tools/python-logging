@@ -126,7 +126,7 @@ class ApatheticLogging_Internal_Registry:  # noqa: N801  # pyright: ignore[repor
         directly. Instead, pass the class to ``registerLogger()`` and let
         ``extendLoggingModule()`` handle setting the logger class. This
         ensures consistent behavior and avoids class identity issues in
-        singlefile mode.
+        stitched mode.
 
         Args:
             logger_name: The name of the logger to retrieve (e.g., "myapp").

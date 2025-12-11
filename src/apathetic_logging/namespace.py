@@ -99,10 +99,10 @@ class apathetic_logging(  # noqa: N801
 # Ensure logging module is extended with TEST, TRACE, DETAIL, BRIEF, MINIMAL, and SILENT
 # levels
 # This must be called before any loggers are created
-# This runs when namespace.py is executed (both installed and stitched modes)
+# This runs when namespace.py is executed (both package and stitched modes)
 # The method is idempotent, so safe to call multiple times if needed
 apathetic_logging.Logger.extendLoggingModule()
 
 # Note: All exports are handled in __init__.py
-# - For library builds (installed/singlefile): __init__.py is included, exports happen
+# - For library builds (package/stitched): __init__.py is included, exports happen
 # - For embedded builds: __init__.py is excluded, no exports (only class available)

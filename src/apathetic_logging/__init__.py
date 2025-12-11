@@ -10,24 +10,24 @@ if TYPE_CHECKING:
 
 # Get reference to the namespace class
 # In stitched mode: class is already defined in namespace.py (executed before this)
-# In installed mode: import from namespace module
-_apathetic_logging_is_standalone = globals().get("__STANDALONE__", False)
+# In package mode: import from namespace module
+_apathetic_logging_is_stitched = globals().get("__STITCHED__", False)
 
-if _apathetic_logging_is_standalone:
+if _apathetic_logging_is_stitched:
     # Stitched mode: class already defined in namespace.py
     # Get reference to the class (it's already in globals from namespace.py)
     _apathetic_logging_raw = globals().get("apathetic_logging")
     if _apathetic_logging_raw is None:
         # Fallback: should not happen, but handle gracefully
-        msg = "apathetic_logging class not found in standalone mode"
+        msg = "apathetic_logging class not found in stitched mode"
         raise RuntimeError(msg)
     # Type cast to help mypy understand this is the apathetic_logging class
     # The import gives us type[apathetic_logging], so cast to
     # type[_apathetic_logging_class]
     apathetic_logging = cast("type[_apathetic_logging_class]", _apathetic_logging_raw)
 else:
-    # Installed mode: import from namespace module
-    # This block is only executed in installed mode, not in standalone builds
+    # Package mode: import from namespace module
+    # This block is only executed in package mode, not in stitched builds
     from .namespace import apathetic_logging
 
     # Ensure the else block is not empty (build script may remove import)
@@ -38,7 +38,7 @@ else:
 #
 # Note: In embedded builds, __init__.py is excluded from the stitch,
 # so this code never runs and no exports happen (only the class is available).
-# In singlefile/installed builds, __init__.py is included, so exports happen.
+# In stitched/package builds, __init__.py is included, so exports happen.
 DEFAULT_APATHETIC_LOG_LEVEL = apathetic_logging.DEFAULT_APATHETIC_LOG_LEVEL
 DEFAULT_APATHETIC_LOG_LEVEL_ENV_VARS = (
     apathetic_logging.DEFAULT_APATHETIC_LOG_LEVEL_ENV_VARS
