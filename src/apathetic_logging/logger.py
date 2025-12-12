@@ -797,6 +797,12 @@ class ApatheticLogging_Internal_LoggerCore(logging.Logger):  # noqa: N801  # pyr
             if hasattr(logging, "root"):
                 logging.root = new_root_logger  # type: ignore[assignment]
 
+            # Also update logging.Logger.manager.root to point to new root logger
+            # The manager's root must stay in sync with logging.root, otherwise
+            # they reference different objects and child loggers may have incorrect
+            # parent references.
+            logging.Logger.manager.root = new_root_logger  # type: ignore[assignment]
+
             # Port state from old root logger to new root logger
             # (also reconnects child loggers internally)
             _logging_utils.portLoggerState(
@@ -927,6 +933,12 @@ class ApatheticLogging_Internal_LoggerCore(logging.Logger):  # noqa: N801  # pyr
             # Update logging.root
             if hasattr(logging, "root"):
                 logging.root = new_root_logger  # type: ignore[assignment]
+
+            # Also update logging.Logger.manager.root to point to new root logger
+            # The manager's root must stay in sync with logging.root, otherwise
+            # they reference different objects and child loggers may have incorrect
+            # parent references.
+            logging.Logger.manager.root = new_root_logger  # type: ignore[assignment]
 
             # Port state from old root logger to new one
             _logging_utils.portLoggerState(

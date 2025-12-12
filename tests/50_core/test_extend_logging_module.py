@@ -308,8 +308,13 @@ def test_extend_logging_module_reconnects_child_loggers() -> None:
     logging.setLoggerClass(logging.Logger)
     standard_root = logging.RootLogger(logging.INFO)
     logging.Logger.manager.loggerDict[_constants.ROOT_LOGGER_KEY] = standard_root
+    # Also update manager.root to stay in sync with logging.root
+    logging.Logger.manager.root = standard_root
     if hasattr(logging, "root"):
         logging.root = standard_root
+
+    # Reset the module extension flag so getLogger triggers extension
+    mod_alogs.Logger._logging_module_extended = False  # noqa: SLF001  # pyright: ignore[reportPrivateUsage]
 
     # Create child loggers BEFORE replacing root
     child1 = mod_alogs.getLogger("test_child1")
@@ -444,6 +449,67 @@ def test_extend_logging_module_port_level_parameter() -> None:
     assert new_root.level != logging.WARNING
     # Should have a valid level (determineLogLevel() result)
     assert new_root.level > 0  # Not INHERIT_LEVEL
+
+    # --- cleanup ---
+    _logging_utils.removeLogger(_constants.ROOT_LOGGER_KEY)
+    logging.setLoggerClass(mod_alogs.Logger)
+    mod_alogs.Logger.extendLoggingModule()
+    restored_root = logging.getLogger(_constants.ROOT_LOGGER_KEY)
+    restored_root.setLevel(old_level)
+    restored_root.propagate = old_propagate
+    restored_root.disabled = old_disabled
+    restored_root.handlers.clear()
+    for handler in old_handlers:
+        restored_root.addHandler(handler)
+
+
+def test_extend_logging_module_keeps_manager_root_in_sync() -> None:
+    """extendLoggingModule() must keep manager.root in sync with logging.root."""
+    # --- setup ---
+    _logging_utils = mod_alogs.apathetic_logging
+    _constants = mod_alogs.apathetic_logging
+
+    # Save current root logger state
+    old_root = logging.getLogger(_constants.ROOT_LOGGER_KEY)
+    old_level = old_root.level
+    old_handlers = list(old_root.handlers)
+    old_propagate = old_root.propagate
+    old_disabled = old_root.disabled
+
+    # Remove root logger and create a standard one
+    _logging_utils.removeLogger(_constants.ROOT_LOGGER_KEY)
+    if hasattr(logging, "root"):
+        logging.root = None  # type: ignore[assignment]
+
+    logging.setLoggerClass(logging.Logger)
+    standard_root = logging.RootLogger(logging.INFO)
+    logging.Logger.manager.loggerDict[_constants.ROOT_LOGGER_KEY] = standard_root
+    logging.Logger.manager.root = standard_root
+    if hasattr(logging, "root"):
+        logging.root = standard_root
+
+    # Reset the module extension flag so extendLoggingModule actually runs
+    mod_alogs.Logger._logging_module_extended = False  # noqa: SLF001  # pyright: ignore[reportPrivateUsage]
+
+    # --- execute ---
+    # Replace root logger
+    mod_alogs.Logger.extendLoggingModule(replace_root=True)
+
+    # --- verify ---
+    # Get new root logger
+    new_root = logging.getLogger(_constants.ROOT_LOGGER_KEY)
+    assert isinstance(new_root, mod_alogs.Logger)
+
+    # CRITICAL: logging.root and logging.Logger.manager.root MUST be the same object
+    # If they're different, child loggers will have inconsistent parent references
+    assert logging.root is new_root, "logging.root not updated to new root logger"  # type: ignore[comparison-overlap]
+    assert logging.Logger.manager.root is new_root, (  # type: ignore[comparison-overlap]
+        "logging.Logger.manager.root not updated to new root logger"
+    )
+    assert logging.root is logging.Logger.manager.root, (
+        "logging.root and logging.Logger.manager.root are different objects! "
+        "This causes child loggers to have incorrect parent references."
+    )
 
     # --- cleanup ---
     _logging_utils.removeLogger(_constants.ROOT_LOGGER_KEY)
