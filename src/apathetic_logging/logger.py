@@ -1226,23 +1226,6 @@ class ApatheticLogging_Internal_LoggerCore(logging.Logger):  # noqa: N801  # pyr
                 **kwargs,
             )
 
-    def minimal(self, msg: str, *args: Any, **kwargs: Any) -> None:
-        """Log a minimal-level message (deprecated: alias for brief).
-
-        .. deprecated::
-            This method is deprecated and will be removed once sibling tools
-            have upgraded. Use :meth:`brief` instead. Functionally equivalent
-            to :meth:`brief`.
-        """
-        _constants = ApatheticLogging_Internal_Constants
-        if self.isEnabledFor(_constants.BRIEF_LEVEL):
-            self._log(
-                _constants.BRIEF_LEVEL,
-                msg,
-                args,
-                **kwargs,
-            )
-
     def test(self, msg: str, *args: Any, **kwargs: Any) -> None:
         """Log a test-level message (most verbose, bypasses capture)."""
         _constants = ApatheticLogging_Internal_Constants

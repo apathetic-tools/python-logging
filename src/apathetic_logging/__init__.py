@@ -51,7 +51,6 @@ safeTrace = apathetic_logging.safeTrace
 SAFE_TRACE_ENABLED = apathetic_logging.SAFE_TRACE_ENABLED
 TRACE_LEVEL = apathetic_logging.TRACE_LEVEL
 BRIEF_LEVEL = apathetic_logging.BRIEF_LEVEL
-MINIMAL_LEVEL = apathetic_logging.MINIMAL_LEVEL
 DETAIL_LEVEL = apathetic_logging.DETAIL_LEVEL
 INHERIT_LEVEL = apathetic_logging.INHERIT_LEVEL
 NOTSET_LEVEL = apathetic_logging.NOTSET_LEVEL
@@ -93,7 +92,6 @@ info = apathetic_logging.info
 log = apathetic_logging.log
 makeLogRecord = apathetic_logging.makeLogRecord
 brief = apathetic_logging.brief
-minimal = apathetic_logging.minimal
 setLogRecordFactory = apathetic_logging.setLogRecordFactory
 setLoggerClass = apathetic_logging.setLoggerClass
 setRootLevel = apathetic_logging.setRootLevel
@@ -137,7 +135,6 @@ __all__ = [
     "DETAIL_LEVEL",
     "INHERIT_LEVEL",
     "LEVEL_ORDER",
-    "MINIMAL_LEVEL",
     "NOTSET_LEVEL",
     "SAFE_TRACE_ENABLED",
     "SILENT_LEVEL",
@@ -184,7 +181,6 @@ __all__ = [
     "log",
     "makeLogRecord",
     "makeSafeTrace",
-    "minimal",
     "registerCompatibilityMode",
     "registerDefaultLogLevel",
     "registerLogLevelEnvVars",
