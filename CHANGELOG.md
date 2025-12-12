@@ -2,6 +2,25 @@
 
 <!-- version list -->
 
+## v0.18.1 (2025-12-12)
+
+### Bug Fixes
+
+- **test**: Set parent for direct_logger fixture to enable level inheritance
+  ([`fd0c841`](https://github.com/apathetic-tools/python-logging/commit/fd0c8415878c67aec69172a013d4e7d2ffcbe083))
+
+### Refactoring
+
+- Improve code clarity and reduce duplication
+  ([`1cd776f`](https://github.com/apathetic-tools/python-logging/commit/1cd776f9fc873be773021ac5e38730138a843082))
+
+- Improve propagate initialization clarity and reduce duplication
+  ([`cf19870`](https://github.com/apathetic-tools/python-logging/commit/cf198703da98ca4f6cb4e115be10761121020c99))
+
+- **api**: Remove allow_inherit parameter from setLevel and getLogger
+  ([`5f70ae1`](https://github.com/apathetic-tools/python-logging/commit/5f70ae17d11fc8a91eeccabdc588e51991c0a4e3))
+
+
 ## v0.18.0 (2025-12-12)
 
 ### Chores
