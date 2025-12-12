@@ -11,6 +11,7 @@ Switch mode with: RUNTIME_MODE=stitched pytest or RUNTIME_MODE=zipapp pytest
 
 import logging
 import os
+import sys
 from collections.abc import Generator
 
 import apathetic_utils
@@ -51,6 +52,41 @@ __all__ = [
 ]
 
 
+# ----------------------------------------------------------------------
+# Helper functions for fixture
+# ----------------------------------------------------------------------
+
+
+def _save_ensure_root_logger_flag() -> bool | None:
+    """Save the current state of the _root_logger_user_configured flag."""
+    logger_module = sys.modules.get("apathetic_logging.logger")
+    return (
+        getattr(logger_module, "_root_logger_user_configured", None)
+        if logger_module
+        else None
+    )
+
+
+def _reset_ensure_root_logger_flag() -> None:
+    """Reset the _root_logger_user_configured flag for test isolation."""
+    logger_module = sys.modules.get("apathetic_logging.logger")
+    if logger_module and hasattr(logger_module, "_root_logger_user_configured"):
+        delattr(logger_module, "_root_logger_user_configured")
+
+
+def _restore_ensure_root_logger_flag(*, original_value: bool | None) -> None:
+    """Restore the _root_logger_user_configured flag to its original state."""
+    logger_module = sys.modules.get("apathetic_logging.logger")
+    if logger_module:
+        if original_value is None:
+            # If it wasn't set before, remove it now
+            if hasattr(logger_module, "_root_logger_user_configured"):
+                delattr(logger_module, "_root_logger_user_configured")
+        else:
+            # If it was set before, restore the original value
+            logger_module._root_logger_user_configured = original_value  # type: ignore[attr-defined]  # noqa: SLF001
+
+
 @pytest.fixture(autouse=True)
 def reset_logger_class_and_registry() -> Generator[None, None, None]:
     """Reset logger class and registry state before and after each test.
@@ -67,6 +103,8 @@ def reset_logger_class_and_registry() -> Generator[None, None, None]:
     original_env_vars = _registry.registered_internal_log_level_env_vars
     original_compatibility_mode = _registry.registered_internal_compatibility_mode
     original_propagate = _registry.registered_internal_propagate
+    # Save ensureRootLogger flag state
+    original_user_configured = _save_ensure_root_logger_flag()
 
     # Clear any existing loggers from the registry
     _logging_utils = mod_alogs.apathetic_logging
@@ -93,6 +131,8 @@ def reset_logger_class_and_registry() -> Generator[None, None, None]:
     _registry.registered_internal_log_level_env_vars = None
     _registry.registered_internal_compatibility_mode = None
     _registry.registered_internal_propagate = None
+    # Reset ensureRootLogger flag for test isolation
+    _reset_ensure_root_logger_flag()
 
     yield
 
@@ -119,6 +159,8 @@ def reset_logger_class_and_registry() -> Generator[None, None, None]:
     _registry.registered_internal_log_level_env_vars = original_env_vars
     _registry.registered_internal_compatibility_mode = original_compatibility_mode
     _registry.registered_internal_propagate = original_propagate
+    # Restore ensureRootLogger flag state
+    _restore_ensure_root_logger_flag(original_value=original_user_configured)
 
 
 # ----------------------------------------------------------------------

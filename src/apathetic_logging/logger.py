@@ -731,14 +731,30 @@ class ApatheticLogging_Internal_LoggerCore(logging.Logger):  # noqa: N801  # pyr
                 else _constants.DEFAULT_REPLACE_ROOT_LOGGER
             )
 
+        # Check if user has explicitly configured the root logger via
+        # ensureRootLogger(). If they have, respect their choice and don't touch it.
+        current_module = sys.modules.get(__name__)
+        user_configured_root = getattr(
+            current_module, "_root_logger_user_configured", False
+        )
+
         # Get root logger directly (logging.root or from registry)
         root_logger = logging.getLogger(_constants.ROOT_LOGGER_KEY)
-        # Check if root logger is the correct type - use cls directly for isinstance
-        # (getLoggerClass() would return cls, but using cls directly is clearer)
-        # Replace if: (not already_extended) OR (root logger is wrong type)
-        # This ensures we replace on first call, and also fix root logger if it
-        # becomes wrong type later (e.g., in tests that create standard root logger)
-        if replace_root and (not already_extended or not isinstance(root_logger, cls)):
+
+        # Determine if we should replace the root logger
+        # Only replace if:
+        # 1. replace_root is True (parameter, registry, or default)
+        # 2. User has NOT explicitly configured root via ensureRootLogger()
+        # 3. Either on first call (not already_extended) OR root logger is wrong type
+        #
+        # This replaces stdlib loggers (including subclasses like RootLogger)
+        # while respecting user configuration.
+        should_replace_root = (
+            replace_root
+            and not user_configured_root
+            and (not already_extended or not isinstance(root_logger, cls))
+        )
+        if should_replace_root:
             # Root logger is wrong type - need to replace it
             # Remove old root logger from registry
             from .logging_utils import (  # noqa: PLC0415
@@ -817,6 +833,118 @@ class ApatheticLogging_Internal_LoggerCore(logging.Logger):  # noqa: N801  # pyr
         cls.addLevelName(_constants.SILENT_LEVEL, "SILENT")
 
         return True
+
+    @classmethod
+    def ensureRootLogger(
+        cls,
+        *,
+        logger_class: type[logging.Logger] | None = None,
+        always_replace: bool = False,
+        accept_subclass: bool = True,
+    ) -> None:
+        """Ensure the root logger is of the specified type.
+
+        This function allows applications to explicitly set what the root logger
+        should be. After calling this function, the root logger will not be
+        replaced by subsequent calls to extendLoggingModule().
+
+        Args:
+            logger_class: The desired logger class for the root logger. If None
+                (default), uses the current default logger class
+                (logging.getLoggerClass()). If specified, the root logger will be
+                created/replaced to be an instance of this class.
+            always_replace: If True, always replace the root logger even if it's
+                already the correct type or a subclass. If False (default), respects
+                existing root logger if it's already the desired type or a subclass
+                (when accept_subclass=True). This parameter is mainly for forcing
+                a fresh creation of the root logger.
+            accept_subclass: If True (default), considers a root logger that is a
+                subclass of `logger_class` as acceptable (no replacement needed).
+                If False, only exact type match is considered acceptable. This
+                affects the behavior when always_replace=False.
+
+        Example:
+            # Ensure root logger is the default apathetic logger
+            apathetic_logging.Logger.ensureRootLogger()
+
+            # Ensure root logger is a custom logger class
+            class MyLogger(apathetic_logging.Logger):
+                pass
+
+            apathetic_logging.Logger.ensureRootLogger(logger_class=MyLogger)
+
+        Note:
+            This function sets a module-level flag indicating the user has
+            explicitly configured the root logger. Subsequent calls to
+            extendLoggingModule() will respect this and not attempt to replace
+            the root logger.
+        """
+        _constants = ApatheticLogging_Internal_Constants
+
+        # If logger_class is None, use the current default logger class
+        if logger_class is None:
+            logger_class = logging.getLoggerClass()
+
+        # Get current root logger
+        root_logger = logging.getLogger(_constants.ROOT_LOGGER_KEY)
+
+        # Determine if we should replace
+        should_replace = always_replace
+        if not should_replace:
+            # Smart mode: only replace if root is not the desired type
+            if accept_subclass:
+                # Accept exact match or subclass
+                should_replace = not isinstance(root_logger, logger_class)
+            else:
+                # Require exact match
+                should_replace = type(root_logger) is not logger_class
+
+        if should_replace:
+            from .logging_utils import (  # noqa: PLC0415
+                ApatheticLogging_Internal_LoggingUtils,
+            )
+
+            _logging_utils = ApatheticLogging_Internal_LoggingUtils
+
+            # Remove old root logger from registry
+            _logging_utils.removeLogger(_constants.ROOT_LOGGER_KEY)
+
+            # Clear logging.root
+            if hasattr(logging, "root"):
+                logging.root = None  # type: ignore[assignment]
+
+            # Set the logger class before getting the root logger
+            # This ensures the manager creates the root logger with the correct class
+            logging.setLoggerClass(logger_class)
+
+            # Create new root logger using the manager's getLogger method
+            # The logger class is already set above, so this will create a logger
+            # of type logger_class. We use the manager directly because it handles
+            # root logger creation properly even when logging.root is None.
+            new_root_logger = logging.Logger.manager.getLogger(
+                _constants.ROOT_LOGGER_KEY
+            )
+
+            # Ensure root logger has correct name
+            if new_root_logger.name != _constants.ROOT_LOGGER_NAME:
+                new_root_logger.name = _constants.ROOT_LOGGER_NAME
+
+            # Update logging.root
+            if hasattr(logging, "root"):
+                logging.root = new_root_logger  # type: ignore[assignment]
+
+            # Port state from old root logger to new one
+            _logging_utils.portLoggerState(
+                root_logger,
+                new_root_logger,
+                port_handlers=True,
+                port_level=True,
+            )
+
+        # Mark that user has explicitly configured the root logger
+        # This tells extendLoggingModule() not to touch the root logger
+        current_module = sys.modules[__name__]
+        current_module._root_logger_user_configured = True  # type: ignore[attr-defined]  # noqa: SLF001
 
     def determineLogLevel(
         self,
