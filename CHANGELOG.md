@@ -2,6 +2,14 @@
 
 <!-- version list -->
 
+## v0.18.2 (2025-12-12)
+
+### Bug Fixes
+
+- Keep logging.Logger.manager.root in sync with logging.root
+  ([`dcdb2c5`](https://github.com/apathetic-tools/python-logging/commit/dcdb2c59da75682fbe6a36c53d7798d73c4ad80e))
+
+
 ## v0.18.1 (2025-12-12)
 
 ### Bug Fixes
