@@ -2,6 +2,19 @@
 
 <!-- version list -->
 
+## v0.18.0 (2025-12-12)
+
+### Chores
+
+- Remove completed roadmap item for root logger edge cases
+  ([`20ed796`](https://github.com/apathetic-tools/python-logging/commit/20ed7965bb52630b19b439ba51aa745587fa24bd))
+
+### Features
+
+- **api**: Add ensureRootLogger() method and update root logger handling
+  ([`3113ce5`](https://github.com/apathetic-tools/python-logging/commit/3113ce5a7763650b1ed19339beb50d2c22471385))
+
+
 ## v0.17.0 (2025-12-11)
 
 ### Features
