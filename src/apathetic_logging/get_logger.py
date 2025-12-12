@@ -10,9 +10,6 @@ from __future__ import annotations
 import logging
 from typing import Any, TypeVar, cast
 
-from .constants import (
-    ApatheticLogging_Internal_Constants,
-)
 from .logger_namespace import (
     ApatheticLogging_Internal_Logger,
 )
@@ -175,27 +172,30 @@ class ApatheticLogging_Internal_GetLogger:  # noqa: N801  # pyright: ignore[repo
     def _applyPropagateSetting(logger: logging.Logger) -> None:
         """Apply propagate setting to a logger from registry or default.
 
-        Determines the propagate value from the registry (if set) or falls back
-        to the default from constants, then applies it to the logger.
+        This method implements the second phase of the two-phase propagate
+        initialization pattern. It is called automatically by getLoggerOfType()
+        after logger creation.
+
+        **Contract with Logger.__init__:** Only applies the registry/default
+        propagate value if the logger's _propagate_explicit flag is False,
+        indicating that the user did not explicitly provide a propagate value
+        in Logger.__init__(). This ensures that explicit user settings take
+        precedence over registry/default values.
+
+        If the logger does not have setPropagate() (e.g., standard logging.Logger),
+        the propagate attribute is set directly.
 
         Args:
             logger: The logger instance to apply the propagate setting to.
         """
-        from .registry_data import (  # noqa: PLC0415
-            ApatheticLogging_Internal_RegistryData,
+        from .registry import (  # noqa: PLC0415
+            ApatheticLogging_Internal_Registry,
         )
 
-        _constants = ApatheticLogging_Internal_Constants
-        _registry_data = ApatheticLogging_Internal_RegistryData
-
         # Only set if not already explicitly set in __init__
-        if not getattr(logger, "_propagate_set", False):
-            if _registry_data.registered_internal_propagate is not None:
-                # Use registered value
-                propagate_value = _registry_data.registered_internal_propagate
-            else:
-                # Use default from constants
-                propagate_value = _constants.DEFAULT_PROPAGATE
+        if not getattr(logger, "_propagate_explicit", False):
+            # Use getDefaultPropagate() to resolve registry/default value
+            propagate_value = ApatheticLogging_Internal_Registry.getDefaultPropagate()
 
             # Use setPropagate if available (apathetic logger), otherwise set directly
             if hasattr(logger, "setPropagate"):

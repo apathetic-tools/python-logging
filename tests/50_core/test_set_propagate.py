@@ -14,7 +14,7 @@ def test_set_propagate_true() -> None:
 
     # --- verify ---
     assert logger.propagate is True
-    assert getattr(logger, "_propagate_set", False) is True
+    assert getattr(logger, "_propagate_explicit", False) is True
 
 
 def test_set_propagate_false() -> None:
@@ -27,11 +27,11 @@ def test_set_propagate_false() -> None:
 
     # --- verify ---
     assert logger.propagate is False
-    assert getattr(logger, "_propagate_set", False) is True
+    assert getattr(logger, "_propagate_explicit", False) is True
 
 
 def test_set_propagate_marks_as_explicitly_set() -> None:
-    """setPropagate() should mark _propagate_set as True."""
+    """setPropagate() should mark _propagate_explicit as True."""
     # --- setup ---
     logger = mod_alogs.Logger("test_set_propagate_explicit")
 
@@ -39,7 +39,7 @@ def test_set_propagate_marks_as_explicitly_set() -> None:
     logger.setPropagate(True)
 
     # --- verify ---
-    assert getattr(logger, "_propagate_set", False) is True
+    assert getattr(logger, "_propagate_explicit", False) is True
     # If it was already set, that's fine - we just verify it's set after
     assert logger.propagate is True
 
@@ -61,7 +61,7 @@ def test_set_propagate_can_be_called_multiple_times() -> None:
 
     # --- verify ---
     assert logger.propagate is True
-    assert getattr(logger, "_propagate_set", False) is True
+    assert getattr(logger, "_propagate_explicit", False) is True
 
 
 def test_set_propagate_affects_handler_attachment() -> None:
@@ -102,7 +102,7 @@ def test_set_propagate_on_root_logger() -> None:
 
         # --- verify ---
         assert root.propagate is False
-        assert getattr(root, "_propagate_set", False) is True
+        assert getattr(root, "_propagate_explicit", False) is True
 
         # --- cleanup ---
         root.setPropagate(propagate=original_propagate)
@@ -127,10 +127,10 @@ def test_set_propagate_works_with_standard_logger() -> None:
     # --- verify ---
     # Should have been set (either True or False depending on registry/default)
     assert hasattr(logger, "propagate")
-    # _propagate_set should be True if setPropagate was called
+    # _propagate_explicit should be True if setPropagate was called
     # (but might be False if it wasn't explicitly set)
-    propagate_set = getattr(logger, "_propagate_set", None)
-    assert propagate_set is not None  # Should exist
+    propagate_explicit = getattr(logger, "_propagate_explicit", None)
+    assert propagate_explicit is not None  # Should exist
 
 
 def test_use_propagate_context_manager_changes_temporarily() -> None:

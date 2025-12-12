@@ -67,6 +67,15 @@ class ApatheticLogging_Internal_LoggerCore(logging.Logger):  # noqa: N801  # pyr
         (i.e. NOTSET) to inherit level from root logger. Defaults to propagate=True for
         root logger architecture.
 
+        **Contract with getLoggerOfType():** The propagate setting follows a two-phase
+        initialization pattern when propagate=None:
+        1. __init__ sets _propagate_explicit=False to indicate the value was not
+           explicitly provided by the user.
+        2. After logger creation, getLoggerOfType() calls _applyPropagateSetting(),
+           which checks _propagate_explicit and applies the registry or default value.
+        This allows explicit user overrides (propagate=True/False in __init__) to take
+        precedence over registry/default values set later via _applyPropagateSetting().
+
         Args:
             name: Logger name
             level: Initial logging level. If None, auto-resolves via
@@ -99,7 +108,7 @@ class ApatheticLogging_Internal_LoggerCore(logging.Logger):  # noqa: N801  # pyr
         if propagate is not None:
             self.setPropagate(propagate)
         else:
-            self._propagate_set = False  # Will be set by _applyPropagateSetting
+            self._propagate_explicit = False  # Will be set by _applyPropagateSetting
 
         # handler attachment will happen in _log() with manageHandlers()
 
@@ -379,7 +388,7 @@ class ApatheticLogging_Internal_LoggerCore(logging.Logger):  # noqa: N801  # pyr
 
         """
         self.propagate = propagate
-        self._propagate_set = True  # Mark as explicitly set
+        self._propagate_explicit = True  # Mark as explicitly set
 
         # Always call manageHandlers - it will handle the manage_handlers parameter
         self.manageHandlers(manage_handlers=manage_handlers)

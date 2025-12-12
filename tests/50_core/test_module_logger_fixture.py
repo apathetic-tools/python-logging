@@ -19,7 +19,7 @@ def test_module_logger_fixture_sets_propagate_false(
     # --- verify ---
     # Fixture should set propagate=False explicitly (line 70 in log_fixtures.py)
     assert module_logger.propagate is False
-    assert getattr(module_logger, "_propagate_set", False) is True
+    assert getattr(module_logger, "_propagate_explicit", False) is True
 
 
 def test_module_logger_fixture_has_handler(module_logger: mod_alogs.Logger) -> None:

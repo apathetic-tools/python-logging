@@ -331,7 +331,7 @@ class ApatheticLogging_Internal_LoggingUtils:  # noqa: N801  # pyright: ignore[r
         new_logger: logging.Logger,
     ) -> None:
         """Port propagate and disabled state from old logger to new logger."""
-        # Use setPropagate() if available to set the _propagate_set flag
+        # Use setPropagate() if available to set the _propagate_explicit flag
         # (prevents _applyPropagateSetting() from overriding ported value)
         if hasattr(new_logger, "setPropagate"):
             new_logger.setPropagate(old_logger.propagate)  # pyright: ignore[reportAttributeAccessIssue, reportUnknownMemberType]
