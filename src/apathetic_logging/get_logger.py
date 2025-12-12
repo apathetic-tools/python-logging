@@ -211,7 +211,6 @@ class ApatheticLogging_Internal_GetLogger:  # noqa: N801  # pyright: ignore[repo
         minimum: bool | None = None,
         extend: bool | None = None,
         replace_root: bool | None = None,
-        allow_inherit: bool | None = None,
         **kwargs: Any,
     ) -> ApatheticLogging_Internal_Logger.Logger:
         """Return a logger with the specified name, creating it if necessary.
@@ -232,7 +231,8 @@ class ApatheticLogging_Internal_GetLogger:  # noqa: N801  # pyright: ignore[repo
                 If an empty string (""), returns the root logger.
             *args: Additional positional arguments (for future-proofing)
             level: Log level to set on the logger. Accepts both string
-                names (case-insensitive) and numeric values.
+                names (case-insensitive) and numeric values. Level 0/NOTSET
+                allows inheritance from parent logger.
                 - If not provided: defaults to INHERIT_LEVEL (inherits from root)
                 - If None: auto-resolves via determineLogLevel()
                 - If provided (str/int): sets the logger's level to this value
@@ -245,9 +245,6 @@ class ApatheticLogging_Internal_GetLogger:  # noqa: N801  # pyright: ignore[repo
             replace_root: Whether to replace the root logger if it's not the correct
                 type. If None (default), uses registry setting or constant default.
                 Only used when extend=True.
-            allow_inherit: If True (default), allows setting the logger level to
-                INHERIT_LEVEL (NOTSET). If False, raises ValueError when attempting
-                to set level to INHERIT_LEVEL.
             **kwargs: Additional keyword arguments (for future-proofing)
 
         Returns:
@@ -269,7 +266,6 @@ class ApatheticLogging_Internal_GetLogger:  # noqa: N801  # pyright: ignore[repo
             minimum=minimum,
             extend=extend,
             replace_root=replace_root,
-            allow_inherit=allow_inherit,
             **kwargs,
         )
         return cast("ApatheticLogging_Internal_Logger.Logger", result)  # type: ignore[redundant-cast]
@@ -284,7 +280,6 @@ class ApatheticLogging_Internal_GetLogger:  # noqa: N801  # pyright: ignore[repo
         minimum: bool | None = None,
         extend: bool | None = True,
         replace_root: bool | None = None,
-        allow_inherit: bool | None = None,
         **kwargs: Any,
     ) -> ApatheticLogging_Internal_GetLogger._LoggerType:
         """Get a logger of the specified type, creating it if necessary.
@@ -308,7 +303,8 @@ class ApatheticLogging_Internal_GetLogger:  # noqa: N801  # pyright: ignore[repo
                 Prefer using as a keyword argument (e.g., skip_frames=2) for clarity.
             *args: Additional positional arguments (for future-proofing)
             level: Exact log level to set on the logger. Accepts both string
-                names (case-insensitive) and numeric values. If provided,
+                names (case-insensitive) and numeric values. Level 0/NOTSET
+                allows inheritance from parent logger. If provided,
                 sets the logger's level to this value. Defaults to None.
             minimum: If True, only set the level if it's more verbose (lower
                 numeric value) than the current level. This prevents downgrading
@@ -319,9 +315,6 @@ class ApatheticLogging_Internal_GetLogger:  # noqa: N801  # pyright: ignore[repo
             replace_root: Whether to replace the root logger if it's not the correct
                 type. If None (default), uses registry setting or constant default.
                 Only used when extend=True.
-            allow_inherit: If True (default), allows setting the logger level to
-                INHERIT_LEVEL (NOTSET). If False, raises ValueError when attempting
-                to set level to INHERIT_LEVEL.
             **kwargs: Additional keyword arguments (for future-proofing)
 
         Returns:
@@ -388,9 +381,8 @@ class ApatheticLogging_Internal_GetLogger:  # noqa: N801  # pyright: ignore[repo
         if level is not None:
             logger.setLevel(
                 level,
-                minimum=minimum,  # pyright: ignore[reportCallIssue]
-                allow_inherit=allow_inherit,  # pyright: ignore[reportCallIssue]
-            )  # type: ignore[call-arg]
+                minimum=minimum,  # type: ignore[call-arg]  # pyright: ignore[reportCallIssue]
+            )
 
         # Apply propagate setting from registry or default
         ApatheticLogging_Internal_GetLogger._applyPropagateSetting(logger)

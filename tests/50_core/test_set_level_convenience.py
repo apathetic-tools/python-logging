@@ -62,7 +62,7 @@ def test_set_level_minimum_with_effective_level_inheritance() -> None:
         assert child.effectiveLevel == logging.DEBUG
         assert child.levelName == "DEBUG"
         # Restore
-        child.setLevel(current_explicit, allow_inherit=True)
+        child.setLevel(current_explicit)
 
     # Test that it doesn't downgrade when requested level is less verbose
     less_verbose_level = logging.ERROR  # Less verbose than WARNING
@@ -72,7 +72,7 @@ def test_set_level_minimum_with_effective_level_inheritance() -> None:
         assert child.effectiveLevel == current_effective
         assert child.level == current_explicit
         # Restore
-        child.setLevel(current_explicit, allow_inherit=True)
+        child.setLevel(current_explicit)
 
     # Key test: Verify consistency with setLevel(minimum=True)
     # Both should compare against effectiveLevel

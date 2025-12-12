@@ -33,7 +33,7 @@ def test_use_level_and_propagate_specific_level_sets_propagate_false() -> None:
     _constants = mod_alogs.apathetic_logging
     child = mod_alogs.Logger("test_use_level_and_propagate_specific")
     child.setPropagate(True)  # Start with propagate=True
-    child.setLevel(_constants.INHERIT_LEVEL, allow_inherit=True)
+    child.setLevel(_constants.INHERIT_LEVEL)
     orig_level = child.level
     orig_propagate = child.propagate
 

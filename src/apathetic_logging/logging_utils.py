@@ -353,31 +353,22 @@ class ApatheticLogging_Internal_LoggingUtils:  # noqa: N801  # pyright: ignore[r
     def _portLevel(
         old_logger: logging.Logger,
         new_logger: logging.Logger,
-        *,
-        constants: Any,
     ) -> None:
         """Port level from old logger to new logger."""
         old_level = old_logger.level
         # Validate level if it's an apathetic logger (has validateLevel)
         if hasattr(new_logger, "validateLevel"):
             try:
-                new_logger.validateLevel(old_level, allow_inherit=True)  # pyright: ignore[reportAttributeAccessIssue, reportUnknownMemberType]
+                new_logger.validateLevel(old_level)  # pyright: ignore[reportAttributeAccessIssue, reportUnknownMemberType]
             except ValueError:
                 # Invalid level - fall back to apathetic default
                 return
 
-        # Use allow_inherit=True if level is INHERIT_LEVEL
-        if old_level == constants.INHERIT_LEVEL:
-            if hasattr(new_logger, "setLevel"):
-                sig = inspect.signature(new_logger.setLevel)
-                if "allow_inherit" in sig.parameters:
-                    new_logger.setLevel(old_level, allow_inherit=True)  # type: ignore[call-arg]
-                else:
-                    new_logger.setLevel(old_level)
-            else:
-                new_logger.level = old_level
-        else:
+        # Set the level - NOTSET/INHERIT_LEVEL (0) is always allowed
+        if hasattr(new_logger, "setLevel"):
             new_logger.setLevel(old_level)
+        else:
+            new_logger.level = old_level
 
     @staticmethod
     def _setApatheticDefaults(
@@ -395,17 +386,10 @@ class ApatheticLogging_Internal_LoggingUtils:  # noqa: N801  # pyright: ignore[r
                 new_logger.setLevel(level_name)  # pyright: ignore[reportUnknownArgumentType]
             else:
                 # Fallback: use INHERIT_LEVEL (though root has no parent)
-                new_logger.setLevel(constants.INHERIT_LEVEL, allow_inherit=True)  # type: ignore[call-arg]
+                new_logger.setLevel(constants.INHERIT_LEVEL)
         # Leaf logger: use INHERIT_LEVEL to inherit from parent
         elif hasattr(new_logger, "setLevel"):
-            sig = inspect.signature(new_logger.setLevel)
-            if "allow_inherit" in sig.parameters:
-                new_logger.setLevel(
-                    constants.INHERIT_LEVEL,
-                    allow_inherit=True,  # type: ignore[call-arg]
-                )
-            else:
-                new_logger.setLevel(constants.INHERIT_LEVEL)
+            new_logger.setLevel(constants.INHERIT_LEVEL)
         else:
             new_logger.level = constants.INHERIT_LEVEL
 
@@ -492,9 +476,7 @@ class ApatheticLogging_Internal_LoggingUtils:  # noqa: N801  # pyright: ignore[r
 
         # Port level if requested, otherwise use apathetic defaults
         if port_level:
-            ApatheticLogging_Internal_LoggingUtils._portLevel(
-                old_logger, new_logger, constants=_constants
-            )
+            ApatheticLogging_Internal_LoggingUtils._portLevel(old_logger, new_logger)
         else:
             ApatheticLogging_Internal_LoggingUtils._setApatheticDefaults(
                 new_logger, constants=_constants
@@ -860,16 +842,4 @@ class ApatheticLogging_Internal_LoggingUtils:  # noqa: N801  # pyright: ignore[r
                     else:
                         # Set child to INHERIT_LEVEL (i.e. NOTSET) so it
                         # inherits from root
-                        # Check if logger supports allow_inherit parameter
-                        sig = inspect.signature(logger.setLevel)
-                        if "allow_inherit" in sig.parameters:
-                            # Type ignore needed because logger might be stdlib
-                            # Logger which doesn't have allow_inherit, but we
-                            # checked the signature above
-                            logger.setLevel(
-                                _constants.INHERIT_LEVEL,
-                                allow_inherit=True,  # pyright: ignore[reportCallIssue]
-                            )  # type: ignore[call-arg]
-                        else:
-                            # Fallback for stdlib loggers - use direct assignment
-                            logger.level = _constants.INHERIT_LEVEL
+                        logger.setLevel(_constants.INHERIT_LEVEL)

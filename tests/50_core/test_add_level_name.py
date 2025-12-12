@@ -29,28 +29,22 @@ def test_validate_level_valid_level() -> None:
     mod_alogs.Logger.validateLevel(100, level_name="CUSTOM")
 
 
-def test_validate_level_zero_raises() -> None:
-    """validateLevel() should raise ValueError for level 0."""
-    with pytest.raises(ValueError, match=r"setLevel\(0\).*NOTSET"):
-        mod_alogs.Logger.validateLevel(0, level_name="TEST")
-
-
-def test_validate_level_zero_with_allow_inherit_passes() -> None:
-    """validateLevel() should pass for level 0 with allow_inherit=True."""
-    # Should not raise when allow_inherit=True
-    mod_alogs.Logger.validateLevel(0, level_name="TEST", allow_inherit=True)
+def test_validate_level_zero_passes() -> None:
+    """validateLevel() should pass for level 0 (NOTSET allows inheritance)."""
+    # Should not raise - level 0 is allowed for inheritance
+    mod_alogs.Logger.validateLevel(0, level_name="TEST")
 
 
 def test_validate_level_negative_raises() -> None:
     """validateLevel() should raise ValueError for negative levels."""
-    with pytest.raises(ValueError, match=r"<= 0"):
+    with pytest.raises(ValueError, match=r"< 0"):
         mod_alogs.Logger.validateLevel(-5, level_name="NEGATIVE")
 
 
 def test_validate_level_auto_detects_name() -> None:
     """validateLevel() should auto-detect level name if None."""
-    with pytest.raises(ValueError, match=r"setLevel\(0\).*NOTSET"):
-        mod_alogs.Logger.validateLevel(0, level_name=None)
+    # Should not raise - level 0 is allowed (would be NOTSET)
+    mod_alogs.Logger.validateLevel(0, level_name=None)
 
 
 # ---------------------------------------------------------------------------
@@ -60,8 +54,8 @@ def test_validate_level_auto_detects_name() -> None:
 
 def test_add_level_name_success() -> None:
     """addLevelName() should successfully register a custom level."""
-    # Use a unique level value to avoid conflicts
-    level_value = 25
+    # Use a unique level value to avoid conflicts (not 25/30 which are BRIEF/WARNING)
+    level_value = 125
     level_name = "CUSTOM_TEST"
     apathetic_level_name = f"{level_name}_LEVEL"
 
@@ -88,10 +82,10 @@ def test_add_level_name_success() -> None:
 
 def test_add_level_name_sets_convenience_attribute() -> None:
     """addLevelName() should set logging.<LEVEL_NAME> attribute."""
-    level_value = 30
+    level_value = 126
     level_name = "CONVENIENCE_TEST"
 
-    # Save original level name mapping (30 is WARNING)
+    # Save original level name mapping
     original_level_name = logging.getLevelName(level_value)
 
     # Clean up if it exists
@@ -116,15 +110,16 @@ def test_add_level_name_sets_convenience_attribute() -> None:
         logging.addLevelName(level_value, original_level_name)
 
 
-def test_add_level_name_zero_raises() -> None:
-    """addLevelName() should raise ValueError for level 0."""
-    with pytest.raises(ValueError, match=r"setLevel\(0\).*NOTSET"):
-        mod_alogs.Logger.addLevelName(0, "ZERO_LEVEL")
+def test_add_level_name_zero_succeeds() -> None:
+    """addLevelName() should succeed for level 0 (NOTSET)."""
+    # Level 0 should be allowed (it's the standard NOTSET)
+    # This is idempotent - calling again with same name should succeed
+    mod_alogs.Logger.addLevelName(0, "NOTSET")
 
 
 def test_add_level_name_negative_raises() -> None:
     """addLevelName() should raise ValueError for negative levels."""
-    with pytest.raises(ValueError, match=r"<= 0.*PEP 282"):
+    with pytest.raises(ValueError, match=r"< 0.*PEP 282"):
         mod_alogs.Logger.addLevelName(-10, "NEGATIVE_LEVEL")
 
 
@@ -160,15 +155,15 @@ def test_add_level_name_rejects_invalid_existing_attribute_type() -> None:
     """addLevelName() should reject if attribute exists with non-integer value."""
     level_name = "INVALID_TYPE_TEST"
 
-    # Set invalid attribute
+    # Set invalid attribute - use a unique level value
     setattr(logging, level_name, "not_an_int")
 
     try:
         with pytest.raises(
             ValueError,
-            match=r"non-integer value.*Level attributes must be integers",
+            match=r"non-integer value",
         ):
-            mod_alogs.Logger.addLevelName(40, level_name)
+            mod_alogs.Logger.addLevelName(140, level_name)
     finally:
         # Clean up
         if hasattr(logging, level_name):
@@ -176,18 +171,18 @@ def test_add_level_name_rejects_invalid_existing_attribute_type() -> None:
 
 
 def test_add_level_name_rejects_invalid_existing_attribute_value() -> None:
-    """addLevelName() should reject if attribute exists with <= 0 value."""
+    """addLevelName() should reject if attribute exists with different value."""
     level_name = "INVALID_VALUE_TEST"
 
-    # Set invalid attribute (zero)
-    setattr(logging, level_name, 0)
+    # Set existing attribute with different value
+    setattr(logging, level_name, 100)
 
     try:
         with pytest.raises(
             ValueError,
-            match=r"setLevel\(0\).*NOTSET",
+            match=r"attribute already exists with different value",
         ):
-            mod_alogs.Logger.addLevelName(45, level_name)
+            mod_alogs.Logger.addLevelName(141, level_name)
     finally:
         # Clean up
         if hasattr(logging, level_name):
@@ -238,19 +233,19 @@ def test_add_level_name_rejects_invalid_apathetic_logging_attribute_type() -> No
 
 def test_add_level_name_rejects_invalid_apathetic_logging_attribute_value() -> None:
     """addLevelName() should reject if apathetic_logging attribute exists
-    with <= 0 value."""
+    with different value."""
     level_name = "INVALID_APATHETIC_VALUE_TEST"
     apathetic_level_name = f"{level_name}_LEVEL"
 
-    # Set invalid attribute (zero) on apathetic_logging namespace class
-    setattr(mod_alogs.apathetic_logging, apathetic_level_name, 0)
+    # Set existing attribute with different value on apathetic_logging namespace
+    setattr(mod_alogs.apathetic_logging, apathetic_level_name, 100)
 
     try:
         with pytest.raises(
             ValueError,
-            match=r"setLevel\(0\).*NOTSET",
+            match=r"attribute already exists with different value",
         ):
-            mod_alogs.Logger.addLevelName(75, level_name)
+            mod_alogs.Logger.addLevelName(142, level_name)
     finally:
         # Clean up
         if hasattr(mod_alogs.apathetic_logging, apathetic_level_name):
@@ -455,21 +450,21 @@ def test_set_level_allows_builtin_levels(direct_logger: Logger) -> None:
     assert direct_logger.level == logging.WARNING
 
 
-def test_set_level_rejects_any_level_zero_or_negative(
+def test_set_level_rejects_negative_levels(
     direct_logger: Logger,
 ) -> None:
-    """setLevel() should reject ANY level <= 0, not just our custom levels."""
-    # Should reject level 0 (NOTSET) - new error message format
-    with pytest.raises(ValueError, match=r"setLevel\(0\).*allow_inherit=True"):
-        direct_logger.setLevel(0)
+    """setLevel() should reject negative levels but allow 0 for inheritance."""
+    # Level 0 (NOTSET) should be allowed for inheritance
+    direct_logger.setLevel(0)
+    assert direct_logger.level == 0
 
     # Should reject negative levels
-    with pytest.raises(ValueError, match=r"<= 0.*PEP 282"):
+    with pytest.raises(ValueError, match=r"< 0.*PEP 282"):
         direct_logger.setLevel(-10)
 
-    # Should reject user's custom level if <= 0
+    # Should reject custom negative levels
     logging.addLevelName(-10, "USER_BAD")
-    with pytest.raises(ValueError, match=r"<= 0.*PEP 282"):
+    with pytest.raises(ValueError, match=r"< 0.*PEP 282"):
         direct_logger.setLevel(-10)
 
 
@@ -486,3 +481,62 @@ def test_set_level_validates_custom_level_string(
 
     direct_logger.setLevel("SILENT")
     assert direct_logger.level == mod_alogs.SILENT_LEVEL
+
+
+# ---------------------------------------------------------------------------
+# Tests for duplicate level value detection
+# ---------------------------------------------------------------------------
+
+
+def test_add_level_name_rejects_duplicate_numeric_value() -> None:
+    """addLevelName() should reject duplicate numeric values with different names."""
+    level_value = 123
+    level_name_1 = "DUPLICATE_TEST_FIRST"
+    level_name_2 = "DUPLICATE_TEST_SECOND"
+
+    # Clean up if they exist
+    if hasattr(logging, level_name_1):
+        delattr(logging, level_name_1)
+    if hasattr(logging, level_name_2):
+        delattr(logging, level_name_2)
+
+    try:
+        # Register the first level
+        mod_alogs.Logger.addLevelName(level_value, level_name_1)
+        assert logging.getLevelName(level_value) == level_name_1
+
+        # Try to register a different name for the same value - should raise
+        with pytest.raises(
+            ValueError,
+            match=r"already registered.*Cannot register",
+        ):
+            mod_alogs.Logger.addLevelName(level_value, level_name_2)
+    finally:
+        # Clean up
+        if hasattr(logging, level_name_1):
+            delattr(logging, level_name_1)
+        if hasattr(logging, level_name_2):
+            delattr(logging, level_name_2)
+
+
+def test_add_level_name_allows_duplicate_numeric_same_name() -> None:
+    """addLevelName() should allow duplicate registrations with same name."""
+    level_value = 124
+    level_name = "DUPLICATE_SAME_NAME_TEST"
+
+    # Clean up if it exists
+    if hasattr(logging, level_name):
+        delattr(logging, level_name)
+
+    try:
+        # Register level
+        mod_alogs.Logger.addLevelName(level_value, level_name)
+        assert logging.getLevelName(level_value) == level_name
+
+        # Register again with same name - should succeed (idempotent)
+        mod_alogs.Logger.addLevelName(level_value, level_name)
+        assert logging.getLevelName(level_value) == level_name
+    finally:
+        # Clean up
+        if hasattr(logging, level_name):
+            delattr(logging, level_name)

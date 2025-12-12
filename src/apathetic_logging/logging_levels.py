@@ -2,7 +2,7 @@
 """Custom log level functions for Apathetic Logging.
 
 This module provides convenience functions for custom log levels (TEST, TRACE, DETAIL,
-BRIEF, MINIMAL) that don't exist in the standard library. These functions log
+BRIEF) that don't exist in the standard library. These functions log
 to the root logger and ensure the logging module is extended with custom levels.
 """
 
@@ -29,7 +29,7 @@ class ApatheticLogging_Internal_LoggingLevels:  # noqa: N801  # pyright: ignore[
     ensure the logging module is extended with custom levels.
 
     When mixed into apathetic_logging, it provides functions for TEST, TRACE, DETAIL,
-    BRIEF, and MINIMAL log levels.
+    and BRIEF log levels.
     """
 
     @staticmethod
@@ -131,8 +131,8 @@ class ApatheticLogging_Internal_LoggingLevels:  # noqa: N801  # pyright: ignore[
         if hasattr(logger, "minimal"):
             logger.minimal(msg, *args, **kwargs)
         # Fallback: if root logger is still a standard logger, use _log directly
-        elif logger.isEnabledFor(_constants.MINIMAL_LEVEL):
-            logger._log(_constants.MINIMAL_LEVEL, msg, args, **kwargs)  # noqa: SLF001  # pyright: ignore[reportPrivateUsage]
+        elif logger.isEnabledFor(_constants.BRIEF_LEVEL):
+            logger._log(_constants.BRIEF_LEVEL, msg, args, **kwargs)  # noqa: SLF001  # pyright: ignore[reportPrivateUsage]
 
     @staticmethod
     def test(msg: str, *args: Any, **kwargs: Any) -> None:

@@ -244,7 +244,6 @@ class ApatheticLogging_Internal_LoggerCore(logging.Logger):  # noqa: N801  # pyr
         level: int | str,
         *,
         minimum: bool | None = False,
-        allow_inherit: bool = False,
     ) -> None:
         """Set the logging level of this logger.
 
@@ -252,30 +251,23 @@ class ApatheticLogging_Internal_LoggerCore(logging.Logger):  # noqa: N801  # pyr
         - Accepts both int and str level values (case-insensitive for strings)
         - Automatically resolves string level names to numeric values
         - Supports custom level names (TEST, TRACE, BRIEF, DETAIL, SILENT)
-        - In improved mode (default), validates that levels are > 0 to prevent
-          accidental INHERIT_LEVEL (i.e. NOTSET) inheritance. Use
-          `allow_inherit=True` to explicitly set to INHERIT_LEVEL (i.e. NOTSET)
-          (0) for inheritance.
+        - Validates that custom levels are registered properly (no duplicate
+          numeric level values via addLevelName)
         - In compatibility mode, accepts any level value (including 0 and negative)
           matching stdlib behavior.
         - Added `minimum` parameter: if True, only sets the level if it's more
           verbose (lower numeric value) than the current level
-        - Added `allow_inherit` parameter: if True, allows setting level to 0
-          (INHERIT_LEVEL, i.e. NOTSET) in improved mode. Ignored in compatibility mode.
 
         Args:
             level: The logging level, either as an integer or a string name
                 (case-insensitive). Standard levels (DEBUG, INFO, WARNING, ERROR,
                 CRITICAL) and custom levels (TEST, TRACE, BRIEF, DETAIL, SILENT)
-                are supported.
+                are supported. Use 0/NOTSET to inherit level from parent logger.
             minimum: If True, only set the level if it's more verbose (lower
                 numeric value) than the current level. This prevents downgrading
                 from a more verbose level (e.g., TRACE) to a less verbose one
                 (e.g., DEBUG). Defaults to False. None is accepted and treated
                 as False.
-            allow_inherit: If True, allows setting level to 0 (INHERIT_LEVEL,
-                i.e. NOTSET) in improved mode. In compatibility mode, this
-                parameter is ignored and 0 is always accepted. Defaults to False.
 
         Wrapper for logging.Logger.setLevel.
 
@@ -303,10 +295,9 @@ class ApatheticLogging_Internal_LoggerCore(logging.Logger):  # noqa: N801  # pyr
                 # Don't downgrade - keep current level
                 return
 
-        # Validate any level <= 0 (prevents INHERIT_LEVEL (i.e. NOTSET) inheritance)
-        # Built-in levels (DEBUG=10, INFO=20, etc.) are all > 0, so they pass
-        # validateLevel() will raise if level <= 0
-        self.validateLevel(level, level_name=level_name, allow_inherit=allow_inherit)
+        # Validate level only if it's <= 0 in improved mode
+        # (validate that custom negative levels are not used)
+        self.validateLevel(level, level_name=level_name)
 
         super().setLevel(level)
         # Clear the isEnabledFor cache when level changes, as cached values
@@ -345,9 +336,9 @@ class ApatheticLogging_Internal_LoggerCore(logging.Logger):  # noqa: N801  # pyr
     def setLevelInherit(self) -> None:
         """Set the logger to inherit its level from the parent logger.
 
-        This convenience method is equivalent to calling
-        ``setLevel(NOTSET, allow_inherit=True)``. It explicitly sets the logger
-        to INHERIT_LEVEL (i.e. NOTSET) so it inherits its effective level from
+        This convenience method is equivalent to calling ``setLevel(0)``
+        (or ``setLevel(NOTSET)``). It explicitly sets the logger to
+        INHERIT_LEVEL (i.e. NOTSET) so it inherits its effective level from
         the root logger or parent logger.
 
         Example:
@@ -360,7 +351,7 @@ class ApatheticLogging_Internal_LoggerCore(logging.Logger):  # noqa: N801  # pyr
 
         """
         _constants = ApatheticLogging_Internal_Constants
-        self.setLevel(_constants.INHERIT_LEVEL, allow_inherit=True)
+        self.setLevel(_constants.INHERIT_LEVEL)
 
     def setPropagate(
         self,
@@ -398,7 +389,6 @@ class ApatheticLogging_Internal_LoggerCore(logging.Logger):  # noqa: N801  # pyr
         level: int | str,
         *,
         minimum: bool | None = False,
-        allow_inherit: bool = False,
         manage_handlers: bool | None = None,
     ) -> None:
         """Set the logging level and propagate setting together in a smart way.
@@ -423,9 +413,6 @@ class ApatheticLogging_Internal_LoggerCore(logging.Logger):  # noqa: N801  # pyr
                 from a more verbose level (e.g., TRACE) to a less verbose one
                 (e.g., DEBUG). Defaults to False. None is accepted and treated
                 as False.
-            allow_inherit: If True, allows setting level to 0 (INHERIT_LEVEL,
-                i.e. NOTSET) in improved mode. In compatibility mode, this
-                parameter is ignored and 0 is always accepted. Defaults to False.
             manage_handlers: If True, automatically manage apathetic handlers
                 based on propagate setting. If None, uses DEFAULT_MANAGE_HANDLERS
                 from constants. If False, only sets propagate without managing handlers.
@@ -434,7 +421,7 @@ class ApatheticLogging_Internal_LoggerCore(logging.Logger):  # noqa: N801  # pyr
         Example:
             >>> logger = getLogger("mymodule")
             >>> # Set to inherit level and propagate to root
-            >>> logger.setLevelAndPropagate(INHERIT_LEVEL, allow_inherit=True)
+            >>> logger.setLevelAndPropagate(INHERIT_LEVEL)
             >>> # Set explicit level and disable propagation (isolated logging)
             >>> logger.setLevelAndPropagate("debug")
 
@@ -453,7 +440,7 @@ class ApatheticLogging_Internal_LoggerCore(logging.Logger):  # noqa: N801  # pyr
             level_int = level
 
         # Set the level first
-        self.setLevel(level_int, minimum=minimum, allow_inherit=allow_inherit)
+        self.setLevel(level_int, minimum=minimum)
 
         # Determine propagate setting based on level
         # Only set propagate if not root logger
@@ -488,31 +475,29 @@ class ApatheticLogging_Internal_LoggerCore(logging.Logger):  # noqa: N801  # pyr
         level: int,
         *,
         level_name: str | None = None,
-        allow_inherit: bool | None = None,
     ) -> None:
-        """Validate that a level value is positive (> 0).
+        """Validate that a level value is not negative (>= 0).
 
-        Custom levels with values <= 0 will inherit from the root logger,
-        causing INHERIT_LEVEL (i.e. NOTSET) inheritance issues. In
-        compatibility mode, validation is skipped (all levels are accepted).
+        Custom levels with values < 0 (negative) are discouraged by PEP 282.
+        Level 0 (NOTSET/INHERIT_LEVEL) is allowed - it causes loggers to
+        inherit from parent loggers. For custom levels to not be confusing,
+        duplicate numeric values are prevented via addLevelName() validation.
+
+        In compatibility mode, validation is skipped (all levels are accepted).
 
         Args:
             level: The numeric level value to validate
             level_name: Optional name for the level (for error messages).
                 If None, will attempt to get from getLevelName()
-            allow_inherit: If True, allows level 0 (INHERIT_LEVEL, i.e. NOTSET).
-                If None (default), error message doesn't mention allow_inherit
-                parameter. If False, error message includes allow_inherit hint.
-                Ignored in compatibility mode.
 
         Raises:
-            ValueError: If level <= 0 (or level == 0 without allow_inherit=True)
+            ValueError: If level < 0 (negative levels are discouraged)
 
         Example:
             >>> Logger.validateLevel(5, level_name="TRACE")
-            >>> Logger.validateLevel(0, level_name="TEST")
-            ValueError: setLevel(0) sets the logger to INHERIT_LEVEL (i.e. NOTSET)...
-            >>> Logger.validateLevel(0, level_name="TEST", allow_inherit=True)
+            >>> Logger.validateLevel(0, level_name="NOTSET")  # OK - allows inheritance
+            >>> Logger.validateLevel(-5, level_name="NEGATIVE")
+            ValueError: Level 'NEGATIVE' has value -5, which is < 0...
 
         """
         from .logging_utils import (  # noqa: PLC0415
@@ -528,21 +513,12 @@ class ApatheticLogging_Internal_LoggerCore(logging.Logger):  # noqa: N801  # pyr
         if compat_mode:
             return
 
-        if not allow_inherit and level == _constants.INHERIT_LEVEL:
-            msg = (
-                "setLevel(0) sets the logger to INHERIT_LEVEL (i.e. NOTSET) "
-                "(inherits from parent). "
-            )
-            if allow_inherit is not None:
-                msg += " Use allow_inherit=True to explicitly set to inheritance."
-            raise ValueError(msg)
-
         if level < _constants.INHERIT_LEVEL:
             if level_name is None:
                 level_name = _logging_utils.getLevelNameStr(level)
             msg = (
                 f"Level '{level_name}' has value {level}, "
-                "which is <= 0. This is discouraged by PEP 282 and"
+                "which is < 0. This is discouraged by PEP 282 and"
                 " results can lead to unexpected behavior."
             )
             raise ValueError(msg)
@@ -552,8 +528,8 @@ class ApatheticLogging_Internal_LoggerCore(logging.Logger):  # noqa: N801  # pyr
         """Associate a level name with a numeric level.
 
         Changed:
-        - Validates that level value is positive (> 0) to prevent NOTSET
-          inheritance issues
+        - Validates that level is not negative (>= 0) to prevent issues per PEP 282
+        - Checks for duplicate numeric level values to prevent confusion
         - Sets logging.<LEVEL_NAME> attribute for convenience, matching the
           pattern of built-in levels (logging.DEBUG, logging.INFO, etc.)
         - Sets apathetic_logging.<LEVEL_NAME>_LEVEL attribute for consistency
@@ -562,24 +538,37 @@ class ApatheticLogging_Internal_LoggerCore(logging.Logger):  # noqa: N801  # pyr
         - Validates existing attributes to ensure consistency
 
         Args:
-            level: The numeric level value (must be > 0 for custom levels)
+            level: The numeric level value (must be >= 0 and not already used
+                by another level name to avoid confusion)
             level_name: The name to associate with this level
 
         Raises:
-            ValueError: If level <= 0 (which would cause NOTSET inheritance)
-            ValueError: If logging.<LEVEL_NAME> already exists with an invalid value
-                (not a positive integer, or different from the provided level)
+            ValueError: If level < 0 (negative levels are discouraged by PEP 282)
+            ValueError: If a different level name already has this numeric value
+            ValueError: If logging.<LEVEL_NAME> already exists with a different value
             ValueError: If apathetic_logging.<LEVEL_NAME>_LEVEL already exists
-                with an invalid value (not a positive integer, or different
-                from the provided level)
+                with a different value
 
         Wrapper for logging.addLevelName.
 
         https://docs.python.org/3.10/library/logging.html#logging.addLevelName
 
         """
-        # Validate level is positive
+        # Validate level is not negative
         ApatheticLogging_Internal_LoggerCore.validateLevel(level, level_name=level_name)
+
+        # Check for duplicate numeric level values
+        # Get the existing name for this level value
+        existing_name = logging.getLevelName(level)
+        # Check if this level value is already registered to a different name
+        # (getLevelName returns "Level {n}" format for unknown levels)
+        if not existing_name.startswith("Level ") and existing_name != level_name:
+            msg = (
+                f"Level value {level} is already registered as '{existing_name}'. "
+                f"Cannot register as '{level_name}'. "
+                "Each level value must have a unique name to avoid confusion."
+            )
+            raise ValueError(msg)
 
         # Check if attribute already exists in logging namespace and validate it
         existing_value = getattr(logging, level_name, None)
@@ -835,9 +824,6 @@ class ApatheticLogging_Internal_LoggerCore(logging.Logger):  # noqa: N801  # pyr
         cls.addLevelName(_constants.TEST_LEVEL, "TEST")
         cls.addLevelName(_constants.TRACE_LEVEL, "TRACE")
         cls.addLevelName(_constants.DETAIL_LEVEL, "DETAIL")
-        # Register MINIMAL before BRIEF so BRIEF "wins" the name mapping
-        # (since MINIMAL is deprecated)
-        cls.addLevelName(_constants.MINIMAL_LEVEL, "MINIMAL")  # deprecated
         cls.addLevelName(_constants.BRIEF_LEVEL, "BRIEF")
         cls.addLevelName(_constants.SILENT_LEVEL, "SILENT")
 
@@ -1237,9 +1223,9 @@ class ApatheticLogging_Internal_LoggerCore(logging.Logger):  # noqa: N801  # pyr
             to :meth:`brief`.
         """
         _constants = ApatheticLogging_Internal_Constants
-        if self.isEnabledFor(_constants.MINIMAL_LEVEL):
+        if self.isEnabledFor(_constants.BRIEF_LEVEL):
             self._log(
-                _constants.MINIMAL_LEVEL,
+                _constants.BRIEF_LEVEL,
                 msg,
                 args,
                 **kwargs,
@@ -1345,7 +1331,7 @@ class ApatheticLogging_Internal_LoggerCore(logging.Logger):  # noqa: N801  # pyr
         try:
             yield
         finally:
-            self.setLevel(prev_level, allow_inherit=True)
+            self.setLevel(prev_level)
 
     @contextmanager
     def useLevelMinimum(self, level: str | int) -> Generator[None, None, None]:
@@ -1415,7 +1401,7 @@ class ApatheticLogging_Internal_LoggerCore(logging.Logger):  # noqa: N801  # pyr
             self.setPropagate(prev_propagate, manage_handlers=manage_handlers)
 
     @contextmanager
-    def useLevelAndPropagate(  # noqa: PLR0912
+    def useLevelAndPropagate(
         self,
         level: str | int,
         *,
@@ -1452,7 +1438,7 @@ class ApatheticLogging_Internal_LoggerCore(logging.Logger):  # noqa: N801  # pyr
         Example:
             >>> logger = getLogger("mymodule")
             >>> # Temporarily inherit level and propagate
-            >>> with logger.useLevelAndPropagate(INHERIT_LEVEL, allow_inherit=True):
+            >>> with logger.useLevelAndPropagate(INHERIT_LEVEL):
             ...     logger.info("This propagates to root")
             >>> # Temporarily set explicit level with isolated logging
             >>> with logger.useLevelAndPropagate("debug"):
@@ -1496,9 +1482,6 @@ class ApatheticLogging_Internal_LoggerCore(logging.Logger):  # noqa: N801  # pyr
             if level_no < current_effective_level:
                 self.setLevel(level_no)
             # Otherwise keep current level (don't downgrade)
-        # For INHERIT_LEVEL, we need allow_inherit=True
-        elif level_no == _constants.INHERIT_LEVEL:
-            self.setLevel(level_no, allow_inherit=True)
         else:
             self.setLevel(level_no)
 
@@ -1521,6 +1504,6 @@ class ApatheticLogging_Internal_LoggerCore(logging.Logger):  # noqa: N801  # pyr
             yield
         finally:
             # Restore previous settings
-            self.setLevel(prev_level, allow_inherit=True)
+            self.setLevel(prev_level)
             if not is_root:
                 self.setPropagate(prev_propagate, manage_handlers=manage_handlers)

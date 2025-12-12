@@ -15,7 +15,7 @@ def test_set_level_and_propagate_inherit_sets_propagate_true() -> None:
     child.setLevel("debug")  # Start with explicit level
 
     # --- execute ---
-    child.setLevelAndPropagate(_constants.INHERIT_LEVEL, allow_inherit=True)
+    child.setLevelAndPropagate(_constants.INHERIT_LEVEL)
 
     # --- verify ---
     assert child.level == _constants.INHERIT_LEVEL
@@ -27,7 +27,7 @@ def test_set_level_and_propagate_specific_level_sets_propagate_false() -> None:
     # --- setup ---
     child = mod_alogs.Logger("test_set_level_and_propagate_specific")
     child.setPropagate(True)  # Start with propagate=True
-    child.setLevel(mod_alogs.apathetic_logging.INHERIT_LEVEL, allow_inherit=True)
+    child.setLevel(mod_alogs.apathetic_logging.INHERIT_LEVEL)
 
     # --- execute ---
     child.setLevelAndPropagate("debug")
@@ -55,14 +55,14 @@ def test_set_level_and_propagate_on_root_only_sets_level() -> None:
         assert root.propagate == original_propagate  # Should be unchanged
 
         # Test with INHERIT_LEVEL
-        root.setLevelAndPropagate(_constants.INHERIT_LEVEL, allow_inherit=True)
+        root.setLevelAndPropagate(_constants.INHERIT_LEVEL)
 
         # --- verify ---
         assert root.level == _constants.INHERIT_LEVEL
         assert root.propagate == original_propagate  # Should still be unchanged
 
         # --- cleanup ---
-        root.setLevel(original_level, allow_inherit=True)
+        root.setLevel(original_level)
         root.setPropagate(original_propagate)
     else:
         # Root logger is not an apathetic logger - skip this test
@@ -114,7 +114,7 @@ def test_set_level_and_propagate_affects_handler_attachment() -> None:
 
     # --- execute ---
     # Set to INHERIT_LEVEL -> propagate=True -> no handler
-    child.setLevelAndPropagate(_constants.INHERIT_LEVEL, allow_inherit=True)
+    child.setLevelAndPropagate(_constants.INHERIT_LEVEL)
 
     # --- verify ---
     assert len(child.handlers) == 0  # propagate=True means no handler
@@ -152,7 +152,7 @@ def test_set_level_and_propagate_can_be_called_multiple_times() -> None:
     assert child.level == logging.DEBUG
     assert child.propagate is False
 
-    child.setLevelAndPropagate(_constants.INHERIT_LEVEL, allow_inherit=True)
+    child.setLevelAndPropagate(_constants.INHERIT_LEVEL)
     assert child.level == _constants.INHERIT_LEVEL
     assert child.propagate is True
 
