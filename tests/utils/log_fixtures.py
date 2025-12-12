@@ -45,6 +45,10 @@ def direct_logger() -> Logger:
     logger.setLevel("test")
     # Set propagate=False so logger gets its own handler for isolated testing
     logger.setPropagate(False)
+    # Set parent to root logger so it can inherit from the root logger hierarchy.
+    # This is needed for tests that check parent-child relationships and
+    # level inheritance.
+    logger.parent = logging.getLogger("")
     return logger
 
 
