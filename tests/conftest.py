@@ -87,6 +87,45 @@ def _restore_ensure_root_logger_flag(*, original_value: bool | None) -> None:
             logger_module._root_logger_user_configured = original_value  # type: ignore[attr-defined]  # noqa: SLF001
 
 
+def _reset_registry_state(
+    *,
+    logger_name: str | None = None,
+    default_log_level: str | None = None,
+    log_level_env_vars: list[str] | None = None,
+    compatibility_mode: bool | None = None,
+    propagate: bool | None = None,
+) -> None:
+    """Reset registry state and re-register custom level names.
+
+    Optionally accepts keyword arguments to set registry values. If not provided,
+    defaults (None) are used. This handles both test setup (clearing to None) and
+    test teardown (restoring original values).
+
+    Args:
+        logger_name: Logger name to register (or None to clear)
+        default_log_level: Default log level to register (or None to clear)
+        log_level_env_vars: Log level environment variables (or None to clear)
+        compatibility_mode: Compatibility mode setting (or None to clear)
+        propagate: Propagate setting (or None to clear)
+    """
+    _registry = mod_registry.ApatheticLogging_Internal_RegistryData
+    _constants = mod_alogs.apathetic_logging
+
+    # Register custom level names
+    mod_alogs.Logger.addLevelName(_constants.TEST_LEVEL, "TEST")
+    mod_alogs.Logger.addLevelName(_constants.TRACE_LEVEL, "TRACE")
+    mod_alogs.Logger.addLevelName(_constants.DETAIL_LEVEL, "DETAIL")
+    mod_alogs.Logger.addLevelName(_constants.BRIEF_LEVEL, "BRIEF")
+    mod_alogs.Logger.addLevelName(_constants.SILENT_LEVEL, "SILENT")
+
+    # Set registry state
+    _registry.registered_internal_logger_name = logger_name
+    _registry.registered_internal_default_log_level = default_log_level
+    _registry.registered_internal_log_level_env_vars = log_level_env_vars
+    _registry.registered_internal_compatibility_mode = compatibility_mode
+    _registry.registered_internal_propagate = propagate
+
+
 @pytest.fixture(autouse=True)
 def reset_logger_class_and_registry() -> Generator[None, None, None]:
     """Reset logger class and registry state before and after each test.
@@ -115,19 +154,8 @@ def reset_logger_class_and_registry() -> Generator[None, None, None]:
     # Reset to defaults before test
     logging.setLoggerClass(mod_alogs.Logger)
     mod_alogs.Logger.extendLoggingModule()
-    # Explicitly restore standard level names to ensure they're registered
-    # even if a previous test added conflicting custom level names
-    _constants = mod_alogs.apathetic_logging
-    mod_alogs.Logger.addLevelName(_constants.TEST_LEVEL, "TEST")
-    mod_alogs.Logger.addLevelName(_constants.TRACE_LEVEL, "TRACE")
-    mod_alogs.Logger.addLevelName(_constants.DETAIL_LEVEL, "DETAIL")
-    mod_alogs.Logger.addLevelName(_constants.BRIEF_LEVEL, "BRIEF")
-    mod_alogs.Logger.addLevelName(_constants.SILENT_LEVEL, "SILENT")
-    _registry.registered_internal_logger_name = None
-    _registry.registered_internal_default_log_level = None
-    _registry.registered_internal_log_level_env_vars = None
-    _registry.registered_internal_compatibility_mode = None
-    _registry.registered_internal_propagate = None
+    # Reset registry state and re-register custom level names
+    _reset_registry_state()
     # Reset ensureRootLogger flag for test isolation
     _reset_ensure_root_logger_flag()
 
@@ -141,18 +169,14 @@ def reset_logger_class_and_registry() -> Generator[None, None, None]:
     # Restore original state after test
     logging.setLoggerClass(original_logger_class)
     mod_alogs.Logger.extendLoggingModule()
-    # Explicitly restore standard level names to ensure they're registered
-    # even if the test added conflicting custom level names
-    mod_alogs.Logger.addLevelName(_constants.TEST_LEVEL, "TEST")
-    mod_alogs.Logger.addLevelName(_constants.TRACE_LEVEL, "TRACE")
-    mod_alogs.Logger.addLevelName(_constants.DETAIL_LEVEL, "DETAIL")
-    mod_alogs.Logger.addLevelName(_constants.BRIEF_LEVEL, "BRIEF")
-    mod_alogs.Logger.addLevelName(_constants.SILENT_LEVEL, "SILENT")
-    _registry.registered_internal_logger_name = original_name
-    _registry.registered_internal_default_log_level = original_default
-    _registry.registered_internal_log_level_env_vars = original_env_vars
-    _registry.registered_internal_compatibility_mode = original_compatibility_mode
-    _registry.registered_internal_propagate = original_propagate
+    # Restore registry state and re-register custom level names
+    _reset_registry_state(
+        logger_name=original_name,
+        default_log_level=original_default,
+        log_level_env_vars=original_env_vars,
+        compatibility_mode=original_compatibility_mode,
+        propagate=original_propagate,
+    )
     # Restore ensureRootLogger flag state
     _restore_ensure_root_logger_flag(original_value=original_user_configured)
 

@@ -231,8 +231,8 @@ class ApatheticLogging_Internal_GetLogger:  # noqa: N801  # pyright: ignore[repo
                 If an empty string (""), returns the root logger.
             *args: Additional positional arguments (for future-proofing)
             level: Log level to set on the logger. Accepts both string
-                names (case-insensitive) and numeric values. Level 0/NOTSET
-                allows inheritance from parent logger.
+                names (case-insensitive) and numeric values. Level 0 or
+                INHERIT_LEVEL (i.e. NOTSET) allows inheritance from parent logger.
                 - If not provided: defaults to INHERIT_LEVEL (inherits from root)
                 - If None: auto-resolves via determineLogLevel()
                 - If provided (str/int): sets the logger's level to this value
@@ -303,9 +303,10 @@ class ApatheticLogging_Internal_GetLogger:  # noqa: N801  # pyright: ignore[repo
                 Prefer using as a keyword argument (e.g., skip_frames=2) for clarity.
             *args: Additional positional arguments (for future-proofing)
             level: Exact log level to set on the logger. Accepts both string
-                names (case-insensitive) and numeric values. Level 0/NOTSET
-                allows inheritance from parent logger. If provided,
-                sets the logger's level to this value. Defaults to None.
+                names (case-insensitive) and numeric values. Level 0 or
+                INHERIT_LEVEL (i.e. NOTSET) allows inheritance from parent
+                logger. If provided, sets the logger's level to this value.
+                Defaults to None.
             minimum: If True, only set the level if it's more verbose (lower
                 numeric value) than the current level. This prevents downgrading
                 from a more verbose level (e.g., TRACE) to a less verbose one

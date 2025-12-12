@@ -373,11 +373,10 @@ class ApatheticLogging_Internal_LoggingUtils:  # noqa: N801  # pyright: ignore[r
     @staticmethod
     def _setApatheticDefaults(
         new_logger: logging.Logger,
-        *,
-        constants: Any,
     ) -> None:
         """Set apathetic defaults for logger level."""
-        root_names = {constants.ROOT_LOGGER_KEY, constants.ROOT_LOGGER_NAME}
+        _constants = ApatheticLogging_Internal_Constants
+        root_names = {_constants.ROOT_LOGGER_KEY, _constants.ROOT_LOGGER_NAME}
         is_root = new_logger.name in root_names
         if is_root:
             # Root logger: use determineLogLevel() if available
@@ -386,12 +385,12 @@ class ApatheticLogging_Internal_LoggingUtils:  # noqa: N801  # pyright: ignore[r
                 new_logger.setLevel(level_name)  # pyright: ignore[reportUnknownArgumentType]
             else:
                 # Fallback: use INHERIT_LEVEL (though root has no parent)
-                new_logger.setLevel(constants.INHERIT_LEVEL)
+                new_logger.setLevel(_constants.INHERIT_LEVEL)
         # Leaf logger: use INHERIT_LEVEL to inherit from parent
         elif hasattr(new_logger, "setLevel"):
-            new_logger.setLevel(constants.INHERIT_LEVEL)
+            new_logger.setLevel(_constants.INHERIT_LEVEL)
         else:
-            new_logger.level = constants.INHERIT_LEVEL
+            new_logger.level = _constants.INHERIT_LEVEL
 
     @staticmethod
     def portLoggerState(
@@ -478,9 +477,7 @@ class ApatheticLogging_Internal_LoggingUtils:  # noqa: N801  # pyright: ignore[r
         if port_level:
             ApatheticLogging_Internal_LoggingUtils._portLevel(old_logger, new_logger)
         else:
-            ApatheticLogging_Internal_LoggingUtils._setApatheticDefaults(
-                new_logger, constants=_constants
-            )
+            ApatheticLogging_Internal_LoggingUtils._setApatheticDefaults(new_logger)
 
         # Reconnect child loggers from old logger to new logger
         # This ensures child loggers point to the new logger instance after replacement

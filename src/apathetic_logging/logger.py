@@ -336,10 +336,10 @@ class ApatheticLogging_Internal_LoggerCore(logging.Logger):  # noqa: N801  # pyr
     def setLevelInherit(self) -> None:
         """Set the logger to inherit its level from the parent logger.
 
-        This convenience method is equivalent to calling ``setLevel(0)``
-        (or ``setLevel(NOTSET)``). It explicitly sets the logger to
-        INHERIT_LEVEL (i.e. NOTSET) so it inherits its effective level from
-        the root logger or parent logger.
+        This convenience method is equivalent to calling ``setLevel(0)`` or
+        ``setLevel(INHERIT_LEVEL)`` or ``setLevel("NOTSET")``. It explicitly
+        sets the logger to INHERIT_LEVEL (i.e. NOTSET) so it inherits its
+        effective level from the root logger or parent logger.
 
         Example:
             >>> logger = getLogger("mymodule")
