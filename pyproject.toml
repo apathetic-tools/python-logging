@@ -14,7 +14,7 @@ dependencies = [
 ]
 keywords = ["library", "logging", "logger"]
 # https://pypi.org/classifiers/
-classifiers = [    
+classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
     "Operating System :: OS Independent",
@@ -53,9 +53,9 @@ typecheck = ["typecheck:mypy", "typecheck:pyright"]
 
 # 🧪 Tests (runs all three: package + stitched + zipapp)
 test = [
-  "test:pytest:package", 
-  "test:pytest:stitched", 
-#  "test:pytest:zipapp"
+  "test:pytest:package",
+  "test:pytest:stitched",
+  "test:pytest:zipapp"
 ]
 "test:pytest:package" = "pytest"
 "test:pytest:package:parallel" = "pytest -n auto"
@@ -92,13 +92,13 @@ test = [
 "test:fast:all" = [
   "test:fast:package",
   "test:fast:stitched",
-#  "test:fast:zipapp"
+  "test:fast:zipapp"
 ]
 # Parallel: all three modes with parallel execution
 "test:parallel" = [
   "test:pytest:package:parallel",
   "test:pytest:stitched:parallel",
-#  "test:pytest:zipapp:parallel"
+  "test:pytest:zipapp:parallel"
 ]
 
 # 📊 Coverage reporting
@@ -136,10 +136,11 @@ fix = ["sync:ai:guidance", "fix:ruff:package", "fix:format:package"]
 "fix:format:dist" = { shell = "if [ -d dist ]; then ruff format dist -q; fi" }
 
 # 🧩 Build and license
-"sync:ai:guidance" = "python -m sync_ai_guidance --quiet"
+#"sync:ai:guidance" = "python -m sync_ai_guidance --quiet"
+"sync:ai:guidance" = "echo 'currently disabled'"
 # this creates the stitched script from the module, it need to use serger not zipbundler to do that
 "build:stitched" = "python -m serger --quiet"
-"build:zipapp" = "python -m zipbundler -m serger.__main__:main -c -o dist/serger.pyz src --quiet"
+"build:zipapp" = "python -m zipbundler -m apathetic_logging.__main__:main -c -o dist/apathetic_logging.pyz src --quiet"
 
 # 🚀 Release management (semantic-release)
 "release:version" = "semantic-release version --noop"
@@ -148,6 +149,9 @@ fix = ["sync:ai:guidance", "fix:ruff:package", "fix:format:package"]
 
 # 🔧 Setup and installation
 "pre-commit:install" = "bash dev/install_pre_commit_hooks.sh"
+
+# 📤 Git operations
+"git:push:rebase" = { shell = "git pull --rebase && git push" }
 
 # 🐍 Python version management
 "env:py310" = "bash dev/env_use_py310.sh"
@@ -204,11 +208,10 @@ dev = [
     "pyright (>=1.1.407,<2.0.0)",
     "python-semantic-release (>=10.0.0,<11.0.0)",
     "trove-classifiers (>=2025.11.14.15,<2026.0.0.0)",
-    "apathetic-utils (>=0.2.0,<2.0.0)",
-    "sheave (>=0.3.0,<2.0.0)",    
-    "zipbundler (>=0.1.0,<2.0.0)",
     "serger (>=0.1.0,<2.0.0)",
-
+    "zipbundler (>=0.1.0,<2.0.0)",
+    "sheave (>=0.3.0,<2.0.0)",
+    "apathetic-utils (>=0.2.0,<2.0.0)",
 ]
 
 # --- Ruff: formatter and linter ---
@@ -346,7 +349,7 @@ typeCheckingMode = "strict"
 [tool.coverage.run]
 source = ["src"]
 omit = ["*/tests/*", "*/test_*.py"]
-# Enable subprocess coverage tracking (for python -m apathetic_logging calls)
+# Enable subprocess coverage tracking (for python -m <package> calls)
 concurrency = ["thread", "multiprocessing"]
 sigterm = true
 

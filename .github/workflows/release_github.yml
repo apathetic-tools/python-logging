@@ -45,9 +45,9 @@ jobs:
       - name: Run checks
         run: poetry run poe check
 
-      - name: Build single-file script
+      - name: Build stitched script
         continue-on-error: true
-        run: poetry run poe build:script
+        run: poetry run poe build:stitched
 
       - name: Build zipapp
         continue-on-error: true
@@ -108,4 +108,3 @@ jobs:
             echo "::warning::Failed to upload release assets (non-fatal)"
             exit 0
           fi
-

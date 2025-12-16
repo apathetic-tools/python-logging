@@ -1,5 +1,5 @@
 // Serger's configuration
-// This file defines how to stitch apathetic_logging into a single-file python script
+// This file defines how to stitch the package into a single-file python script
 
 {
   // Stitching configuration for the main serger package
@@ -14,7 +14,7 @@
   // Source modules to include in the stitch
   // These are glob patterns relative to the source directory
   "include": [
-    "src/apathetic_*/**/*.py"       
+    "src/apathetic_*/**/*.py"
   ],
 
   // Files to exclude from stitching
@@ -25,8 +25,4 @@
 //    "**/__init__.py",    // we want to expose our guts, not just the class, in this case
     "**/__main__.py"     // Entry point, not stitched
   ],
-
-  // Output file path (relative to project root)
-  // This will be the final single-file executable
-  "out": "dist/apathetic_logging.py"
 }

@@ -2,9 +2,9 @@
 """Shared test setup for project.
 
 Each pytest run now targets a single runtime mode:
-- Normal mode (default): uses src/apathetic_logging
-- Stitched mode: uses dist/apathetic_logging.py when RUNTIME_MODE=stitched
-- Zipapp mode: uses dist/apathetic_logging.pyz when RUNTIME_MODE=zipapp
+- Package mode (default): uses src/<package> when RUNTIME_MODE=package
+- Stitched mode: uses dist/<package>.py when RUNTIME_MODE=stitched
+- Zipapp mode: uses dist/<package>.pyz when RUNTIME_MODE=zipapp
 
 Switch mode with: RUNTIME_MODE=stitched pytest or RUNTIME_MODE=zipapp pytest
 """
@@ -14,34 +14,25 @@ import os
 import sys
 from collections.abc import Generator
 
-import apathetic_utils
+import apathetic_utils as alib_utils
 import pytest
 
+import apathetic_logging as alib_logging
 from tests.utils import (
     PROGRAM_PACKAGE,
     PROGRAM_SCRIPT,
     PROJ_ROOT,
-    make_safe_trace,
+    direct_logger,
+    module_logger,
 )
 
 
-safe_trace = make_safe_trace("⚡️")
-
-# early jank hook
-apathetic_utils.runtime_swap(
+# early jank hook, must happen before importing the <package>
+# so we get the stitched/zipapp version in the right mode
+alib_utils.runtime_swap(
     root=PROJ_ROOT,
     package_name=PROGRAM_PACKAGE,
     script_name=PROGRAM_SCRIPT,
-)
-
-# Import after runtime_swap to ensure we get the right module
-import apathetic_logging as mod_alogs  # noqa: E402
-import apathetic_logging.registry_data as mod_registry  # noqa: E402
-
-# Import fixtures after runtime_swap so they use the correct module version
-from tests.utils.log_fixtures import (  # noqa: E402
-    direct_logger,
-    module_logger,
 )
 
 
@@ -50,6 +41,13 @@ __all__ = [
     "direct_logger",
     "module_logger",
 ]
+
+safe_trace = alib_logging.makeSafeTrace("⚡️")
+
+
+# Import after runtime_swap to ensure we get the right module
+import apathetic_logging as mod_alogs  # noqa: E402
+import apathetic_logging.registry_data as mod_registry  # noqa: E402
 
 
 # ----------------------------------------------------------------------
