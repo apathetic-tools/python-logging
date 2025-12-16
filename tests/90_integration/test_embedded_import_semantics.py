@@ -18,6 +18,7 @@ import subprocess
 import sys
 import types
 import zipfile
+from typing import Any
 
 import apathetic_utils as mod_utils
 import pytest
@@ -173,8 +174,7 @@ def test_serger_build_import_semantics() -> None:  # noqa: PLR0915
         sys.modules[name] = mod
 
 
-@pytest.mark.skip(reason="Will re-enable when zipbundler is integrated")
-def test_zipapp_import_semantics() -> None:
+def test_zipapp_import_semantics(tmp_path: Any) -> None:
     """Test that zipapp builds maintain correct import semantics.
 
     This test verifies our project code works correctly when built with zipbundler:
@@ -190,11 +190,8 @@ def test_zipapp_import_semantics() -> None:
     expected_reset_code = "\033[0m"
     test_text = "Hello, world!"
 
-    # Build the project's zipapp
-    zipapp_file = PROJ_ROOT / "dist" / "apathetic_logging.pyz"
-
-    # Ensure dist directory exists
-    zipapp_file.parent.mkdir(parents=True, exist_ok=True)
+    # Use pytest's tmp_path to avoid race conditions in parallel test execution
+    zipapp_file = tmp_path / f"apathetic_logging_{id(test_zipapp_import_semantics)}.pyz"
 
     # --- execute: build zipapp ---
     zipbundler_cmd = mod_utils.find_python_command("zipbundler")
