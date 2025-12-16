@@ -43,8 +43,10 @@ def test_module_logger_fixture_has_handler(module_logger: mod_alogs.Logger) -> N
     assert len(module_logger.handlers) > 0, (
         "Handler should be attached after manageHandlers()"
     )
+    # Check handler type by class name (works in both package and stitched modes
+    # where the same class may be imported via different paths)
     assert any(
-        isinstance(h, mod_alogs.DualStreamHandler) for h in module_logger.handlers
+        type(h).__name__ == "DualStreamHandler" for h in module_logger.handlers
     ), "Handler should be DualStreamHandler"
 
     # Log a message to verify handler works (this also triggers manageHandlers())
@@ -56,7 +58,7 @@ def test_module_logger_fixture_has_handler(module_logger: mod_alogs.Logger) -> N
         "Handler should still be present after logging"
     )
     assert any(
-        isinstance(h, mod_alogs.DualStreamHandler) for h in module_logger.handlers
+        type(h).__name__ == "DualStreamHandler" for h in module_logger.handlers
     ), "Handler should still be DualStreamHandler after logging"
 
 

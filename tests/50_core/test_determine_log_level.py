@@ -143,11 +143,11 @@ def test_determine_log_level_falls_back_to_module_default(
     assert result == "DETAIL"
 
 
-def test_determine_log_level_priority_order(
+def test_determine_log_level_args_override_all(
     monkeypatch: pytest.MonkeyPatch,
     direct_logger: Logger,
 ) -> None:
-    """determine_log_level() should respect priority: args > env > root > default."""
+    """determine_log_level() should prioritize CLI args over all other sources."""
     # --- setup ---
     mod_alogs.registerDefaultLogLevel("error")
     monkeypatch.setenv("LOG_LEVEL", "warning")
@@ -157,23 +157,36 @@ def test_determine_log_level_priority_order(
     result = direct_logger.determineLogLevel(args=args, root_log_level="info")
 
     # --- verify ---
-    # Args should win
     assert result == "DEBUG"
 
-    # --- setup: test env over root ---
+
+def test_determine_log_level_env_overrides_root_and_default(
+    monkeypatch: pytest.MonkeyPatch,
+    direct_logger: Logger,
+) -> None:
+    """determine_log_level() should prioritize env vars over root_log_level."""
+    # --- setup ---
+    mod_alogs.registerDefaultLogLevel("error")
+    monkeypatch.setenv("LOG_LEVEL", "warning")
+
     # --- execute ---
     result = direct_logger.determineLogLevel(root_log_level="info")
 
     # --- verify ---
-    # Env should win over root
     assert result == "WARNING"
 
-    # --- setup: test root over default ---
+
+def test_determine_log_level_root_overrides_default(
+    monkeypatch: pytest.MonkeyPatch,
+    direct_logger: Logger,
+) -> None:
+    """determine_log_level() should prioritize root_log_level over default."""
+    # --- setup ---
+    mod_alogs.registerDefaultLogLevel("error")
     monkeypatch.delenv("LOG_LEVEL", raising=False)
 
     # --- execute ---
     result = direct_logger.determineLogLevel(root_log_level="info")
 
     # --- verify ---
-    # Root should win over default
     assert result == "INFO"
