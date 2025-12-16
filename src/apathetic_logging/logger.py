@@ -950,8 +950,9 @@ class ApatheticLogging_Internal_LoggerCore(logging.Logger):  # noqa: N801  # pyr
 
         # Mark that user has explicitly configured the root logger
         # This tells extendLoggingModule() not to touch the root logger
-        current_module = sys.modules[__name__]
-        current_module._root_logger_user_configured = True  # type: ignore[attr-defined]  # noqa: SLF001
+        current_module = sys.modules.get(__name__)
+        if current_module is not None:
+            current_module._root_logger_user_configured = True  # type: ignore[attr-defined]  # noqa: SLF001
 
     def determineLogLevel(
         self,
