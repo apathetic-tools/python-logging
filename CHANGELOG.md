@@ -2,6 +2,50 @@
 
 <!-- version list -->
 
+## v0.18.3 (2025-12-17)
+
+### Bug Fixes
+
+- Always set target version in version-gated test success case
+  ([`d51f748`](https://github.com/apathetic-tools/python-logging/commit/d51f748d5907497a0f2015cb9ed799713684ce23))
+
+- Check handler type by class name instead of isinstance in stitched mode
+  ([`a0806db`](https://github.com/apathetic-tools/python-logging/commit/a0806db2e426345c2dcc8ac9c1ef177184bb063c))
+
+- Ensure root logger configuration flag is accessible in all runtimes
+  ([`7655f83`](https://github.com/apathetic-tools/python-logging/commit/7655f83449a6c29a7063d1ecd9352d27a40620db))
+
+- Improve error handling and mise integration in Python environment scripts
+  ([`e20bf2b`](https://github.com/apathetic-tools/python-logging/commit/e20bf2bd4be51bfef9d2b6975a3367be368d57fd))
+
+- Resolve zipapp test race condition in parallel execution
+  ([`2323bb8`](https://github.com/apathetic-tools/python-logging/commit/2323bb82108aa78aea239b4f62e7de219bfd5c5e))
+
+- Set _root_logger_user_configured flag on shim module in stitched mode
+  ([`708ce3c`](https://github.com/apathetic-tools/python-logging/commit/708ce3c2bfa8022bc27de2016626ae8a1c6ced5e))
+
+- Use safe module access in ensureRootLogger for parallel test execution
+  ([`e40eca0`](https://github.com/apathetic-tools/python-logging/commit/e40eca07d91ffbe880fc4e149f1e087dc3a7d672))
+
+### Chores
+
+- Update AI guidance rules and test infrastructure
+  ([`9beff9e`](https://github.com/apathetic-tools/python-logging/commit/9beff9e3035f8cef7191451e2a7d5d10d7fa3f72))
+
+- Update poetry.lock
+  ([`3dd394b`](https://github.com/apathetic-tools/python-logging/commit/3dd394bd32b348a0a7a2c7504f2d8e7d84e0ad68))
+
+### Documentation
+
+- Update runtime mode references from singlefile to stitched
+  ([`011bc0a`](https://github.com/apathetic-tools/python-logging/commit/011bc0af9762c2c868e0cafcaf58fe2991bf8cb7))
+
+### Refactoring
+
+- Remove deprecated minimal() function and MINIMAL_LEVEL constant
+  ([`0cefc10`](https://github.com/apathetic-tools/python-logging/commit/0cefc10687509618504909550be87c49f69f921e))
+
+
 ## v0.18.2 (2025-12-12)
 
 ### Bug Fixes
