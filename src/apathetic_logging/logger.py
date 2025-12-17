@@ -731,9 +731,11 @@ class ApatheticLogging_Internal_LoggerCore(logging.Logger):  # noqa: N801  # pyr
 
         # Check if user has explicitly configured the root logger via
         # ensureRootLogger(). If they have, respect their choice and don't touch it.
-        current_module = sys.modules.get(__name__)
+        # Use the main apathetic_logging module, not the logger submodule
+        # (important for stitched mode where there's only one module)
+        namespace_module = sys.modules.get("apathetic_logging")
         user_configured_root = getattr(
-            current_module, "_root_logger_user_configured", False
+            namespace_module, "_root_logger_user_configured", False
         )
 
         # Get root logger directly (logging.root or from registry)
@@ -950,9 +952,14 @@ class ApatheticLogging_Internal_LoggerCore(logging.Logger):  # noqa: N801  # pyr
 
         # Mark that user has explicitly configured the root logger
         # This tells extendLoggingModule() not to touch the root logger
-        current_module = sys.modules.get(__name__)
-        if current_module is not None:
-            current_module._root_logger_user_configured = True  # type: ignore[attr-defined]  # noqa: SLF001
+        # Set on both the logger module (package mode) and apathetic_logging module
+        # (stitched mode). This ensures the flag is accessible in all runtime modes.
+        logger_module = sys.modules.get(__name__)
+        if logger_module is not None:
+            logger_module._root_logger_user_configured = True  # type: ignore[attr-defined]  # noqa: SLF001
+        namespace_module = sys.modules.get("apathetic_logging")
+        if namespace_module is not None:
+            namespace_module._root_logger_user_configured = True  # type: ignore[attr-defined]  # noqa: SLF001
 
     def determineLogLevel(
         self,
