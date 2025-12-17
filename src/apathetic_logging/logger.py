@@ -954,12 +954,18 @@ class ApatheticLogging_Internal_LoggerCore(logging.Logger):  # noqa: N801  # pyr
         # This tells extendLoggingModule() not to touch the root logger
         # Set on both the logger module (package mode) and apathetic_logging module
         # (stitched mode). This ensures the flag is accessible in all runtime modes.
+        # Also set on the shim module (apathetic_logging.logger) if it exists, as
+        # serger creates separate module objects for submodule shims in stitched mode.
         logger_module = sys.modules.get(__name__)
         if logger_module is not None:
             logger_module._root_logger_user_configured = True  # type: ignore[attr-defined]  # noqa: SLF001
         namespace_module = sys.modules.get("apathetic_logging")
         if namespace_module is not None:
             namespace_module._root_logger_user_configured = True  # type: ignore[attr-defined]  # noqa: SLF001
+        # Also set on the shim module for stitched mode compatibility
+        logger_shim_module = sys.modules.get("apathetic_logging.logger")
+        if logger_shim_module is not None:
+            logger_shim_module._root_logger_user_configured = True  # type: ignore[attr-defined]  # noqa: SLF001
 
     def determineLogLevel(
         self,
