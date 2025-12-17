@@ -342,12 +342,10 @@ def test_zipapp_build_produces_valid_file(tmp_path: Path) -> None:
     result = subprocess.run(  # noqa: S603
         [
             *zipbundler_cmd,
-            "-m",
-            "apathetic_logging",
             "-o",
             str(zipapp_file),
             "-q",
-            ".",
+            "src",
         ],
         cwd=PROJ_ROOT,
         capture_output=True,
@@ -402,12 +400,10 @@ def test_zipapp_build_is_deterministic(tmp_path: Path) -> None:
     result1 = subprocess.run(  # noqa: S603
         [
             *zipbundler_cmd,
-            "-m",
-            "apathetic_logging",
             "-o",
             str(zipapp_file),
             "-q",
-            ".",
+            "src",
         ],
         cwd=PROJ_ROOT,
         capture_output=True,
@@ -433,12 +429,10 @@ def test_zipapp_build_is_deterministic(tmp_path: Path) -> None:
         result2 = subprocess.run(  # noqa: S603
             [
                 *zipbundler_cmd,
-                "-m",
-                "apathetic_logging",
                 "-o",
                 str(zipapp_file),
                 "-q",
-                ".",
+                "src",
             ],
             cwd=PROJ_ROOT,
             capture_output=True,

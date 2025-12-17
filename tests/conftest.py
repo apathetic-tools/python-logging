@@ -22,8 +22,6 @@ from tests.utils import (
     PROGRAM_PACKAGE,
     PROGRAM_SCRIPT,
     PROJ_ROOT,
-    direct_logger,
-    module_logger,
 )
 
 
@@ -33,6 +31,11 @@ alib_utils.runtime_swap(
     root=PROJ_ROOT,
     package_name=PROGRAM_PACKAGE,
     script_name=PROGRAM_SCRIPT,
+)
+
+from tests.utils import (  # noqa: E402
+    direct_logger,
+    module_logger,
 )
 
 

@@ -198,12 +198,10 @@ def test_zipapp_import_semantics(tmp_path: Any) -> None:
     result = subprocess.run(  # noqa: S603
         [
             *zipbundler_cmd,
-            "-m",
-            "apathetic_logging",
             "-o",
             str(zipapp_file),
             "-q",
-            ".",
+            "src",
         ],
         cwd=PROJ_ROOT,
         capture_output=True,
