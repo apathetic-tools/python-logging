@@ -294,6 +294,12 @@ class ApatheticLogging_Internal_LoggingUtils:  # noqa: N801  # pyright: ignore[r
             False if it's fresh and ready for configuration with defaults.
 
         Note:
+            This function queries the **current state** of the logging registry, not
+            user intent. It returns True if ANY code (user, third-party library, or
+            stdlib) has accessed the root logger. To check if the USER explicitly
+            configured the root logger via ensureRootLogger(), use the module-level
+            flag _root_logger_user_configured instead.
+
             Calling logging.getLogger("") after this returns False will instantiate
             the root logger, so timing matters. This check should be done before any
             code that accesses the root logger.

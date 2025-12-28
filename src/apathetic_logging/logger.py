@@ -687,7 +687,10 @@ class ApatheticLogging_Internal_LoggerCore(logging.Logger):  # noqa: N801  # pyr
                 registerReplaceRootLogger()). If not set in registry, defaults to True
                 for backward compatibility. When False, the root logger will not be
                 replaced, allowing applications to use their own custom logger class
-                for the root logger.
+                for the root logger. Note: This parameter is overridden if the user
+                has explicitly called ensureRootLogger(), which sets the
+                _root_logger_user_configured flag. In that case, the root logger will
+                never be replaced, regardless of the replace_root setting.
             port_handlers: Whether to port handlers from the old root logger to the
                 new logger. If None (default), checks the registry setting (set via
                 registerPortHandlers()). If not set in registry, defaults to True
@@ -703,6 +706,15 @@ class ApatheticLogging_Internal_LoggerCore(logging.Logger):  # noqa: N801  # pyr
                 configuration of the root logger before extendLoggingModule() is called.
                 When explicitly False, always uses determineLogLevel(). When explicitly
                 True, always preserves the old level.
+
+        Note:
+            This method respects the _root_logger_user_configured flag set by
+            ensureRootLogger(). This flag represents user **intent** to control the
+            root logger, which is distinct from whether the root logger has been
+            **instantiated** (see isRootLoggerInstantiated()). The flag is sticky
+            and persists even if the root logger is later removed, ensuring that
+            if a user explicitly called ensureRootLogger(), subsequent calls to
+            extendLoggingModule() will never replace the root logger.
 
         Note for tests:
             When testing isinstance checks on logger instances, use
@@ -777,6 +789,14 @@ class ApatheticLogging_Internal_LoggerCore(logging.Logger):  # noqa: N801  # pyr
         # ensureRootLogger(). If they have, respect their choice and don't touch it.
         # Use the main apathetic_logging module, not the logger submodule
         # (important for stitched mode where there's only one module)
+        #
+        # NOTE: This checks _root_logger_user_configured (user INTENT), not
+        # isRootLoggerInstantiated() (current STATE). These are fundamentally
+        # different:
+        # - _root_logger_user_configured: True if user called ensureRootLogger()
+        # - isRootLoggerInstantiated(): True if ANY code accessed the root logger
+        # We MUST use the flag here to avoid replacing a root logger that was
+        # created by third-party code when the user didn't explicitly configure it.
         namespace_module = sys.modules.get("apathetic_logging")
         user_configured_root = getattr(
             namespace_module, "_root_logger_user_configured", False
@@ -784,6 +804,7 @@ class ApatheticLogging_Internal_LoggerCore(logging.Logger):  # noqa: N801  # pyr
 
         # Check if root logger was already instantiated BEFORE getting it
         # (getting it will create it if it doesn't exist)
+        # This is used to determine whether to port level or apply defaults.
         from .logging_utils import (  # noqa: PLC0415
             ApatheticLogging_Internal_LoggingUtils,
         )
@@ -800,8 +821,10 @@ class ApatheticLogging_Internal_LoggerCore(logging.Logger):  # noqa: N801  # pyr
         # 2. User has NOT explicitly configured root via ensureRootLogger()
         # 3. Either on first call (not already_extended) OR root logger is wrong type
         #
-        # This replaces stdlib loggers (including subclasses like RootLogger)
-        # while respecting user configuration.
+        # The _root_logger_user_configured flag is critical here: if True, we NEVER
+        # replace the root logger, ensuring that user intent via ensureRootLogger()
+        # is always respected. This differs from isRootLoggerInstantiated(), which
+        # can be True if third-party code accessed the root logger.
         should_replace_root = (
             replace_root
             and not user_configured_root
@@ -927,10 +950,23 @@ class ApatheticLogging_Internal_LoggerCore(logging.Logger):  # noqa: N801  # pyr
             apathetic_logging.Logger.ensureRootLogger(logger_class=MyLogger)
 
         Note:
-            This function sets a module-level flag indicating the user has
-            explicitly configured the root logger. Subsequent calls to
-            extendLoggingModule() will respect this and not attempt to replace
-            the root logger.
+            This function sets a module-level flag (_root_logger_user_configured)
+            indicating the user has **explicitly** configured the root logger. This
+            flag represents user **intent** and is distinct from whether the root
+            logger has been **instantiated** (see isRootLoggerInstantiated()).
+
+            The difference is critical:
+            - isRootLoggerInstantiated(): Queries current registry state. Returns
+              True if ANY code (user, library, stdlib) has accessed the root logger.
+            - _root_logger_user_configured flag: Tracks user intent. Only set if
+              the user explicitly called ensureRootLogger(). This flag persists
+              even if the root logger is later removed, ensuring user configuration
+              is always respected.
+
+            Subsequent calls to extendLoggingModule() check this flag to decide
+            whether to replace the root logger. If the flag is set,
+            extendLoggingModule() will not touch the root logger, respecting the
+            user's explicit choice.
         """
         _constants = ApatheticLogging_Internal_Constants
 
@@ -1002,6 +1038,18 @@ class ApatheticLogging_Internal_LoggerCore(logging.Logger):  # noqa: N801  # pyr
 
         # Mark that user has explicitly configured the root logger
         # This tells extendLoggingModule() not to touch the root logger
+        #
+        # IMPORTANT: This flag represents USER INTENT, not current state. It is
+        # distinct from isRootLoggerInstantiated() which queries the registry:
+        # - _root_logger_user_configured: "Did user call ensureRootLogger()?"
+        #   * Only set by ensureRootLogger()
+        #   * Sticky: persists even if root logger is removed
+        #   * Used to prevent extendLoggingModule() from touching the root logger
+        # - isRootLoggerInstantiated(): "Does a root logger currently exist?"
+        #   * Returns True if ANY code (user/library/stdlib) accessed root logger
+        #   * Dynamic: can change if root logger is removed
+        #   * Used to determine if we should port state or apply defaults
+        #
         # Set on both the logger module (package mode) and apathetic_logging module
         # (stitched mode). This ensures the flag is accessible in all runtime modes.
         # Also set on the shim module (apathetic_logging.logger) if it exists, as
