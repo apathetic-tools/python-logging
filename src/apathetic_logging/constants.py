@@ -34,6 +34,18 @@ class ApatheticLogging_Internal_Constants:  # noqa: N801  # pyright: ignore[repo
     logging.NOTSET terminology. Use INHERIT_LEVEL in new code for clarity.
     """
 
+    ROOT_ALLOW_ALL_LEVEL: int = logging.NOTSET
+    """Root logger accepts all messages level (0).
+
+    When the root logger is set to this level, it accepts all messages
+    without filtering, regardless of severity. This is stdlib logging behavior:
+    a logger set to NOTSET (0) processes all messages (unlike child loggers
+    which inherit from parent when NOTSET).
+
+    Note: Use ROOT_ALLOW_ALL_LEVEL when explicitly setting root to accept
+    all messages for clarity. Equivalent to logging.NOTSET.
+    """
+
     # levels must be careful not to equal 0 to avoid INHERIT_LEVEL (i.e. NOTSET)
     TEST_LEVEL: int = logging.DEBUG - 8
     """Most verbose level, bypasses capture."""

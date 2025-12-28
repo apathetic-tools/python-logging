@@ -32,6 +32,23 @@ Complete API documentation for Apathetic Python Logger.
 | [`setLoggerClass()`<sup>†</sup>](#setloggerclass) | Set the class to be used when instantiating a logger |
 | [`shutdown()`<sup>†</sup>](#shutdown) | Perform an orderly shutdown of the logging system |
 
+### Root Logger Convenience API
+
+For applications using the root logger as the single source of truth for log levels:
+
+| Function | Summary |
+|-----------|---------|
+| [`getRootLevel()`](#getrootlevel) | Get current root logger level |
+| [`getRootLevelName()`](#getrootlevelname) | Get current root logger level name |
+| [`getEffectiveRootLevel()`](#geteffectiverootlevel) | Get effective root logger level |
+| [`getEffectiveRootLevelName()`](#geteffectiverootlevelname) | Get effective root logger level name |
+| [`setRootLevel()`](#setrootlevel) | Set root logger level (and optionally children) |
+| [`setRootLevelMinimum()`](#setrootlevelminimum) | Set root level only if more verbose |
+| [`useRootLevel()`](#userootlevel) | Context manager to temporarily set root level |
+| [`useRootLevelMinimum()`](#userootlevelminimum) | Context manager to temporarily set root level (minimum) |
+| [`isRootEnabledFor()`](#isrootenablefor) | Check if root would log at level |
+| [`logRootDynamic()`](#logrootdynamic) | Log with dynamically provided level |
+
 ### Logging Messages (to *Root Logger*)
 
 | Function | Summary |
@@ -1496,6 +1513,347 @@ except NotImplementedError as e:
 **See Also:**
 - `getTargetPythonVersion()` - Get the registered target Python version
 - `checkPythonVersionRequirement()` - Check if a function is available for the target Python version
+
+### setRootLevel
+
+```python
+setRootLevel(
+    level: str | int,
+    *,
+    apply_to_children: bool = True,
+    set_children_to_level: bool = True,
+    root: logging.Logger | None = None
+) -> None
+```
+
+Set the log level on the root logger and optionally on child loggers.
+
+This is the recommended way to set log levels in a CLI application, as it ensures all loggers (including those from libraries) use the same level. When propagation is enabled (default), child loggers inherit from root, so setting root level affects all loggers.
+
+**Parameters:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `level` | str \| int | Log level to set (string name or numeric value). Supports standard levels (DEBUG, INFO, etc.) and custom levels (TRACE, DETAIL, BRIEF, SILENT). |
+| `apply_to_children` | bool | If True (default), also sets level on any child loggers with explicit levels. Useful for loggers created before root level was set. |
+| `set_children_to_level` | bool | If True (default), sets child loggers to same level as root. If False, sets child loggers to NOTSET to inherit from root. |
+| `root` | logging.Logger \| None | Logger to use as root. If None, uses actual root logger. Can pass any logger to work on its children. |
+
+**Example:**
+
+```python
+from apathetic_logging import setRootLevel
+
+# Set root level - all loggers inherit
+setRootLevel("debug")
+
+# Set root level and reset children to NOTSET to inherit
+setRootLevel("info", set_children_to_level=False)
+```
+
+**See Also:**
+- `getRootLevel()` - Get current root level
+- `getRootLevelName()` - Get current root level name
+- `setRootLevelMinimum()` - Only set if more verbose
+- `useRootLevel()` - Temporarily change root level
+
+### getRootLevel
+
+```python
+getRootLevel() -> int
+```
+
+Return the current explicit log level set on the root logger.
+
+Returns the level explicitly set on the root logger, not the effective level (which would be the same for root since it has no parent).
+
+**Returns:**
+- `int`: Integer log level value (e.g., 10 for DEBUG, 20 for INFO)
+
+**Example:**
+
+```python
+from apathetic_logging import setRootLevel, getRootLevel
+
+setRootLevel("DEBUG")
+print(getRootLevel())  # 10
+```
+
+**See Also:**
+- `getRootLevelName()` - Get level name
+- `getEffectiveRootLevel()` - Get effective level
+- `setRootLevel()` - Set root level
+
+### getRootLevelName
+
+```python
+getRootLevelName() -> str
+```
+
+Return the name of the current explicit log level set on the root logger.
+
+Returns the name of the level explicitly set on the root logger (e.g., "DEBUG", "INFO", "NOTSET").
+
+**Returns:**
+- `str`: Level name as uppercase string
+
+**Example:**
+
+```python
+from apathetic_logging import setRootLevel, getRootLevelName
+
+setRootLevel("DEBUG")
+print(getRootLevelName())  # "DEBUG"
+```
+
+**See Also:**
+- `getRootLevel()` - Get level value
+- `getEffectiveRootLevelName()` - Get effective level name
+
+### getEffectiveRootLevel
+
+```python
+getEffectiveRootLevel() -> int
+```
+
+Return the effective log level on the root logger.
+
+For the root logger, this is the same as the explicit level since the root logger has no parent to inherit from. This method exists for API completeness and symmetry with `Logger.getEffectiveLevel()`.
+
+**Returns:**
+- `int`: Integer log level value
+
+**Example:**
+
+```python
+from apathetic_logging import getEffectiveRootLevel
+
+print(getEffectiveRootLevel())  # Effective level value
+```
+
+**See Also:**
+- `getRootLevel()` - Get explicit level
+- `getEffectiveRootLevelName()` - Get effective level name
+
+### getEffectiveRootLevelName
+
+```python
+getEffectiveRootLevelName() -> str
+```
+
+Return the name of the effective log level on the root logger.
+
+For the root logger, this is the same as the explicit level name. This method exists for API completeness and symmetry with `Logger.getEffectiveLevelName()`.
+
+**Returns:**
+- `str`: Level name as uppercase string
+
+**Example:**
+
+```python
+from apathetic_logging import getEffectiveRootLevelName
+
+print(getEffectiveRootLevelName())  # "INFO"
+```
+
+**See Also:**
+- `getRootLevelName()` - Get explicit level name
+- `getEffectiveRootLevel()` - Get effective level value
+
+### setRootLevelMinimum
+
+```python
+setRootLevelMinimum(level: str | int) -> None
+```
+
+Set root logger level only if more verbose than current level.
+
+This is a convenience method that prevents downgrades from more verbose to less verbose levels. Useful for ensuring you don't accidentally reduce logging verbosity.
+
+**Parameters:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `level` | str \| int | Log level to potentially set |
+
+**Example:**
+
+```python
+from apathetic_logging import setRootLevelMinimum, setRootLevel
+
+setRootLevel("INFO")
+setRootLevelMinimum("DEBUG")  # Sets to DEBUG (more verbose)
+setRootLevelMinimum("WARNING")  # Does nothing (already DEBUG)
+```
+
+**See Also:**
+- `setRootLevel()` - Set level unconditionally
+- `useRootLevelMinimum()` - Temporary version
+
+### setRootLevelInherit
+
+```python
+setRootLevelInherit() -> None
+```
+
+Set root logger to inherit level (NOTSET).
+
+For the root logger, this sets level to NOTSET (0). Since the root logger has no parent, this effectively means the root will not filter by level - all messages are accepted.
+
+Useful when you want child loggers to have explicit levels but the root logger should accept everything and let children decide what to log.
+
+**Example:**
+
+```python
+from apathetic_logging import setRootLevelInherit, getRootLevel
+
+setRootLevelInherit()
+print(getRootLevel())  # 0 (NOTSET/INHERIT_LEVEL)
+```
+
+**See Also:**
+- `setRootLevel()` - Set specific level
+- `useRootLevel()` - Temporary change
+
+### useRootLevel
+
+```python
+useRootLevel(level: str | int, *, minimum: bool = False) -> ContextManager
+```
+
+Context manager to temporarily set root logger level.
+
+Sets the root logger to a specific level for the duration of the with block, then restores the previous level.
+
+**Parameters:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `level` | str \| int | Temporary log level to use |
+| `minimum` | bool | If True, only applies level if more verbose than current. Defaults to False. |
+
+**Returns:**
+- Context manager that restores the previous level on exit
+
+**Example:**
+
+```python
+from apathetic_logging import setRootLevel, useRootLevel
+
+setRootLevel("INFO")
+with useRootLevel("DEBUG"):
+    # Root is at DEBUG level here
+    pass
+# Back to INFO level
+```
+
+**See Also:**
+- `setRootLevel()` - Permanently set level
+- `useRootLevelMinimum()` - Convenience for minimum=True
+
+### useRootLevelMinimum
+
+```python
+useRootLevelMinimum(level: str | int) -> ContextManager
+```
+
+Context manager to temporarily set root level only if more verbose.
+
+Convenience context manager equivalent to `useRootLevel(level, minimum=True)`. Only applies the level if it's more verbose than the current effective level.
+
+**Parameters:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `level` | str \| int | Temporary log level to potentially use |
+
+**Returns:**
+- Context manager that restores the previous level on exit
+
+**Example:**
+
+```python
+from apathetic_logging import setRootLevel, useRootLevelMinimum
+
+setRootLevel("DEBUG")
+with useRootLevelMinimum("TRACE"):
+    # Root upgraded to TRACE (more verbose)
+    pass
+
+setRootLevel("TRACE")
+with useRootLevelMinimum("DEBUG"):
+    # Stays at TRACE (already more verbose)
+    pass
+```
+
+**See Also:**
+- `useRootLevel()` - For unconditional temporary change
+- `setRootLevelMinimum()` - Permanent version
+
+### isRootEnabledFor
+
+```python
+isRootEnabledFor(level: str | int) -> bool
+```
+
+Check if root logger would process messages at the given level.
+
+Returns True if the root logger's effective level would allow messages at the given level to be processed. Useful for conditional expensive operations that should only run if logging is enabled.
+
+**Parameters:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `level` | str \| int | Log level to check (string name or numeric value) |
+
+**Returns:**
+- `bool`: True if root logger would process messages at this level
+
+**Example:**
+
+```python
+from apathetic_logging import setRootLevel, isRootEnabledFor
+
+setRootLevel("INFO")
+if isRootEnabledFor("DEBUG"):
+    # Expensive debug info generation
+    pass
+```
+
+**See Also:**
+- `getRootLevel()` - Get current root level
+
+### logRootDynamic
+
+```python
+logRootDynamic(level: str | int, msg: str, *args: Any, **kwargs: Any) -> None
+```
+
+Log a message to root logger with dynamically provided level.
+
+Allows logging with a level that is determined at runtime rather than compile time. Useful when the logging level comes from user input, configuration, or other dynamic sources.
+
+**Parameters:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `level` | str \| int | Log level as string name or integer value |
+| `msg` | str | The log message |
+| `*args` | Any | Arguments for message formatting |
+| `**kwargs` | Any | Additional keyword arguments (e.g., exc_info, stacklevel) |
+
+**Example:**
+
+```python
+from apathetic_logging import logRootDynamic
+
+level = "DEBUG"  # From config
+logRootDynamic(level, "Message at %s level", level)
+logRootDynamic(10, "Direct integer level")
+```
+
+**See Also:**
+- `getRootLogger()` - Get root logger for standard logging methods
 
 ### setLogRecordFactory
 

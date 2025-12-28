@@ -54,6 +54,7 @@ BRIEF_LEVEL = apathetic_logging.BRIEF_LEVEL
 DETAIL_LEVEL = apathetic_logging.DETAIL_LEVEL
 INHERIT_LEVEL = apathetic_logging.INHERIT_LEVEL
 NOTSET_LEVEL = apathetic_logging.NOTSET_LEVEL
+ROOT_ALLOW_ALL_LEVEL = apathetic_logging.ROOT_ALLOW_ALL_LEVEL
 
 # ANSI Colors
 ANSIColors = apathetic_logging.ANSIColors
@@ -102,15 +103,20 @@ warn = apathetic_logging.warn
 warning = apathetic_logging.warning
 
 # Functions (camelCase - library functions)
-getDefaultLogLevel = apathetic_logging.getDefaultLogLevel
 getCompatibilityMode = apathetic_logging.getCompatibilityMode
+getDefaultLogLevel = apathetic_logging.getDefaultLogLevel
 getDefaultLoggerName = apathetic_logging.getDefaultLoggerName
 getDefaultPropagate = apathetic_logging.getDefaultPropagate
-getLevelNumber = apathetic_logging.getLevelNumber
+getEffectiveRootLevel = apathetic_logging.getEffectiveRootLevel
+getEffectiveRootLevelName = apathetic_logging.getEffectiveRootLevelName
+getLevelName = apathetic_logging.getLevelName
 getLevelNameStr = apathetic_logging.getLevelNameStr
+getLevelNumber = apathetic_logging.getLevelNumber
 getLogLevelEnvVars = apathetic_logging.getLogLevelEnvVars
 getLoggerOfType = apathetic_logging.getLoggerOfType
 getRegisteredLoggerName = apathetic_logging.getRegisteredLoggerName
+getRootLevel = apathetic_logging.getRootLevel
+getRootLevelName = apathetic_logging.getRootLevelName
 getRootLogger = apathetic_logging.getRootLogger  # pyright: ignore[reportUnknownVariableType,reportUnknownMemberType]
 getTargetPythonVersion = apathetic_logging.getTargetPythonVersion
 hasLogger = apathetic_logging.hasLogger
@@ -126,6 +132,12 @@ registerReplaceRootLogger = apathetic_logging.registerReplaceRootLogger
 registerTargetPythonVersion = apathetic_logging.registerTargetPythonVersion
 removeLogger = apathetic_logging.removeLogger
 safeLog = apathetic_logging.safeLog
+setRootLevel = apathetic_logging.setRootLevel
+setRootLevelMinimum = apathetic_logging.setRootLevelMinimum
+useRootLevel = apathetic_logging.useRootLevel
+useRootLevelMinimum = apathetic_logging.useRootLevelMinimum
+isRootEnabledFor = apathetic_logging.isRootEnabledFor
+logRootDynamic = apathetic_logging.logRootDynamic
 
 
 __all__ = [
@@ -136,6 +148,7 @@ __all__ = [
     "INHERIT_LEVEL",
     "LEVEL_ORDER",
     "NOTSET_LEVEL",
+    "ROOT_ALLOW_ALL_LEVEL",
     "SAFE_TRACE_ENABLED",
     "SILENT_LEVEL",
     "TAG_STYLES",
@@ -162,6 +175,8 @@ __all__ = [
     "getDefaultLogLevel",
     "getDefaultLoggerName",
     "getDefaultPropagate",
+    "getEffectiveRootLevel",
+    "getEffectiveRootLevelName",
     "getHandlerByName",
     "getHandlerNames",
     "getLevelName",
@@ -174,11 +189,15 @@ __all__ = [
     "getLoggerClass",
     "getLoggerOfType",
     "getRegisteredLoggerName",
+    "getRootLevel",
+    "getRootLevelName",
     "getRootLogger",
     "getTargetPythonVersion",
     "hasLogger",
     "info",
+    "isRootEnabledFor",
     "log",
+    "logRootDynamic",
     "makeLogRecord",
     "makeSafeTrace",
     "registerCompatibilityMode",
@@ -196,9 +215,12 @@ __all__ = [
     "setLogRecordFactory",
     "setLoggerClass",
     "setRootLevel",
+    "setRootLevelMinimum",
     "shutdown",
     "test",
     "trace",
+    "useRootLevel",
+    "useRootLevelMinimum",
     "warn",
     "warning",
 ]

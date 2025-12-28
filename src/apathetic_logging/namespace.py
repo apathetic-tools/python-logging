@@ -25,6 +25,9 @@ from .logger_namespace import (
 from .logging_levels import (
     ApatheticLogging_Internal_LoggingLevels,
 )
+from .logging_root import (
+    ApatheticLogging_Internal_LoggingRoot,
+)
 from .logging_std_camel import (
     ApatheticLogging_Internal_StdCamelCase,
 )
@@ -54,6 +57,7 @@ class apathetic_logging(  # noqa: N801
     ApatheticLogging_Internal_GetLogger,
     ApatheticLogging_Internal_Logger,
     ApatheticLogging_Internal_LoggingLevels,
+    ApatheticLogging_Internal_LoggingRoot,
     ApatheticLogging_Internal_LoggingUtils,
     ApatheticLogging_Internal_Registry,
     ApatheticLogging_Internal_RegistryData,
