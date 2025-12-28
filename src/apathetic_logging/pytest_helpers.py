@@ -44,7 +44,7 @@ import uuid
 from collections.abc import Generator
 from contextlib import contextmanager
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, TypeAlias
+from typing import TYPE_CHECKING, Any, TypeAlias, cast
 
 import pytest
 
@@ -53,6 +53,7 @@ import apathetic_logging
 
 if TYPE_CHECKING:
     from .logger_namespace import ApatheticLogging_Internal_Logger
+    from .namespace import apathetic_logging as apathetic_logging_class
 
     Logger: TypeAlias = ApatheticLogging_Internal_Logger.Logger
 else:
@@ -487,7 +488,16 @@ def saveLoggingState() -> LoggingState:
     logger_class = logging.getLoggerClass()
 
     # Save registry data (8 fields)
-    registry = apathetic_logging.apathetic_logging
+    # In package mode: module exports the class via __init__.py
+    # In stitched mode: the class is available directly
+    registry = cast(
+        "type[apathetic_logging_class]",
+        (
+            apathetic_logging.apathetic_logging
+            if hasattr(apathetic_logging, "apathetic_logging")
+            else apathetic_logging
+        ),
+    )
     registry_data = {
         "registered_internal_logger_name": (registry.registered_internal_logger_name),
         "registered_internal_default_log_level": (
@@ -549,7 +559,16 @@ def restoreLoggingState(state: LoggingState) -> None:
     logging.setLoggerClass(state.logger_class)
 
     # Restore registry data
-    registry = apathetic_logging.apathetic_logging
+    # In package mode: module exports the class via __init__.py
+    # In stitched mode: the class is available directly
+    registry = cast(
+        "type[apathetic_logging_class]",
+        (
+            apathetic_logging.apathetic_logging
+            if hasattr(apathetic_logging, "apathetic_logging")
+            else apathetic_logging
+        ),
+    )
     registry.registered_internal_logger_name = state.registry_data[
         "registered_internal_logger_name"
     ]
