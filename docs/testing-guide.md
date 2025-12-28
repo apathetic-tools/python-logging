@@ -39,9 +39,9 @@ If you just want to get started quickly:
 ### For Debugging (See All Logs When Tests Fail)
 
 ```python
-from apathetic_logging.pytest_helpers import logging_test_level
+from apathetic_logging.pytest_helpers import LoggingTestLevel
 
-def test_my_feature(logging_test_level):
+def test_my_feature(logging_test_level: LoggingTestLevel) -> None:
     # Root logger is set to TEST level (most verbose)
     my_app.run()
     # All logs visible for debugging
@@ -50,11 +50,11 @@ def test_my_feature(logging_test_level):
 ### For Testing Log Level Changes
 
 ```python
-from apathetic_logging.pytest_helpers import logging_level_testing
+from apathetic_logging.pytest_helpers import LoggingLevelTesting
 import pytest
 
 @pytest.mark.initial_level("ERROR")
-def test_cli_debug_flag(logging_level_testing):
+def test_cli_debug_flag(logging_level_testing: LoggingLevelTesting) -> None:
     cli.main(["--log-level", "debug"])
     logging_level_testing.assert_level_changed_from("ERROR", to="DEBUG")
 ```
@@ -62,12 +62,13 @@ def test_cli_debug_flag(logging_level_testing):
 ### For Complete Isolation
 
 ```python
-from apathetic_logging.pytest_helpers import isolated_logging
+from apathetic_logging.pytest_helpers import LoggingIsolation
+import logging
 
-def test_first(isolated_logging):
+def test_first(isolated_logging: LoggingIsolation) -> None:
     isolated_logging.set_root_level("DEBUG")
 
-def test_second(isolated_logging):
+def test_second(isolated_logging: LoggingIsolation) -> None:
     # First test's state is not here
     assert isolated_logging.get_root_logger().level != logging.DEBUG
 ```
@@ -113,7 +114,9 @@ Then use in any test:
 
 ```python
 # tests/test_my_app.py
-def test_feature(logging_test_level):
+from apathetic_logging.pytest_helpers import LoggingTestLevel
+
+def test_feature(logging_test_level: LoggingTestLevel) -> None:
     my_app.run()
 ```
 
@@ -139,9 +142,9 @@ The `logging_test_level` fixture:
 ### Basic Example
 
 ```python
-from apathetic_logging.pytest_helpers import logging_test_level
+from apathetic_logging.pytest_helpers import LoggingTestLevel
 
-def test_app_with_verbose_logs(logging_test_level):
+def test_app_with_verbose_logs(logging_test_level: LoggingTestLevel) -> None:
     # Root logger is at TEST level - all logs visible
     my_app.initialize()
     my_app.process_data()
@@ -153,7 +156,9 @@ def test_app_with_verbose_logs(logging_test_level):
 Sometimes your app needs to set its own level for specific configurations. Use the context manager:
 
 ```python
-def test_app_with_temp_override(logging_test_level):
+from apathetic_logging.pytest_helpers import LoggingTestLevel
+
+def test_app_with_temp_override(logging_test_level: LoggingTestLevel) -> None:
     # Normal behavior: prevents downgrades
     app.configure_logging(level="INFO")  # Ignored, stays at TEST
 
@@ -204,11 +209,11 @@ The `logging_level_testing` fixture:
 ### Basic Example
 
 ```python
-from apathetic_logging.pytest_helpers import logging_level_testing
+from apathetic_logging.pytest_helpers import LoggingLevelTesting
 import pytest
 
 @pytest.mark.initial_level("ERROR")  # Start quiet
-def test_cli_debug_flag(logging_level_testing):
+def test_cli_debug_flag(logging_level_testing: LoggingLevelTesting) -> None:
     # Verify we start at ERROR
     logging_level_testing.assert_root_level("ERROR")
 
@@ -227,8 +232,11 @@ def test_cli_debug_flag(logging_level_testing):
 Test all log levels in one test:
 
 ```python
+from apathetic_logging.pytest_helpers import LoggingLevelTesting
+import pytest
+
 @pytest.mark.parametrize("level", ["DEBUG", "INFO", "WARNING", "ERROR"])
-def test_all_log_levels(logging_level_testing, level):
+def test_all_log_levels(logging_level_testing: LoggingLevelTesting, level: str) -> None:
     cli.main(["--log-level", level.lower()])
     logging_level_testing.assert_root_level(level)
 ```
@@ -238,8 +246,12 @@ def test_all_log_levels(logging_level_testing, level):
 Test that your app can be made quiet:
 
 ```python
+from apathetic_logging.pytest_helpers import LoggingLevelTesting
+import logging
+import pytest
+
 @pytest.mark.initial_level("DEBUG")  # Start verbose
-def test_quiet_flag(logging_level_testing):
+def test_quiet_flag(logging_level_testing: LoggingLevelTesting) -> None:
     cli.main(["--quiet"])
 
     # Verify it made it quieter
@@ -251,8 +263,11 @@ def test_quiet_flag(logging_level_testing):
 Use any initial level:
 
 ```python
+from apathetic_logging.pytest_helpers import LoggingLevelTesting
+import pytest
+
 @pytest.mark.initial_level("INFO")
-def test_with_info_baseline(logging_level_testing):
+def test_with_info_baseline(logging_level_testing: LoggingLevelTesting) -> None:
     logging_level_testing.assert_root_level("INFO")
     # ... rest of test
 ```
@@ -262,7 +277,9 @@ def test_with_info_baseline(logging_level_testing):
 Get the full history of changes:
 
 ```python
-def test_inspect_history(logging_level_testing):
+from apathetic_logging.pytest_helpers import LoggingLevelTesting
+
+def test_inspect_history(logging_level_testing: LoggingLevelTesting) -> None:
     cli.main(["--log-level", "debug"])
     cli.main(["--log-level", "error"])
 
@@ -305,16 +322,17 @@ Everything saved/restored:
 ### Basic Example
 
 ```python
-from apathetic_logging.pytest_helpers import isolated_logging
+from apathetic_logging.pytest_helpers import LoggingIsolation
+import logging
 
-def test_logger_isolation(isolated_logging):
+def test_logger_isolation(isolated_logging: LoggingIsolation) -> None:
     # Create and configure loggers
     logger = isolated_logging.get_logger("myapp")
     logger.setLevel("DEBUG")
 
     assert logger.level == logging.DEBUG
 
-def test_no_state_bleeding(isolated_logging):
+def test_no_state_bleeding(isolated_logging: LoggingIsolation) -> None:
     # Previous test's logger configuration is gone
     logger = isolated_logging.get_logger("myapp")
     assert logger.level == logging.NOTSET  # Fresh state
@@ -323,7 +341,9 @@ def test_no_state_bleeding(isolated_logging):
 ### Working with Root Logger
 
 ```python
-def test_root_logger(isolated_logging):
+from apathetic_logging.pytest_helpers import LoggingIsolation
+
+def test_root_logger(isolated_logging: LoggingIsolation) -> None:
     # Get root logger
     root = isolated_logging.get_root_logger()
 
@@ -337,7 +357,9 @@ def test_root_logger(isolated_logging):
 ### Working with Multiple Loggers
 
 ```python
-def test_multiple_loggers(isolated_logging):
+from apathetic_logging.pytest_helpers import LoggingIsolation
+
+def test_multiple_loggers(isolated_logging: LoggingIsolation) -> None:
     app_logger = isolated_logging.get_logger("myapp")
     lib_logger = isolated_logging.get_logger("mylib")
 
@@ -355,8 +377,12 @@ def test_multiple_loggers(isolated_logging):
 Each parameter run gets fresh state:
 
 ```python
+from apathetic_logging.pytest_helpers import LoggingIsolation
+import logging
+import pytest
+
 @pytest.mark.parametrize("log_level", ["DEBUG", "INFO", "WARNING"])
-def test_isolation_per_param(isolated_logging, log_level):
+def test_isolation_per_param(isolated_logging: LoggingIsolation, log_level: str) -> None:
     isolated_logging.set_root_level(log_level)
 
     # Each run has its own isolated state
@@ -387,7 +413,10 @@ lib_logger.debug("...")  # Uses root's level
 
 **In tests**:
 ```python
-def test_root_pattern(isolated_logging):
+from apathetic_logging.pytest_helpers import LoggingIsolation
+import logging
+
+def test_root_pattern(isolated_logging: LoggingIsolation) -> None:
     # Set root level - all children inherit
     isolated_logging.set_root_level("INFO")
 
@@ -415,7 +444,10 @@ lib_logger.debug("...")  # Won't be visible (WARNING level)
 
 **In tests**:
 ```python
-def test_app_pattern(isolated_logging):
+from apathetic_logging.pytest_helpers import LoggingIsolation
+import logging
+
+def test_app_pattern(isolated_logging: LoggingIsolation) -> None:
     # Create isolated logger
     logger = isolated_logging.get_logger("mylib")
     logger.setLevel("DEBUG")
@@ -440,7 +472,9 @@ lib_logger.setLevel("DEBUG")
 lib_logger.propagate = False  # Library pattern
 
 # In tests
-def test_hybrid(isolated_logging):
+from apathetic_logging.pytest_helpers import LoggingIsolation
+
+def test_hybrid(isolated_logging: LoggingIsolation) -> None:
     # Test root-based loggers
     isolated_logging.set_root_level("WARNING")
     # ... test ...
@@ -458,11 +492,14 @@ def test_hybrid(isolated_logging):
 You can use multiple fixtures in one test:
 
 ```python
+from apathetic_logging.pytest_helpers import LoggingTestLevel, LoggingIsolation
+from logging import Logger
+
 def test_complex_scenario(
-    logging_test_level,
-    apathetic_logger,
-    isolated_logging,
-):
+    logging_test_level: LoggingTestLevel,
+    apathetic_logger: Logger,
+    isolated_logging: LoggingIsolation,
+) -> None:
     # All three fixtures available
     # logging_test_level: Prevents downgrades from TEST
     # apathetic_logger: Fresh test logger with unique name
@@ -478,11 +515,13 @@ def test_complex_scenario(
 All fixtures work with pytest's class-based tests:
 
 ```python
+from apathetic_logging.pytest_helpers import LoggingIsolation
+
 class TestAppLogging:
-    def test_one(self, isolated_logging):
+    def test_one(self, isolated_logging: LoggingIsolation) -> None:
         isolated_logging.set_root_level("DEBUG")
 
-    def test_two(self, isolated_logging):
+    def test_two(self, isolated_logging: LoggingIsolation) -> None:
         # Fresh state for each test
         root = isolated_logging.get_root_logger()
 ```
@@ -493,12 +532,13 @@ Use the assertion helper functions:
 
 ```python
 from apathetic_logging.pytest_helpers import (
+    LoggingIsolation,
     assert_level_equals,
     assert_root_level_equals,
     assert_handler_count,
 )
 
-def test_with_custom_assertions(isolated_logging):
+def test_with_custom_assertions(isolated_logging: LoggingIsolation) -> None:
     logger = isolated_logging.get_logger("myapp")
     logger.setLevel("DEBUG")
 
@@ -515,11 +555,12 @@ def test_with_custom_assertions(isolated_logging):
 For advanced use cases:
 
 ```python
-from apathetic_logging.pytest_helpers import save_logging_state, restore_logging_state
+from apathetic_logging.pytest_helpers import save_logging_state, restore_logging_state, LoggingState
+import logging
 
-def test_manual_state_management():
+def test_manual_state_management() -> None:
     # Save state
-    saved = save_logging_state()
+    saved: LoggingState = save_logging_state()
 
     # Modify logging
     logging.setLoggerClass(MyCustomLogger)
@@ -586,7 +627,9 @@ def test_manual_state_management():
 
 **Example**:
 ```python
-def test_logger_methods(apathetic_logger):
+from logging import Logger
+
+def test_logger_methods(apathetic_logger: Logger) -> None:
     apathetic_logger.debug("message")
 ```
 
@@ -629,16 +672,18 @@ def assert_handler_count(
 Use the simplest fixture that meets your needs:
 
 ```python
+from apathetic_logging.pytest_helpers import LoggingIsolation, LoggingLevelTesting, LoggingTestLevel
+
 # Good: Just need isolation
-def test_isolation(isolated_logging):
+def test_isolation(isolated_logging: LoggingIsolation) -> None:
     pass
 
 # Good: Testing level changes
-def test_changes(logging_level_testing):
+def test_changes(logging_level_testing: LoggingLevelTesting) -> None:
     pass
 
 # Good: Need TEST level
-def test_debugging(logging_test_level):
+def test_debugging(logging_test_level: LoggingTestLevel) -> None:
     pass
 ```
 
@@ -647,14 +692,17 @@ def test_debugging(logging_test_level):
 When testing level changes, choose initial levels that make sense:
 
 ```python
+from apathetic_logging.pytest_helpers import LoggingLevelTesting
+import pytest
+
 # Good: Start with ERROR (quiet) to test that app makes it verbose
 @pytest.mark.initial_level("ERROR")
-def test_debug_flag(logging_level_testing):
+def test_debug_flag(logging_level_testing: LoggingLevelTesting) -> None:
     cli.main(["--debug"])
 
 # Good: Start with DEBUG (verbose) to test that app makes it quiet
 @pytest.mark.initial_level("DEBUG")
-def test_quiet_flag(logging_level_testing):
+def test_quiet_flag(logging_level_testing: LoggingLevelTesting) -> None:
     cli.main(["--quiet"])
 ```
 
@@ -663,14 +711,17 @@ def test_quiet_flag(logging_level_testing):
 Instead of manual on/off:
 
 ```python
-# Good: Clear intent, automatic cleanup
-with logging_test_level.temporarily_allow_changes():
-    app.configure(level="WARNING")
+from apathetic_logging.pytest_helpers import LoggingTestLevel
 
-# Less clear and error-prone
-logging_test_level.allow_app_level_change()
-app.configure(level="WARNING")
-logging_test_level.prevent_app_level_change()
+# Good: Clear intent, automatic cleanup
+def test_example(logging_test_level: LoggingTestLevel) -> None:
+    with logging_test_level.temporarily_allow_changes():
+        app.configure(level="WARNING")
+
+    # Less clear and error-prone
+    logging_test_level.allow_app_level_change()
+    app.configure(level="WARNING")
+    logging_test_level.prevent_app_level_change()
 ```
 
 ### 4. Check History for Complex Scenarios
@@ -678,7 +729,9 @@ logging_test_level.prevent_app_level_change()
 When testing complex level change sequences:
 
 ```python
-def test_complex_config(logging_level_testing):
+from apathetic_logging.pytest_helpers import LoggingLevelTesting
+
+def test_complex_config(logging_level_testing: LoggingLevelTesting) -> None:
     cli.main(args_that_change_level_multiple_times())
 
     history = logging_level_testing.get_level_history()
@@ -692,19 +745,21 @@ def test_complex_config(logging_level_testing):
 Stick to one pattern per test:
 
 ```python
+from apathetic_logging.pytest_helpers import LoggingIsolation
+
 # Good: Testing root pattern only
-def test_root_only(isolated_logging):
+def test_root_only(isolated_logging: LoggingIsolation) -> None:
     isolated_logging.set_root_level("INFO")
     # Test root-based logging
 
 # Good: Testing app pattern only
-def test_app_only(isolated_logging):
+def test_app_only(isolated_logging: LoggingIsolation) -> None:
     logger = isolated_logging.get_logger("myapp")
     logger.setLevel("DEBUG")
     # Test app-based logging
 
 # Less ideal: Mixing both in same test (confusing)
-def test_mixed(isolated_logging):
+def test_mixed(isolated_logging: LoggingIsolation) -> None:
     isolated_logging.set_root_level("INFO")  # Root pattern
     logger = isolated_logging.get_logger("myapp")
     logger.setLevel("DEBUG")  # App pattern
@@ -718,13 +773,16 @@ def test_mixed(isolated_logging):
 Test framework expectations vary. Be explicit:
 
 ```python
+from apathetic_logging.pytest_helpers import LoggingLevelTesting, LoggingIsolation
+import pytest
+
 # Good: Explicit about what we're testing
 @pytest.mark.initial_level("ERROR")
-def test_something(logging_level_testing):
+def test_something(logging_level_testing: LoggingLevelTesting) -> None:
     # Explicitly starts at ERROR
 
 # Less clear: What's the baseline?
-def test_something_unclear(isolated_logging):
+def test_something_unclear(isolated_logging: LoggingIsolation) -> None:
     isolated_logging.set_root_level("ERROR")  # What was it before?
 ```
 
@@ -733,8 +791,11 @@ def test_something_unclear(isolated_logging):
 Child loggers don't automatically inherit from root until you set propagate correctly:
 
 ```python
+from apathetic_logging.pytest_helpers import LoggingIsolation
+import logging
+
 # Good: Clear propagation
-def test_propagation(isolated_logging):
+def test_propagation(isolated_logging: LoggingIsolation) -> None:
     isolated_logging.set_root_level("INFO")
 
     child = isolated_logging.get_logger("myapp.module")
@@ -742,7 +803,7 @@ def test_propagation(isolated_logging):
     assert child.getEffectiveLevel() == logging.INFO
 
 # Pitfall: Manual level setting prevents inheritance
-def test_wrong_inheritance(isolated_logging):
+def test_wrong_inheritance(isolated_logging: LoggingIsolation) -> None:
     isolated_logging.set_root_level("INFO")
 
     child = isolated_logging.get_logger("myapp.module")
@@ -757,8 +818,9 @@ Don't import and modify fixture behavior from other modules:
 ```python
 # Bad: Modifying imported fixture in test module
 import apathetic_logging
+from apathetic_logging.pytest_helpers import LoggingIsolation
 
-def test_something(isolated_logging):
+def test_something(isolated_logging: LoggingIsolation) -> None:
     # This might not work as expected if isolated_logging's
     # monkeypatch isn't in this namespace
     apathetic_logging.setRootLevel("DEBUG")
@@ -768,7 +830,9 @@ Instead, use the fixture's helper:
 
 ```python
 # Good: Using fixture helper
-def test_something(isolated_logging):
+from apathetic_logging.pytest_helpers import LoggingIsolation
+
+def test_something(isolated_logging: LoggingIsolation) -> None:
     isolated_logging.set_root_level("DEBUG")
 ```
 
@@ -777,12 +841,15 @@ def test_something(isolated_logging):
 pytest fixtures work with class-based tests, but reset between methods:
 
 ```python
+from apathetic_logging.pytest_helpers import LoggingIsolation
+import logging
+
 # Good: Understands fixture resets between methods
 class TestLogging:
-    def test_first(self, isolated_logging):
+    def test_first(self, isolated_logging: LoggingIsolation) -> None:
         isolated_logging.set_root_level("DEBUG")
 
-    def test_second(self, isolated_logging):
+    def test_second(self, isolated_logging: LoggingIsolation) -> None:
         # Fresh fixture - level is reset
         root = isolated_logging.get_root_logger()
         assert root.level != logging.DEBUG
@@ -793,15 +860,19 @@ class TestLogging:
 TEST_LEVEL (integer 2) is different from test level detection:
 
 ```python
+from apathetic_logging.pytest_helpers import LoggingIsolation
+import apathetic_logging
+
 # These are different
 apathetic_logging.TEST_LEVEL  # The integer level (2)
 "TEST"  # The string level name
 
 # Good: Know the difference
-root = isolated_logging.get_root_logger()
-root.setLevel(apathetic_logging.TEST_LEVEL)  # Integer
-apathetic_logging.setRootLevel("TEST")  # String
-assert root.level == apathetic_logging.TEST_LEVEL  # Both work
+def test_example(isolated_logging: LoggingIsolation) -> None:
+    root = isolated_logging.get_root_logger()
+    root.setLevel(apathetic_logging.TEST_LEVEL)  # Integer
+    apathetic_logging.setRootLevel("TEST")  # String
+    assert root.level == apathetic_logging.TEST_LEVEL  # Both work
 ```
 
 ## Complete Working Examples
@@ -812,16 +883,16 @@ assert root.level == apathetic_logging.TEST_LEVEL  # Both work
 # tests/test_cli.py
 import pytest
 from myapp.cli import main
-from apathetic_logging.pytest_helpers import logging_level_testing
+from apathetic_logging.pytest_helpers import LoggingLevelTesting
 
 @pytest.mark.initial_level("WARNING")
-def test_verbose_flag(logging_level_testing):
+def test_verbose_flag(logging_level_testing: LoggingLevelTesting) -> None:
     """Test that --verbose flag sets DEBUG level."""
     main(["--verbose", "command"])
     logging_level_testing.assert_level_changed_from("WARNING", to="DEBUG")
 
 @pytest.mark.initial_level("INFO")
-def test_quiet_flag(logging_level_testing):
+def test_quiet_flag(logging_level_testing: LoggingLevelTesting) -> None:
     """Test that --quiet flag sets ERROR level."""
     main(["--quiet", "command"])
     logging_level_testing.assert_level_changed_from("INFO", to="ERROR")
@@ -833,7 +904,7 @@ def test_quiet_flag(logging_level_testing):
     ("--quiet", "WARNING"),
     ("--silent", "SILENT"),
 ])
-def test_all_log_level_flags(logging_level_testing, flag, expected_level):
+def test_all_log_level_flags(logging_level_testing: LoggingLevelTesting, flag: str, expected_level: str) -> None:
     """Test all log level flags."""
     main([flag, "command"])
     logging_level_testing.assert_root_level(expected_level)
@@ -844,9 +915,11 @@ def test_all_log_level_flags(logging_level_testing, flag, expected_level):
 ```python
 # tests/test_mylib.py
 from mylib import MyLibrary
-from apathetic_logging.pytest_helpers import isolated_logging
+from apathetic_logging.pytest_helpers import LoggingIsolation
+import logging
+import pytest
 
-def test_library_logging_isolation(isolated_logging):
+def test_library_logging_isolation(isolated_logging: LoggingIsolation) -> None:
     """Test that library sets its own logging independently."""
     lib = MyLibrary(log_level="DEBUG")
 
@@ -854,7 +927,7 @@ def test_library_logging_isolation(isolated_logging):
     lib_logger = isolated_logging.get_logger("mylib")
     assert lib_logger.getEffectiveLevel() == logging.DEBUG
 
-def test_library_doesnt_affect_root(isolated_logging):
+def test_library_doesnt_affect_root(isolated_logging: LoggingIsolation) -> None:
     """Test that library doesn't change root logger."""
     # Set root to WARNING
     isolated_logging.set_root_level(logging.WARNING)
@@ -866,7 +939,7 @@ def test_library_doesnt_affect_root(isolated_logging):
     isolated_logging.assert_root_level(logging.WARNING)
 
 @pytest.mark.parametrize("level", ["DEBUG", "INFO", "WARNING", "ERROR"])
-def test_library_respects_all_levels(isolated_logging, level):
+def test_library_respects_all_levels(isolated_logging: LoggingIsolation, level: str) -> None:
     """Test library works with all log levels."""
     lib = MyLibrary(log_level=level)
     lib.process()  # Should work regardless of level
@@ -879,12 +952,14 @@ def test_library_respects_all_levels(isolated_logging, level):
 import pytest
 from myapp import App
 from apathetic_logging.pytest_helpers import (
-    logging_test_level,
-    apathetic_logger,
-    isolated_logging,
+    LoggingTestLevel,
+    LoggingIsolation,
+    LoggingLevelTesting,
 )
+from logging import Logger
+import apathetic_logging
 
-def test_app_initialization_with_debugging(logging_test_level):
+def test_app_initialization_with_debugging(logging_test_level: LoggingTestLevel) -> None:
     """Test app initialization with maximum verbosity."""
     # Root is at TEST level
     app = App()
@@ -893,10 +968,10 @@ def test_app_initialization_with_debugging(logging_test_level):
     app.configure_logging("INFO")
 
     # All logs visible
-    apathetic_logger = logging_test_level.get_current_level()
-    assert apathetic_logger == apathetic_logging.TEST_LEVEL
+    current_level = logging_test_level.get_current_level()
+    assert current_level == apathetic_logging.TEST_LEVEL
 
-def test_app_with_custom_logger(isolated_logging, apathetic_logger):
+def test_app_with_custom_logger(isolated_logging: LoggingIsolation, apathetic_logger: Logger) -> None:
     """Test app with custom test logger."""
     app = App()
     app.set_logger(apathetic_logger)
@@ -905,10 +980,10 @@ def test_app_with_custom_logger(isolated_logging, apathetic_logger):
     app.run()
 
     # Verify test logger was used
-    assert apathetic_logger.levelName == "TEST"
+    assert apathetic_logger.levelname == "TEST"
 
 @pytest.mark.initial_level("ERROR")
-def test_app_configuration_changes(logging_level_testing):
+def test_app_configuration_changes(logging_level_testing: LoggingLevelTesting) -> None:
     """Test that app can configure logging properly."""
     app = App()
 
@@ -926,11 +1001,11 @@ def test_app_configuration_changes(logging_level_testing):
 class TestAppIntegration:
     """Integration tests with isolation."""
 
-    def test_first_scenario(self, isolated_logging):
+    def test_first_scenario(self, isolated_logging: LoggingIsolation) -> None:
         app = App(log_level="DEBUG")
         app.run()
 
-    def test_second_scenario(self, isolated_logging):
+    def test_second_scenario(self, isolated_logging: LoggingIsolation) -> None:
         # Fresh state - not affected by first test
         app = App(log_level="WARNING")
         app.run()

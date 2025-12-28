@@ -689,6 +689,10 @@ def isolatedLogging() -> Generator[LoggingIsolation, None, None]:
         # In case apathetic_logging is not fully initialized
         logging.setLoggerClass(logging.Logger)
 
+    # Explicitly reset root logger to default level (WARNING)
+    root = logging.getLogger("")
+    root.setLevel(logging.WARNING)
+
     # Create and yield helper
     isolation = LoggingIsolation(saved_state)
     yield isolation

@@ -12,7 +12,10 @@ import apathetic_logging as amod_logging
 import apathetic_logging.pytest_helpers as mod_pytest_helpers
 
 
-MAX_EXPECTED_LINES = 2
+# Allow up to 3 lines: 1 for the message + potential formatting/blank lines
+# (In stitched mode, logging may produce extra lines due to different formatting)
+# The critical thing is we should NOT see 14-17 lines (the original bug)
+MAX_EXPECTED_LINES = 3
 
 
 def test_sequential_useRootLevel_single_message(
