@@ -48,14 +48,14 @@ from typing import TYPE_CHECKING, Any, TypeAlias
 
 import pytest
 
+import apathetic_logging
+
 
 if TYPE_CHECKING:
     from .logger_namespace import ApatheticLogging_Internal_Logger
 
     Logger: TypeAlias = ApatheticLogging_Internal_Logger.Logger
 else:
-    import apathetic_logging
-
     Logger = apathetic_logging.Logger
 
 
@@ -77,8 +77,8 @@ class RootLoggerState:
     propagate: bool
     """Whether the root logger propagates to parent (always False for root)."""
 
-    disabled: int
-    """Disabled level of the root logger."""
+    disabled: bool
+    """Disabled state of the root logger."""
 
     filters: list[logging.Filter]
     """List of filters attached to the root logger."""
@@ -150,22 +150,19 @@ class LoggingIsolation:
         """
         root = self.getRootLogger()
         if isinstance(level, str):
-            level_int = logging.getLevelName(level)
-            # Handle custom levels by looking in the registry
-            if isinstance(level_int, str):
-                # It's still a string, not a valid level name
-                # Try getting from apathetic_logging
-                try:
-                    level_int = apathetic_logging.getLevelNumber(level)
-                except (AttributeError, ValueError):
-                    msg = f"Invalid log level: {level}"
-                    raise ValueError(msg) from None
+            try:
+                # Try apathetic_logging first for custom levels
+                level_int = apathetic_logging.getLevelNumber(level)
+            except ValueError:
+                # If not a custom level, raise an error
+                msg = f"Invalid log level: {level}"
+                raise ValueError(msg) from None
         else:
             level_int = level
 
         root.setLevel(level_int)
 
-    def getAllLoggers(self) -> dict[str, Logger]:
+    def getAllLoggers(self) -> dict[str, logging.Logger]:
         """Get all loggers in the logging registry.
 
         Returns:
@@ -373,7 +370,7 @@ class LoggingLevelTesting:
 
         def trackedSetRootLevel(level: str | int, **kwargs: Any) -> None:
             """Wrapper that tracks level changes."""
-            result = self._original_set_root_level(level, **kwargs)
+            self._original_set_root_level(level, **kwargs)
 
             # Record the new level
             if isinstance(level, str):
@@ -382,7 +379,6 @@ class LoggingLevelTesting:
                 level_int = level
 
             self._recordLevel(level_int)
-            return result
 
         self._monkeypatch.setattr(
             apathetic_logging,
@@ -531,7 +527,7 @@ def saveLoggingState() -> LoggingState:
         handlers=root.handlers.copy(),
         propagate=root.propagate,
         disabled=root.disabled,
-        filters=root.filters.copy() if hasattr(root, "filters") else [],
+        filters=[f for f in root.filters if isinstance(f, logging.Filter)],
     )
 
     return LoggingState(
@@ -689,7 +685,7 @@ def isolatedLogging() -> Generator[LoggingIsolation, None, None]:
 def loggingTestLevel(
     isolatedLogging: LoggingIsolation,  # noqa: N803
     monkeypatch: pytest.MonkeyPatch,
-) -> Generator[LoggingTestLevel, None, None]:
+) -> LoggingTestLevel:
     """Fixture that sets root logger to TEST level and prevents downgrades.
 
     Use this fixture when you want your tests to default to maximum verbosity
@@ -717,8 +713,7 @@ def loggingTestLevel(
         and bypasses pytest's capsys to write directly to sys.__stderr__.
         This allows you to see all output even if other tests capture output.
     """
-    helper = LoggingTestLevel(isolatedLogging, monkeypatch)
-    return helper
+    return LoggingTestLevel(isolatedLogging, monkeypatch)
 
 
 @pytest.fixture
@@ -726,7 +721,7 @@ def loggingLevelTesting(
     isolatedLogging: LoggingIsolation,  # noqa: N803
     request: pytest.FixtureRequest,
     monkeypatch: pytest.MonkeyPatch,
-) -> Generator[LoggingLevelTesting, None, None]:
+) -> LoggingLevelTesting:
     """Fixture for testing that your app correctly changes log levels.
 
     Use this when you want to test that your app's log level configuration
@@ -764,11 +759,10 @@ def loggingLevelTesting(
             logging_level_testing.assert_root_level(level)
     """
     # Extract initial level from pytest mark if provided
-    marker = request.node.get_closest_marker("initial_level")
-    initial_level = marker.args[0] if marker else "ERROR"  # Default to quiet
+    marker = request.node.get_closest_marker("initial_level")  # pyright: ignore[reportUnknownVariableType,reportUnknownMemberType]
+    initial_level = marker.args[0] if marker else "ERROR"  # pyright: ignore[reportUnknownVariableType,reportUnknownMemberType,reportOptionalSubscript]  # Default to quiet
 
-    helper = LoggingLevelTesting(isolatedLogging, initial_level, monkeypatch)
-    return helper
+    return LoggingLevelTesting(isolatedLogging, initial_level, monkeypatch)  # pyright: ignore[reportUnknownArgumentType]
 
 
 @pytest.fixture
@@ -779,7 +773,7 @@ def apatheticLogger(isolatedLogging: LoggingIsolation) -> Logger:  # noqa: N803
     TEST level (most verbose). It's useful for testing logger methods
     in isolation.
 
-    Returns:
+    Yields:
         Logger: A freshly created logger with a unique name.
 
     Example:
@@ -788,8 +782,7 @@ def apatheticLogger(isolatedLogging: LoggingIsolation) -> Logger:  # noqa: N803
             apatheticLogger.trace("So is this")
             assert apatheticLogger.levelName == "TEST"
     """
-    name = f"test_logger_{uuid.uuid4().hex[:6]}"
-    logger = isolatedLogging.getLogger(name)
+    logger = isolatedLogging.getLogger(f"test_logger_{uuid.uuid4().hex[:6]}")
     logger.setLevel(apathetic_logging.TEST_LEVEL)
     return logger
 

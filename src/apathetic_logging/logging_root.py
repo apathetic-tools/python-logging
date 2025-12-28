@@ -383,6 +383,8 @@ class ApatheticLogging_Internal_LoggingRoot:  # noqa: N801
 
         # Get root logger
         root = logging.getLogger(_constants.ROOT_LOGGER_KEY)
+        # Cast to Any to handle _last_stream_ids attribute that exists at runtime
+        root_any: Any = root
         old_level = root.level
 
         # Check minimum condition if requested
@@ -401,6 +403,11 @@ class ApatheticLogging_Internal_LoggingRoot:  # noqa: N801
         finally:
             # Restore original level
             root.setLevel(old_level)
+            # Clear stream cache state to fix .plan/062 bug where stale stream IDs
+            # cause handler rebuild loops in stitched mode on sequential context
+            # manager use. We reset to None to force a fresh handler rebuild check
+            # on next use.
+            root_any._last_stream_ids = None  # noqa: SLF001
 
     @staticmethod
     @contextmanager
