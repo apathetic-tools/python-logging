@@ -2,6 +2,24 @@
 
 <!-- version list -->
 
+## v0.19.0 (2025-12-28)
+
+### Chores
+
+- Update dependencies and improve logger fixtures
+  ([`0df0b39`](https://github.com/apathetic-tools/python-logging/commit/0df0b3940162a3bb198532d0d337bdc8fb5afee2))
+
+### Features
+
+- Add root logger convenience API and refactor tests
+  ([`4812b90`](https://github.com/apathetic-tools/python-logging/commit/4812b900e43a5f5477420070f025fc95198c335c))
+
+### Refactoring
+
+- Remove entry point and update zipapp build configuration
+  ([`7e3611b`](https://github.com/apathetic-tools/python-logging/commit/7e3611b3dd118207a103a64844fcaf0aead7cdcc))
+
+
 ## v0.18.3 (2025-12-17)
 
 ### Bug Fixes
