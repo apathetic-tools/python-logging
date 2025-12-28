@@ -112,6 +112,40 @@ class ApatheticLogging_Internal_LoggerCore(logging.Logger):  # noqa: N801  # pyr
 
         # handler attachment will happen in _log() with manageHandlers()
 
+    def _rebuildAppatheticHandlers(self) -> None:
+        """Rebuild apathetic handlers for this logger.
+
+        Removes existing DualStreamHandler instances and creates a new one.
+        Updates _last_stream_ids to track current stdout/stderr.
+
+        This is called by manageHandlers() when handlers need to be rebuilt.
+
+        """
+        _dual_stream_handler = ApatheticLogging_Internal_DualStreamHandler
+        _tag_formatter = ApatheticLogging_Internal_TagFormatter
+        _safe_logging = ApatheticLogging_Internal_SafeLogging
+
+        # Remove existing apathetic handlers. In unusual circumstances (e.g., when
+        # test fixtures create a new root logger and copy handlers), there might be
+        # multiple stale handlers from copies. Remove them defensively to ensure
+        # we don't end up with handlers pointing to old stdout/stderr.
+        for handler in list(self.handlers):  # Copy list to avoid mutation issues
+            if isinstance(handler, _dual_stream_handler.DualStreamHandler):
+                self.removeHandler(handler)
+                if hasattr(handler, "close"):
+                    handler.close()
+
+        # Add new apathetic handler
+        h = _dual_stream_handler.DualStreamHandler()
+        h.setFormatter(_tag_formatter.TagFormatter("%(message)s"))
+        h.enable_color = self.enable_color
+        self.addHandler(h)
+        self._last_stream_ids = (sys.stdout, sys.stderr)
+        _safe_logging.safeTrace(
+            "manageHandlers()",
+            f"rebuilt_handlers={self.handlers}",
+        )
+
     def manageHandlers(self, *, manage_handlers: bool | None = None) -> None:
         """Manage apathetic handlers for this logger.
 
@@ -156,8 +190,6 @@ class ApatheticLogging_Internal_LoggerCore(logging.Logger):  # noqa: N801  # pyr
             return
 
         _dual_stream_handler = ApatheticLogging_Internal_DualStreamHandler
-        _tag_formatter = ApatheticLogging_Internal_TagFormatter
-        _safe_logging = ApatheticLogging_Internal_SafeLogging
 
         # Identify apathetic handlers
         apathetic_handlers = [
@@ -186,32 +218,20 @@ class ApatheticLogging_Internal_LoggerCore(logging.Logger):  # noqa: N801  # pyr
         # Root logger or non-propagating child logger - ensure it has an
         # apathetic handler. Check if rebuild is needed (missing handler or
         # streams changed)
-        needs_rebuild = False
-        if not apathetic_handlers:
-            needs_rebuild = True
-        elif self._last_stream_ids is not None:
-            last_stdout, last_stderr = self._last_stream_ids
-            if last_stdout is not sys.stdout or last_stderr is not sys.stderr:
-                needs_rebuild = True
-        else:
-            # _last_stream_ids is None but we have handlers - rebuild to set it
-            needs_rebuild = True
+        needs_rebuild = (
+            not apathetic_handlers
+            or (
+                self._last_stream_ids is not None
+                and (
+                    self._last_stream_ids[0] is not sys.stdout
+                    or self._last_stream_ids[1] is not sys.stderr
+                )
+            )
+            or self._last_stream_ids is None
+        )
 
         if needs_rebuild:
-            # Remove existing apathetic handlers (there should only be one, but be safe)
-            for handler in apathetic_handlers:
-                self.removeHandler(handler)
-
-            # Add new apathetic handler
-            h = _dual_stream_handler.DualStreamHandler()
-            h.setFormatter(_tag_formatter.TagFormatter("%(message)s"))
-            h.enable_color = self.enable_color
-            self.addHandler(h)
-            self._last_stream_ids = (sys.stdout, sys.stderr)
-            _safe_logging.safeTrace(
-                "manageHandlers()",
-                f"rebuilt_handlers={self.handlers}",
-            )
+            self._rebuildAppatheticHandlers()
 
     def _log(  # type: ignore[override]
         self,
@@ -674,11 +694,15 @@ class ApatheticLogging_Internal_LoggerCore(logging.Logger):  # noqa: N801  # pyr
                 (DEFAULT_PORT_HANDLERS from constants.py). When False, the new
                 logger manages its own handlers via manageHandlers().
             port_level: Whether to port level from the old root logger to the new
-                logger. If None (default), checks the registry setting (set via
-                registerPortLevel()). If not set in registry, defaults to True
-                (DEFAULT_PORT_LEVEL from constants.py). When False, the new root
-                logger uses determineLogLevel() to get a sensible default. When
-                True, the old level is preserved.
+                logger. If None (default), uses smart detection: if the root logger
+                was never instantiated (fresh), uses determineLogLevel() to apply
+                registered defaults; if the root logger was already accessed, respects
+                the registry setting (set via registerPortLevel()), defaulting to True
+                (DEFAULT_PORT_LEVEL from constants.py). This allows registered defaults
+                to apply cleanly during initialization, while respecting user
+                configuration of the root logger before extendLoggingModule() is called.
+                When explicitly False, always uses determineLogLevel(). When explicitly
+                True, always preserves the old level.
 
         Note for tests:
             When testing isinstance checks on logger instances, use
@@ -706,6 +730,26 @@ class ApatheticLogging_Internal_LoggerCore(logging.Logger):  # noqa: N801  # pyr
         # This allows subclasses to override the logger class.
         # stdlib unwrapped
         logging.setLoggerClass(cls)
+
+        # Register custom levels EARLY (before root logger replacement)
+        # This ensures determineLogLevel() can return custom level names
+        # when applying defaults via _setApatheticDefaults() during root replacement
+        if not already_extended:
+            # Sanity check: validate TAG_STYLES keys are in LEVEL_ORDER
+            if __debug__:
+                _tag_levels = set(_constants.TAG_STYLES.keys())
+                _known_levels = {lvl.upper() for lvl in _constants.LEVEL_ORDER}
+                if not _tag_levels <= _known_levels:
+                    _msg = "TAG_STYLES contains unknown levels"
+                    raise AssertionError(_msg)
+
+            # Register custom levels with validation
+            # addLevelName() also sets logging.TEST, logging.TRACE, etc. attributes
+            cls.addLevelName(_constants.TEST_LEVEL, "TEST")
+            cls.addLevelName(_constants.TRACE_LEVEL, "TRACE")
+            cls.addLevelName(_constants.DETAIL_LEVEL, "DETAIL")
+            cls.addLevelName(_constants.BRIEF_LEVEL, "BRIEF")
+            cls.addLevelName(_constants.SILENT_LEVEL, "SILENT")
 
         # Check if root logger exists and needs to be replaced
         # This handles the case where root logger was created before
@@ -737,6 +781,15 @@ class ApatheticLogging_Internal_LoggerCore(logging.Logger):  # noqa: N801  # pyr
         user_configured_root = getattr(
             namespace_module, "_root_logger_user_configured", False
         )
+
+        # Check if root logger was already instantiated BEFORE getting it
+        # (getting it will create it if it doesn't exist)
+        from .logging_utils import (  # noqa: PLC0415
+            ApatheticLogging_Internal_LoggingUtils,
+        )
+
+        _logging_utils = ApatheticLogging_Internal_LoggingUtils
+        root_was_instantiated = _logging_utils.isRootLoggerInstantiated()
 
         # Get root logger directly (logging.root or from registry)
         root_logger = logging.getLogger(_constants.ROOT_LOGGER_KEY)
@@ -807,33 +860,30 @@ class ApatheticLogging_Internal_LoggerCore(logging.Logger):  # noqa: N801  # pyr
 
             # Port state from old root logger to new root logger
             # (also reconnects child loggers internally)
+            #
+            # Smart port_level handling:
+            # - If root was instantiated: port its level (respect existing config)
+            # - If root is fresh (never accessed): use determineLogLevel() for defaults
+            # This allows users to register defaults and have them apply when the
+            # root logger hasn't been touched yet, while respecting user-configured
+            # root loggers accessed before extendLoggingModule() was called.
+            effective_port_level = port_level
+            if port_level is None and not root_was_instantiated:
+                # Root was never instantiated - use defaults, not port_level=True
+                # This makes determineLogLevel() apply via _setApatheticDefaults()
+                effective_port_level = False
+
             _logging_utils.portLoggerState(
                 root_logger,
                 new_root_logger,
                 port_handlers=port_handlers,
-                port_level=port_level,
+                port_level=effective_port_level,
             )
 
-        # If already extended, skip the rest (level registration, etc.)
+        # If already extended, skip returning early
         if already_extended:
             return False
         cls._logging_module_extended = True
-
-        # Sanity check: validate TAG_STYLES keys are in LEVEL_ORDER
-        if __debug__:
-            _tag_levels = set(_constants.TAG_STYLES.keys())
-            _known_levels = {lvl.upper() for lvl in _constants.LEVEL_ORDER}
-            if not _tag_levels <= _known_levels:
-                _msg = "TAG_STYLES contains unknown levels"
-                raise AssertionError(_msg)
-
-        # Register custom levels with validation
-        # addLevelName() also sets logging.TEST, logging.TRACE, etc. attributes
-        cls.addLevelName(_constants.TEST_LEVEL, "TEST")
-        cls.addLevelName(_constants.TRACE_LEVEL, "TRACE")
-        cls.addLevelName(_constants.DETAIL_LEVEL, "DETAIL")
-        cls.addLevelName(_constants.BRIEF_LEVEL, "BRIEF")
-        cls.addLevelName(_constants.SILENT_LEVEL, "SILENT")
 
         return True
 

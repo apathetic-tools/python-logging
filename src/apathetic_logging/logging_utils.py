@@ -279,6 +279,39 @@ class ApatheticLogging_Internal_LoggingUtils:  # noqa: N801  # pyright: ignore[r
         return logger_name in logging.Logger.manager.loggerDict
 
     @staticmethod
+    def isRootLoggerInstantiated() -> bool:
+        """Check if the root logger has been instantiated/accessed yet.
+
+        The root logger is created lazily by Python's logging module. This function
+        checks if it has been instantiated without creating it as a side effect.
+
+        This is useful to distinguish between:
+        - Fresh root logger: Never accessed, ready to be configured with defaults
+        - Existing root logger: Already created/accessed, should preserve its state
+
+        Returns:
+            True if the root logger has been instantiated (exists in manager registry),
+            False if it's fresh and ready for configuration with defaults.
+
+        Note:
+            Calling logging.getLogger("") after this returns False will instantiate
+            the root logger, so timing matters. This check should be done before any
+            code that accesses the root logger.
+
+        Example:
+            >>> if not isRootLoggerInstantiated():
+            ...     # Root logger is fresh, apply our defaults
+            ...     root.setLevel(determineLogLevel())
+            ... else:
+            ...     # Root logger already exists, port its state
+            ...     portLoggerState(old_root, new_root, port_level=True)
+        """
+        _constants = ApatheticLogging_Internal_Constants
+        return ApatheticLogging_Internal_LoggingUtils.hasLogger(
+            _constants.ROOT_LOGGER_KEY
+        )
+
+    @staticmethod
     def reconnectChildLoggers(
         old_logger: logging.Logger,
         new_logger: logging.Logger,
