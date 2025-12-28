@@ -120,6 +120,7 @@ getRootLevelName = apathetic_logging.getRootLevelName
 getRootLogger = apathetic_logging.getRootLogger  # pyright: ignore[reportUnknownVariableType,reportUnknownMemberType]
 getTargetPythonVersion = apathetic_logging.getTargetPythonVersion
 hasLogger = apathetic_logging.hasLogger
+isRootLoggerInstantiated = apathetic_logging.isRootLoggerInstantiated
 makeSafeTrace = apathetic_logging.makeSafeTrace
 registerDefaultLogLevel = apathetic_logging.registerDefaultLogLevel
 registerLogLevelEnvVars = apathetic_logging.registerLogLevelEnvVars
@@ -196,6 +197,7 @@ __all__ = [
     "hasLogger",
     "info",
     "isRootEnabledFor",
+    "isRootLoggerInstantiated",
     "log",
     "logRootDynamic",
     "makeLogRecord",

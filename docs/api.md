@@ -111,6 +111,7 @@ For writing library extensions.
 | [`getRegisteredLoggerName()`](#getregisteredloggername) | Get the registered logger name |
 | [`getTargetPythonVersion()`](#gettargetpythonversion) | Get the target Python version |
 | [`hasLogger()`](#haslogger) | Check if a logger exists in the logging manager's registry |
+| [`isRootLoggerInstantiated()`](#isrootloggerinstantiated) | Check if the root logger has been instantiated |
 | [`makeLogRecord()`<sup>†</sup>](#makelogrecord) | Create a LogRecord from the given parameters |
 | [`removeLogger()`](#removelogger) | Remove a logger from the logging manager's registry |
 | [`setLogRecordFactory()`<sup>†</sup>](#setlogrecordfactory) | Set the factory function used to create LogRecords |
@@ -979,6 +980,40 @@ Check if a logger exists in the logging manager's registry.
 
 **Returns:**
 - `bool`: True if the logger exists, False otherwise
+
+### isRootLoggerInstantiated
+
+```python
+isRootLoggerInstantiated() -> bool
+```
+
+Check if the root logger has been instantiated/accessed yet.
+
+The root logger is created lazily by Python's logging module. This function checks if it has been instantiated without creating it as a side effect.
+
+**Returns:**
+- `bool`: True if the root logger has been instantiated (exists in manager registry), False if it's fresh and ready for configuration with defaults
+
+**Use Cases:**
+
+This is useful to distinguish between:
+- **Fresh root logger**: Never accessed, ready to be configured with defaults
+- **Existing root logger**: Already created/accessed, should preserve its state
+
+**Note:**
+
+Calling `logging.getLogger("")` after this returns False will instantiate the root logger, so timing matters. This check should be done before any code that accesses the root logger.
+
+**Example:**
+
+```python
+if not isRootLoggerInstantiated():
+    # Root logger is fresh, apply our defaults
+    root.setLevel(determineLogLevel())
+else:
+    # Root logger already exists, port its state
+    portLoggerState(old_root, new_root, port_level=True)
+```
 
 ### removeLogger
 
