@@ -5,128 +5,128 @@ import logging
 import pytest
 
 
-def test_isolated_logging_resets_logger_state(isolated_logging: object) -> None:
-    """Test that isolated_logging works in first test."""
+def test_isolated_logging_resets_logger_state(isolatedLogging: object) -> None:  # noqa: N803
+    """Test that isolatedLogging works in first test."""
     # Just verify the fixture is available and works
-    isolation = isolated_logging  # type: ignore[assignment]
-    root = isolation.get_root_logger()
+    isolation = isolatedLogging  # type: ignore[assignment]
+    root = isolation.getRootLogger()
     root.setLevel(logging.DEBUG)
     assert root.level == logging.DEBUG
 
 
-def test_isolated_logging_state_reset_between_tests(isolated_logging: object) -> None:
-    """Test that isolated_logging resets state between tests."""
+def test_isolated_logging_state_reset_between_tests(isolatedLogging: object) -> None:  # noqa: N803
+    """Test that isolatedLogging resets state between tests."""
     # Verify state is reset from previous test
-    isolation = isolated_logging  # type: ignore[assignment]
-    root = isolation.get_root_logger()
+    isolation = isolatedLogging  # type: ignore[assignment]
+    root = isolation.getRootLogger()
     # Root level should be reset, not DEBUG from previous test
     assert root.level != logging.DEBUG
 
 
-def test_isolated_logging_clears_loggers(isolated_logging: object) -> None:
-    """Test that isolated_logging clears all loggers between tests."""
-    isolation = isolated_logging  # type: ignore[assignment]
-    logger = isolation.get_logger("test.app")
+def test_isolated_logging_clears_loggers(isolatedLogging: object) -> None:  # noqa: N803
+    """Test that isolatedLogging clears all loggers between tests."""
+    isolation = isolatedLogging  # type: ignore[assignment]
+    logger = isolation.getLogger("test.app")
     logger.setLevel(logging.DEBUG)
     assert "test.app" in logging.Logger.manager.loggerDict
 
 
-@pytest.mark.usefixtures("isolated_logging")
+@pytest.mark.usefixtures("isolatedLogging")
 def test_isolated_logging_clears_in_next_test() -> None:
     """Test that logger from previous test is removed."""
     # Logger from previous test should be removed (fixture provides isolation)
     assert "test.app" not in logging.Logger.manager.loggerDict
 
 
-def test_isolated_logging_get_logger(isolated_logging: object) -> None:
-    """Test that get_logger creates loggers correctly."""
-    isolation = isolated_logging  # type: ignore[assignment]
-    logger = isolation.get_logger("myapp.module")
+def test_isolated_logging_get_logger(isolatedLogging: object) -> None:  # noqa: N803
+    """Test that getLogger creates loggers correctly."""
+    isolation = isolatedLogging  # type: ignore[assignment]
+    logger = isolation.getLogger("myapp.module")
     assert logger.name == "myapp.module"
     assert isinstance(logger, logging.Logger)
 
 
-def test_isolated_logging_set_root_level_string(isolated_logging: object) -> None:
-    """Test that set_root_level works with string levels."""
-    isolation = isolated_logging  # type: ignore[assignment]
-    isolation.set_root_level("DEBUG")
-    root = isolation.get_root_logger()
+def test_isolated_logging_set_root_level_string(isolatedLogging: object) -> None:  # noqa: N803
+    """Test that setRootLevel works with string levels."""
+    isolation = isolatedLogging  # type: ignore[assignment]
+    isolation.setRootLevel("DEBUG")
+    root = isolation.getRootLogger()
     assert root.level == logging.DEBUG
 
 
-def test_isolated_logging_set_root_level_int(isolated_logging: object) -> None:
-    """Test that set_root_level works with int levels."""
-    isolation = isolated_logging  # type: ignore[assignment]
-    isolation.set_root_level(logging.INFO)
-    root = isolation.get_root_logger()
+def test_isolated_logging_set_root_level_int(isolatedLogging: object) -> None:  # noqa: N803
+    """Test that setRootLevel works with int levels."""
+    isolation = isolatedLogging  # type: ignore[assignment]
+    isolation.setRootLevel(logging.INFO)
+    root = isolation.getRootLogger()
     assert root.level == logging.INFO
 
 
-def test_isolated_logging_assert_root_level_passes(isolated_logging: object) -> None:
-    """Test that assert_root_level passes when level matches."""
-    isolation = isolated_logging  # type: ignore[assignment]
-    isolation.set_root_level("DEBUG")
-    isolation.assert_root_level("DEBUG")  # Should not raise
+def test_isolated_logging_assert_root_level_passes(isolatedLogging: object) -> None:  # noqa: N803
+    """Test that assertRootLevel passes when level matches."""
+    isolation = isolatedLogging  # type: ignore[assignment]
+    isolation.setRootLevel("DEBUG")
+    isolation.assertRootLevel("DEBUG")  # Should not raise
 
 
-def test_isolated_logging_assert_root_level_fails(isolated_logging: object) -> None:
-    """Test that assert_root_level fails when level doesn't match."""
-    isolation = isolated_logging  # type: ignore[assignment]
-    isolation.set_root_level("DEBUG")
+def test_isolated_logging_assert_root_level_fails(isolatedLogging: object) -> None:  # noqa: N803
+    """Test that assertRootLevel fails when level doesn't match."""
+    isolation = isolatedLogging  # type: ignore[assignment]
+    isolation.setRootLevel("DEBUG")
     with pytest.raises(AssertionError):
-        isolation.assert_root_level("INFO")
+        isolation.assertRootLevel("INFO")
 
 
-def test_isolated_logging_assert_logger_level(isolated_logging: object) -> None:
-    """Test that assert_logger_level works correctly."""
-    isolation = isolated_logging  # type: ignore[assignment]
-    logger = isolation.get_logger("myapp")
+def test_isolated_logging_assert_logger_level(isolatedLogging: object) -> None:  # noqa: N803
+    """Test that assertLoggerLevel works correctly."""
+    isolation = isolatedLogging  # type: ignore[assignment]
+    logger = isolation.getLogger("myapp")
     logger.setLevel(logging.DEBUG)
-    isolation.assert_logger_level("myapp", logging.DEBUG)
+    isolation.assertLoggerLevel("myapp", logging.DEBUG)
 
 
-def test_isolated_logging_assert_logger_level_fails(isolated_logging: object) -> None:
-    """Test that assert_logger_level fails when level doesn't match."""
-    isolation = isolated_logging  # type: ignore[assignment]
-    logger = isolation.get_logger("myapp")
+def test_isolated_logging_assert_logger_level_fails(isolatedLogging: object) -> None:  # noqa: N803
+    """Test that assertLoggerLevel fails when level doesn't match."""
+    isolation = isolatedLogging  # type: ignore[assignment]
+    logger = isolation.getLogger("myapp")
     logger.setLevel(logging.DEBUG)
     with pytest.raises(AssertionError):
-        isolation.assert_logger_level("myapp", logging.INFO)
+        isolation.assertLoggerLevel("myapp", logging.INFO)
 
 
-def test_isolated_logging_get_all_loggers(isolated_logging: object) -> None:
-    """Test that get_all_loggers returns all loggers."""
-    isolation = isolated_logging  # type: ignore[assignment]
-    isolation.get_logger("app.module1")
-    isolation.get_logger("app.module2")
+def test_isolated_logging_get_all_loggers(isolatedLogging: object) -> None:  # noqa: N803
+    """Test that getAllLoggers returns all loggers."""
+    isolation = isolatedLogging  # type: ignore[assignment]
+    isolation.getLogger("app.module1")
+    isolation.getLogger("app.module2")
 
-    all_loggers = isolation.get_all_loggers()
+    all_loggers = isolation.getAllLoggers()
     assert "app.module1" in all_loggers
     assert "app.module2" in all_loggers
 
 
 @pytest.mark.parametrize("level", ["DEBUG", "INFO", "WARNING"])
 def test_isolated_logging_with_parametrized_tests(
-    isolated_logging: object,
+    isolatedLogging: object,  # noqa: N803
     level: str,
 ) -> None:
-    """Test that isolated_logging works with parametrized tests."""
-    isolation = isolated_logging  # type: ignore[assignment]
-    isolation.set_root_level(level)
-    isolation.assert_root_level(level)
+    """Test that isolatedLogging works with parametrized tests."""
+    isolation = isolatedLogging  # type: ignore[assignment]
+    isolation.setRootLevel(level)
+    isolation.assertRootLevel(level)
 
 
 class TestIsolatedLoggingClassBased:
-    """Class-based tests with isolated_logging."""
+    """Class-based tests with isolatedLogging."""
 
-    def test_one(self, isolated_logging: object) -> None:
+    def test_one(self, isolatedLogging: object) -> None:  # noqa: N803
         """Test in class - first method."""
-        isolation = isolated_logging  # type: ignore[assignment]
-        isolation.set_root_level(logging.DEBUG)
-        assert isolation.get_root_logger().level == logging.DEBUG
+        isolation = isolatedLogging  # type: ignore[assignment]
+        isolation.setRootLevel(logging.DEBUG)
+        assert isolation.getRootLogger().level == logging.DEBUG
 
-    def test_two(self, isolated_logging: object) -> None:
+    def test_two(self, isolatedLogging: object) -> None:  # noqa: N803
         """Test in class - second method."""
-        isolation = isolated_logging  # type: ignore[assignment]
+        isolation = isolatedLogging  # type: ignore[assignment]
         # State should be reset from previous test
-        assert isolation.get_root_logger().level != logging.DEBUG
+        assert isolation.getRootLogger().level != logging.DEBUG

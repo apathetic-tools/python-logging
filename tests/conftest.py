@@ -33,15 +33,27 @@ alib_utils.runtime_swap(
     script_name=PROGRAM_SCRIPT,
 )
 
+# Import pytest helpers fixtures for discovery
+import apathetic_logging.pytest_helpers as mod_pytest_helpers  # noqa: E402
 from tests.utils import (  # noqa: E402
     direct_logger,
     module_logger,
 )
 
 
+# Make fixtures available for pytest discovery via module attributes
+apatheticLogger = mod_pytest_helpers.apatheticLogger
+isolatedLogging = mod_pytest_helpers.isolatedLogging
+loggingTestLevel = mod_pytest_helpers.loggingTestLevel
+loggingLevelTesting = mod_pytest_helpers.loggingLevelTesting
+
 # These fixtures are intentionally re-exported so pytest can discover them.
 __all__ = [
+    "apatheticLogger",
     "direct_logger",
+    "isolatedLogging",
+    "loggingLevelTesting",
+    "loggingTestLevel",
     "module_logger",
 ]
 

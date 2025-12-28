@@ -123,7 +123,7 @@ class LoggingIsolation:
         """
         self._saved_state = saved_state
 
-    def get_root_logger(self) -> Logger:
+    def getRootLogger(self) -> Logger:
         """Get the root logger.
 
         Returns:
@@ -131,7 +131,7 @@ class LoggingIsolation:
         """
         return logging.getLogger("")  # type: ignore[return-value]
 
-    def get_logger(self, name: str | None = None) -> Logger:
+    def getLogger(self, name: str | None = None) -> Logger:
         """Get a logger by name, creating it if needed.
 
         Args:
@@ -142,13 +142,13 @@ class LoggingIsolation:
         """
         return logging.getLogger(name)  # type: ignore[return-value]
 
-    def set_root_level(self, level: str | int) -> None:
+    def setRootLevel(self, level: str | int) -> None:
         """Set the root logger's level.
 
         Args:
             level: The log level (string or int).
         """
-        root = self.get_root_logger()
+        root = self.getRootLogger()
         if isinstance(level, str):
             level_int = logging.getLevelName(level)
             # Handle custom levels by looking in the registry
@@ -165,7 +165,7 @@ class LoggingIsolation:
 
         root.setLevel(level_int)
 
-    def get_all_loggers(self) -> dict[str, Logger]:
+    def getAllLoggers(self) -> dict[str, Logger]:
         """Get all loggers in the logging registry.
 
         Returns:
@@ -177,7 +177,7 @@ class LoggingIsolation:
             if isinstance(logger, logging.Logger)
         }
 
-    def assert_root_level(self, expected: str | int) -> None:
+    def assertRootLevel(self, expected: str | int) -> None:
         """Assert that the root logger has the expected level.
 
         Args:
@@ -186,7 +186,7 @@ class LoggingIsolation:
         Raises:
             AssertionError: If the levels don't match.
         """
-        root = self.get_root_logger()
+        root = self.getRootLogger()
         expected_int = (
             apathetic_logging.getLevelNumber(expected)
             if isinstance(expected, str)
@@ -203,7 +203,7 @@ class LoggingIsolation:
             )
             raise AssertionError(msg)
 
-    def assert_logger_level(self, name: str, expected: str | int) -> None:
+    def assertLoggerLevel(self, name: str, expected: str | int) -> None:
         """Assert that a logger has the expected level.
 
         Args:
@@ -213,7 +213,7 @@ class LoggingIsolation:
         Raises:
             AssertionError: If the levels don't match or logger not found.
         """
-        logger = self.get_logger(name)
+        logger = self.getLogger(name)
         expected_int = (
             apathetic_logging.getLevelNumber(expected)
             if isinstance(expected, str)
@@ -254,15 +254,15 @@ class LoggingTestLevel:
         self._original_set_root_level = apathetic_logging.setRootLevel
 
         # Set root to TEST level
-        isolation.set_root_level("TEST")
+        isolation.setRootLevel("TEST")
 
         # Install monkey-patch to prevent downgrades
-        self._install_prevention()
+        self._installPrevention()
 
-    def _install_prevention(self) -> None:
+    def _installPrevention(self) -> None:
         """Install monkey-patch to prevent level downgrades."""
 
-        def protected_set_root_level(level: str | int, **kwargs: Any) -> None:
+        def protectedSetRootLevel(level: str | int, **kwargs: Any) -> None:
             """Wrapper that prevents downgrades from TEST."""
             if not self._prevention_enabled:
                 self._original_set_root_level(level, **kwargs)
@@ -287,46 +287,46 @@ class LoggingTestLevel:
         self._monkeypatch.setattr(
             apathetic_logging,
             "setRootLevel",
-            protected_set_root_level,
+            protectedSetRootLevel,
         )
 
-    def allow_app_level_change(self) -> None:
+    def allowAppLevelChange(self) -> None:
         """Temporarily allow the app to change the log level.
 
         This disables the downgrade prevention, allowing setRootLevel to work
-        normally for the rest of the test or until prevent_app_level_change()
+        normally for the rest of the test or until preventAppLevelChange()
         is called.
         """
         self._prevention_enabled = False
 
-    def prevent_app_level_change(self) -> None:
+    def preventAppLevelChange(self) -> None:
         """Re-enable the downgrade prevention.
 
         This re-enables the monkey-patch that prevents downgrades.
         """
         self._prevention_enabled = True
 
-    def get_current_level(self) -> int:
+    def getCurrentLevel(self) -> int:
         """Get the current root logger level.
 
         Returns:
             The numeric log level of the root logger.
         """
-        return self._isolation.get_root_logger().level
+        return self._isolation.getRootLogger().level
 
     @contextmanager
-    def temporarily_allow_changes(self) -> Generator[None, None, None]:
+    def temporarilyAllowChanges(self) -> Generator[None, None, None]:
         """Context manager to temporarily allow level changes.
 
         Example:
-            with logging_test_level.temporarily_allow_changes():
+            with logging_test_level.temporarilyAllowChanges():
                 app.configure_logging(level="INFO")
         """
-        self.allow_app_level_change()
+        self.allowAppLevelChange()
         try:
             yield
         finally:
-            self.prevent_app_level_change()
+            self.preventAppLevelChange()
 
 
 class LoggingLevelTesting:
@@ -361,17 +361,17 @@ class LoggingLevelTesting:
         self._history: list[tuple[float, int, str]] = []
 
         # Set initial level
-        isolation.set_root_level(initial_level)
-        self._record_level(self._initial_level_int)
+        isolation.setRootLevel(initial_level)
+        self._recordLevel(self._initial_level_int)
 
         # Install monkey-patch to track changes
         self._original_set_root_level = apathetic_logging.setRootLevel
-        self._install_tracking()
+        self._installTracking()
 
-    def _install_tracking(self) -> None:
+    def _installTracking(self) -> None:
         """Install monkey-patch to track level changes."""
 
-        def tracked_set_root_level(level: str | int, **kwargs: Any) -> None:
+        def trackedSetRootLevel(level: str | int, **kwargs: Any) -> None:
             """Wrapper that tracks level changes."""
             result = self._original_set_root_level(level, **kwargs)
 
@@ -381,16 +381,16 @@ class LoggingLevelTesting:
             else:
                 level_int = level
 
-            self._record_level(level_int)
+            self._recordLevel(level_int)
             return result
 
         self._monkeypatch.setattr(
             apathetic_logging,
             "setRootLevel",
-            tracked_set_root_level,
+            trackedSetRootLevel,
         )
 
-    def _record_level(self, level_int: int) -> None:
+    def _recordLevel(self, level_int: int) -> None:
         """Record a level change to the history.
 
         Args:
@@ -400,7 +400,7 @@ class LoggingLevelTesting:
         timestamp = time.time()
         self._history.append((timestamp, level_int, level_name))
 
-    def assert_root_level(self, expected: str | int) -> None:
+    def assertRootLevel(self, expected: str | int) -> None:
         """Assert that the root logger currently has the expected level.
 
         Args:
@@ -409,9 +409,9 @@ class LoggingLevelTesting:
         Raises:
             AssertionError: If the levels don't match.
         """
-        self._isolation.assert_root_level(expected)
+        self._isolation.assertRootLevel(expected)
 
-    def assert_level_changed_from(
+    def assertLevelChangedFrom(
         self,
         old_level: str | int,
         *,
@@ -448,7 +448,7 @@ class LoggingLevelTesting:
         )
         raise AssertionError(msg)
 
-    def assert_level_not_changed(self) -> None:
+    def assertLevelNotChanged(self) -> None:
         """Assert that the level was never changed from the initial value.
 
         Raises:
@@ -459,7 +459,7 @@ class LoggingLevelTesting:
             msg = f"Expected level to not change, but history is: {history_names}"
             raise AssertionError(msg)
 
-    def get_level_history(self) -> list[tuple[float, int, str]]:
+    def getLevelHistory(self) -> list[tuple[float, int, str]]:
         """Get the complete history of level changes.
 
         Returns:
@@ -467,9 +467,9 @@ class LoggingLevelTesting:
         """
         return self._history.copy()
 
-    def reset_to_initial(self) -> None:
+    def resetToInitial(self) -> None:
         """Reset the root logger back to its initial level."""
-        self._isolation.set_root_level(self._initial_level_int)
+        self._isolation.setRootLevel(self._initial_level_int)
 
 
 # ============================================================================
@@ -477,7 +477,7 @@ class LoggingLevelTesting:
 # ============================================================================
 
 
-def save_logging_state() -> LoggingState:
+def saveLoggingState() -> LoggingState:
     """Save the complete logging state.
 
     This saves everything needed to restore logging to its current state,
@@ -543,7 +543,7 @@ def save_logging_state() -> LoggingState:
     )
 
 
-def restore_logging_state(state: LoggingState) -> None:
+def restoreLoggingState(state: LoggingState) -> None:
     """Restore logging to a previously saved state.
 
     Args:
@@ -618,7 +618,7 @@ def restore_logging_state(state: LoggingState) -> None:
             root.addFilter(filt)
 
 
-def clear_all_loggers() -> None:
+def clearAllLoggers() -> None:
     """Remove all loggers from the logging registry except the root logger.
 
     This is useful for test cleanup to ensure a clean state for the next test.
@@ -635,7 +635,7 @@ def clear_all_loggers() -> None:
 
 
 @pytest.fixture
-def isolated_logging() -> Generator[LoggingIsolation, None, None]:
+def isolatedLogging() -> Generator[LoggingIsolation, None, None]:
     """Fixture providing complete test isolation for logging.
 
     This fixture saves the complete logging state before the test, clears
@@ -652,20 +652,20 @@ def isolated_logging() -> Generator[LoggingIsolation, None, None]:
         LoggingIsolation: Helper object with methods to manage logger state.
 
     Example:
-        def test_logger_isolation(isolated_logging):
-            isolated_logging.set_root_level("DEBUG")
-            assert isolated_logging.get_root_logger().level == logging.DEBUG
+        def test_logger_isolation(isolatedLogging):
+            isolatedLogging.setRootLevel("DEBUG")
+            assert isolatedLogging.getRootLogger().level == logging.DEBUG
 
-        def test_no_state_bleeding(isolated_logging):
+        def test_no_state_bleeding(isolatedLogging):
             # Previous test's state is not present here
-            root = isolated_logging.get_root_logger()
+            root = isolatedLogging.getRootLogger()
             assert root.level != logging.DEBUG
     """
     # Save state
-    saved_state = save_logging_state()
+    saved_state = saveLoggingState()
 
     # Clear all loggers
-    clear_all_loggers()
+    clearAllLoggers()
 
     # Reset to defaults (via apathetic_logging's defaults)
     try:
@@ -679,15 +679,15 @@ def isolated_logging() -> Generator[LoggingIsolation, None, None]:
     yield isolation
 
     # Cleanup: Remove all loggers again
-    clear_all_loggers()
+    clearAllLoggers()
 
     # Restore state
-    restore_logging_state(saved_state)
+    restoreLoggingState(saved_state)
 
 
 @pytest.fixture
-def logging_test_level(
-    isolated_logging: LoggingIsolation,
+def loggingTestLevel(
+    isolatedLogging: LoggingIsolation,  # noqa: N803
     monkeypatch: pytest.MonkeyPatch,
 ) -> Generator[LoggingTestLevel, None, None]:
     """Fixture that sets root logger to TEST level and prevents downgrades.
@@ -701,14 +701,14 @@ def logging_test_level(
         LoggingTestLevel: Helper with methods to control the prevention.
 
     Example:
-        def test_with_verbose_logs(logging_test_level):
+        def test_with_verbose_logs(loggingTestLevel):
             # Root logger is at TEST level
             app.initialize()  # App calls setRootLevel("INFO"), but it's ignored
             app.run()  # All logs visible because level stays at TEST
 
-        def test_allow_app_to_change(logging_test_level):
+        def test_allow_app_to_change(loggingTestLevel):
             # Sometimes you need to let the app change levels
-            with logging_test_level.temporarily_allow_changes():
+            with loggingTestLevel.temporarilyAllowChanges():
                 app.configure_logging(level="WARNING")
             # Level is now WARNING, but prevention re-enabled
 
@@ -717,13 +717,13 @@ def logging_test_level(
         and bypasses pytest's capsys to write directly to sys.__stderr__.
         This allows you to see all output even if other tests capture output.
     """
-    helper = LoggingTestLevel(isolated_logging, monkeypatch)
+    helper = LoggingTestLevel(isolatedLogging, monkeypatch)
     return helper
 
 
 @pytest.fixture
-def logging_level_testing(
-    isolated_logging: LoggingIsolation,
+def loggingLevelTesting(
+    isolatedLogging: LoggingIsolation,  # noqa: N803
     request: pytest.FixtureRequest,
     monkeypatch: pytest.MonkeyPatch,
 ) -> Generator[LoggingLevelTesting, None, None]:
@@ -738,9 +738,9 @@ def logging_level_testing(
     You can set the initial level via a pytest mark:
 
         @pytest.mark.initial_level("ERROR")
-        def test_cli_sets_debug(logging_level_testing):
+        def test_cli_sets_debug(loggingLevelTesting):
             cli.main(["--log-level", "debug"])
-            logging_level_testing.assert_level_changed_from("ERROR", to="DEBUG")
+            loggingLevelTesting.assertLevelChangedFrom("ERROR", to="DEBUG")
 
     If no mark is provided, the default initial level is "ERROR" (quiet).
 
@@ -767,12 +767,12 @@ def logging_level_testing(
     marker = request.node.get_closest_marker("initial_level")
     initial_level = marker.args[0] if marker else "ERROR"  # Default to quiet
 
-    helper = LoggingLevelTesting(isolated_logging, initial_level, monkeypatch)
+    helper = LoggingLevelTesting(isolatedLogging, initial_level, monkeypatch)
     return helper
 
 
 @pytest.fixture
-def apathetic_logger(isolated_logging: LoggingIsolation) -> Logger:
+def apatheticLogger(isolatedLogging: LoggingIsolation) -> Logger:  # noqa: N803
     """Fixture providing a test logger with a unique name.
 
     This fixture creates a new logger with a unique name and sets it to
@@ -783,13 +783,13 @@ def apathetic_logger(isolated_logging: LoggingIsolation) -> Logger:
         Logger: A freshly created logger with a unique name.
 
     Example:
-        def test_logger_methods(apathetic_logger):
-            apathetic_logger.debug("This is visible")
-            apathetic_logger.trace("So is this")
-            assert apathetic_logger.levelName == "TEST"
+        def test_logger_methods(apatheticLogger):
+            apatheticLogger.debug("This is visible")
+            apatheticLogger.trace("So is this")
+            assert apatheticLogger.levelName == "TEST"
     """
     name = f"test_logger_{uuid.uuid4().hex[:6]}"
-    logger = isolated_logging.get_logger(name)
+    logger = isolatedLogging.getLogger(name)
     logger.setLevel(apathetic_logging.TEST_LEVEL)
     return logger
 
@@ -799,7 +799,7 @@ def apathetic_logger(isolated_logging: LoggingIsolation) -> Logger:
 # ============================================================================
 
 
-def assert_level_equals(
+def assertLevelEquals(
     logger: logging.Logger,
     expected: str | int,
     *,
@@ -834,7 +834,7 @@ def assert_level_equals(
         raise AssertionError(msg)
 
 
-def assert_root_level_equals(expected: str | int) -> None:
+def assertRootLevelEquals(expected: str | int) -> None:
     """Assert that the root logger has the expected level.
 
     Args:
@@ -844,10 +844,10 @@ def assert_root_level_equals(expected: str | int) -> None:
         AssertionError: If the levels don't match.
     """
     root = logging.getLogger("")
-    assert_level_equals(root, expected, effective=False)
+    assertLevelEquals(root, expected, effective=False)
 
 
-def assert_handler_count(
+def assertHandlerCount(
     logger: logging.Logger,
     expected: int,
     *,
@@ -882,14 +882,14 @@ __all__ = [
     "LoggingState",
     "LoggingTestLevel",
     "RootLoggerState",
-    "apathetic_logger",
-    "assert_handler_count",
-    "assert_level_equals",
-    "assert_root_level_equals",
-    "clear_all_loggers",
-    "isolated_logging",
-    "logging_level_testing",
-    "logging_test_level",
-    "restore_logging_state",
-    "save_logging_state",
+    "apatheticLogger",
+    "assertHandlerCount",
+    "assertLevelEquals",
+    "assertRootLevelEquals",
+    "clearAllLoggers",
+    "isolatedLogging",
+    "loggingLevelTesting",
+    "loggingTestLevel",
+    "restoreLoggingState",
+    "saveLoggingState",
 ]
