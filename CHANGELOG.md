@@ -2,6 +2,22 @@
 
 <!-- version list -->
 
+## v0.19.1 (2025-12-28)
+
+### Bug Fixes
+
+- Clarify distinction between _root_logger_user_configured and isRootLoggerInstantiated()
+  ([`3b83fd5`](https://github.com/apathetic-tools/python-logging/commit/3b83fd549e0bc1b553ab0f461ca70552cfa12f25))
+
+- Improve root logger initialization and handler management
+  ([`b417730`](https://github.com/apathetic-tools/python-logging/commit/b4177301f58fc5a1687a153b4a770d0e0bfd60d4))
+
+### Refactoring
+
+- Improve root logger initialization and handler management
+  ([`0344e1f`](https://github.com/apathetic-tools/python-logging/commit/0344e1f7a324361674e6d52854d0527bc304d045))
+
+
 ## v0.19.0 (2025-12-28)
 
 ### Chores
