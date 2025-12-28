@@ -2,6 +2,27 @@
 
 <!-- version list -->
 
+## v0.20.0 (2025-12-28)
+
+### Bug Fixes
+
+- Handle registry access in both package and stitched modes
+  ([`0fd0552`](https://github.com/apathetic-tools/python-logging/commit/0fd055256f10c4061c197bd301c701c13e19f5c2))
+
+- Reset root logger level in isolatedLogging fixture for parallel test isolation
+  ([`2d70dd9`](https://github.com/apathetic-tools/python-logging/commit/2d70dd953bb7ee51b9fe3d6bb9938f031344733f))
+
+### Features
+
+- Add pytest helpers for isolated logging in tests
+  ([`f44e24c`](https://github.com/apathetic-tools/python-logging/commit/f44e24c607645ee9f274e75b572dc187170b5240))
+
+### Refactoring
+
+- Convert pytest helpers to camelCase naming convention
+  ([`0cbae08`](https://github.com/apathetic-tools/python-logging/commit/0cbae08badd765f074c14791974ffe78866d98a9))
+
+
 ## v0.19.1 (2025-12-28)
 
 ### Bug Fixes
