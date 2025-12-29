@@ -602,7 +602,7 @@ def test_message_count(isolated_logging: LoggingIsolation) -> None:
         logger.debug("test message")
 
     # Count exact message occurrences
-    count = capture.count_message("test message")
+    count = capture.countMessage("test message")
     assert count == 1
 ```
 
@@ -657,7 +657,7 @@ def test_logger_methods(apathetic_logger: Logger) -> None:
 **Type**: Context manager (use with `with` statement)
 
 **Methods**:
-- `count_message(message: str) -> int` - Count exact message occurrences
+- `countMessage(message: str) -> int` - Count exact message occurrences
 
 **When to use**:
 - Detecting message duplication
@@ -678,7 +678,7 @@ def test_no_duplication(isolated_logging: LoggingIsolation) -> None:
         logger.debug("unique message")
 
     # Count exact occurrences (should be 1, not 2)
-    count = capture.count_message("unique message")
+    count = capture.countMessage("unique message")
     assert count == 1
 ```
 
@@ -832,7 +832,7 @@ def test_no_duplication(isolated_logging: LoggingIsolation) -> None:
         logger.debug("message")
 
     # Count exact occurrences
-    count = capture.count_message("message")
+    count = capture.countMessage("message")
     assert count == 1  # Not 2 or more
 
 # Less ideal: caplog may fail in parallel/stitched modes
@@ -849,10 +849,10 @@ def test_with_caplog(caplog: pytest.LogCaptureFixture) -> None:
 - **Parallel-safe**: Works correctly in xdist worker processes
 - **Stitched-safe**: Works in single-file stitched distribution
 - **Consistent**: Same behavior across all runtime modes
-- **Simple**: Just call `count_message()`
+- **Simple**: Just call `countMessage()`
 
 **When to use each**:
-- Use `StreamCapture.count_message()` for: Counting message occurrences, detecting duplication
+- Use `StreamCapture.countMessage()` for: Counting message occurrences, detecting duplication
 - Use `caplog.records` for: Filtering by level, checking logger names, accessing log metadata
 
 ## Common Pitfalls
@@ -990,7 +990,7 @@ def test_no_duplication(isolated_logging: LoggingIsolation) -> None:
     with isolated_logging.captureStreams() as capture:
         logger.debug("message")
 
-    count = capture.count_message("message")
+    count = capture.countMessage("message")
     assert count == 1  # Works reliably in all modes
 ```
 
@@ -1021,7 +1021,7 @@ def test_child_logger_no_duplication(isolated_logging: LoggingIsolation) -> None
         child.debug("unique message")
 
     # Count exact message occurrences
-    count = capture.count_message("unique message")
+    count = capture.countMessage("unique message")
 
     # Should be 1, not 2 or more (duplication bug)
     assert count == 1, f"Expected message once, got {count} times"

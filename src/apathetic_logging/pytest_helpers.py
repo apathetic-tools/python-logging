@@ -45,9 +45,10 @@ import uuid
 from collections.abc import Generator
 from contextlib import contextmanager
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, Self, TypeAlias, cast
+from typing import TYPE_CHECKING, Any, Literal, TypeAlias, cast
 
 import pytest
+from typing_extensions import Self
 
 import apathetic_logging
 
@@ -864,13 +865,13 @@ class StreamCapture:
         exc_type: type[BaseException] | None,
         exc_val: BaseException | None,
         exc_tb: types.TracebackType | None,
-    ) -> bool:
+    ) -> Literal[False]:
         # Remove our record capture handler
         root_logger = logging.getLogger()
         root_logger.removeHandler(self._capture_handler)
         return False
 
-    def count_message(self, message: str) -> int:
+    def countMessage(self, message: str) -> int:
         """Count how many times a message appears in captured log records.
 
         Args:

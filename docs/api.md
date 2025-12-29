@@ -2867,7 +2867,7 @@ class StreamCapture:
 
     def __enter__(self) -> StreamCapture: ...
     def __exit__(self, exc_type, exc_val, exc_tb) -> bool: ...
-    def count_message(self, message: str) -> int: ...
+    def countMessage(self, message: str) -> int: ...
 ```
 
 Capture log records during test execution to count message occurrences. This is the recommended approach for testing message output, especially for detecting duplication issues.
@@ -2882,7 +2882,7 @@ Capture log records during test execution to count message occurrences. This is 
 
 | Method | Returns | Description |
 |--------|---------|-------------|
-| `count_message(message)` | `int` | Count how many times a message appears in output |
+| `countMessage(message)` | `int` | Count how many times a message appears in output |
 
 **Example:**
 
@@ -2895,7 +2895,7 @@ def test_no_duplicate_output(isolated_logging):
     with isolated_logging.captureStreams() as capture:
         logger.debug("UNIQUE_MESSAGE_001")
 
-    count = capture.count_message("UNIQUE_MESSAGE_001")
+    count = capture.countMessage("UNIQUE_MESSAGE_001")
     assert count == 1, f"Expected 1 occurrence, got {count}"
 ```
 
@@ -3025,7 +3025,7 @@ def test_complex_logging_scenario(isolated_logging):
         logger = isolated_logging.getLogger("phase1")
         logger.warning("First phase complete")
 
-    assert capture.count_message("First phase complete") == 1
+    assert capture.countMessage("First phase complete") == 1
 
     # Phase 3: Change state and test again
     root.setLevel(logging.DEBUG)

@@ -79,7 +79,7 @@ def test_child_propagates_without_excessive_duplication(
         child.debug("UNIQUE_CHILD_PROPAGATE_001")
 
     # Count message appearances in output
-    count = capture.count_message("UNIQUE_CHILD_PROPAGATE_001")
+    count = capture.countMessage("UNIQUE_CHILD_PROPAGATE_001")
 
     # Should appear exactly 1 time, not 14-17 (the bug)
     assert count == 1, (
@@ -105,8 +105,8 @@ def test_root_and_child_logging_no_excessive_duplication(
         child.debug("UNIQUE_CHILD_MESSAGE_002")
 
     # Each should appear exactly once
-    root_count = capture.count_message("UNIQUE_ROOT_MESSAGE_002")
-    child_count = capture.count_message("UNIQUE_CHILD_MESSAGE_002")
+    root_count = capture.countMessage("UNIQUE_ROOT_MESSAGE_002")
+    child_count = capture.countMessage("UNIQUE_CHILD_MESSAGE_002")
 
     assert root_count == 1, (
         f"Root message appeared {root_count} times (expected 1). Duplication detected."
@@ -146,7 +146,7 @@ def test_multiple_children_no_excessive_duplication(
         ],
         1,
     ):
-        count = capture.count_message(msg)
+        count = capture.countMessage(msg)
         assert count == 1, (
             f"Message {i} appeared {count} times (expected 1). Duplication detected."
         )
@@ -171,7 +171,7 @@ def test_sequential_messages_no_excessive_duplication(
     # Each should appear exactly once
     for i in range(1, 6):
         msg = f"UNIQUE_SEQ_MSG_{i}_004"
-        count = capture.count_message(msg)
+        count = capture.countMessage(msg)
         assert count == 1, (
             f"Sequential message {i} appeared {count} times (expected 1). "
             f"Duplication or bleed detected."
@@ -230,7 +230,7 @@ def test_mixed_propagating_and_non_propagating_no_duplication(
         child_no_prop.debug("UNIQUE_NOPROP_MSG_ABC_006")
 
     # Check propagating message in output
-    prop_count = capture.count_message("UNIQUE_PROP_MSG_XYZ_006")
+    prop_count = capture.countMessage("UNIQUE_PROP_MSG_XYZ_006")
     assert prop_count == 1, (
         f"Propagating message appeared {prop_count} times (expected 1)."
     )
@@ -265,8 +265,8 @@ def test_root_level_context_no_excessive_duplication(
         child.debug("UNIQUE_CONTEXT_CHILD_MSG_007")
 
     # Each should appear exactly once
-    root_count = capture.count_message("UNIQUE_CONTEXT_ROOT_MSG_007")
-    child_count = capture.count_message("UNIQUE_CONTEXT_CHILD_MSG_007")
+    root_count = capture.countMessage("UNIQUE_CONTEXT_ROOT_MSG_007")
+    child_count = capture.countMessage("UNIQUE_CONTEXT_CHILD_MSG_007")
 
     assert root_count == 1, (
         f"Context root message appeared {root_count} times (expected 1). "
@@ -296,21 +296,21 @@ def test_sequential_root_level_contexts_no_excessive_duplication(
         amod_logging.useRootLevel("DEBUG"),
     ):
         logger.debug("UNIQUE_SEQUENTIAL_CONTEXT_MSG_1_008")
-    msg1_count = capture1.count_message("UNIQUE_SEQUENTIAL_CONTEXT_MSG_1_008")
+    msg1_count = capture1.countMessage("UNIQUE_SEQUENTIAL_CONTEXT_MSG_1_008")
 
     with (
         isolatedLogging.captureStreams() as capture2,
         amod_logging.useRootLevel("DEBUG"),
     ):
         logger.debug("UNIQUE_SEQUENTIAL_CONTEXT_MSG_2_008")
-    msg2_count = capture2.count_message("UNIQUE_SEQUENTIAL_CONTEXT_MSG_2_008")
+    msg2_count = capture2.countMessage("UNIQUE_SEQUENTIAL_CONTEXT_MSG_2_008")
 
     with (
         isolatedLogging.captureStreams() as capture3,
         amod_logging.useRootLevel("DEBUG"),
     ):
         logger.debug("UNIQUE_SEQUENTIAL_CONTEXT_MSG_3_008")
-    msg3_count = capture3.count_message("UNIQUE_SEQUENTIAL_CONTEXT_MSG_3_008")
+    msg3_count = capture3.countMessage("UNIQUE_SEQUENTIAL_CONTEXT_MSG_3_008")
 
     # Each should appear exactly once (not 14-17 times like the bug)
     for i, count in enumerate([msg1_count, msg2_count, msg3_count], 1):
