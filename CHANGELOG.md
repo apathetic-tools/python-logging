@@ -2,6 +2,32 @@
 
 <!-- version list -->
 
+## v0.21.0 (2025-12-29)
+
+### Bug Fixes
+
+- Prevent root logger state pollution between tests
+  ([`5e1a343`](https://github.com/apathetic-tools/python-logging/commit/5e1a34375d75b0c975086edafaa7a237a0e842de))
+
+- Resolve mypy type errors and camelCase naming violations
+  ([`7fc4cf4`](https://github.com/apathetic-tools/python-logging/commit/7fc4cf4e12d8395a6b52fce46040c4541998f551))
+
+### Features
+
+- Add comprehensive pytest_helpers API reference to api.md
+  ([`9dd1b1c`](https://github.com/apathetic-tools/python-logging/commit/9dd1b1c00ab3b2311c3d8c8bbed10c211a938a7c))
+
+### Refactoring
+
+- Move sequential useRootLevel test to integration directory
+  ([`e351a3a`](https://github.com/apathetic-tools/python-logging/commit/e351a3a317959b89cd297913e4c477655d63648f))
+
+### Testing
+
+- Delete redundant test_useRootLevel_bug_mechanism.py
+  ([`71221c3`](https://github.com/apathetic-tools/python-logging/commit/71221c345544d8a1bf71cd120f922ac7ce5e2384))
+
+
 ## v0.20.0 (2025-12-28)
 
 ### Bug Fixes
