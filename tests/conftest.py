@@ -174,6 +174,17 @@ def reset_logger_class_and_registry() -> Generator[None, None, None]:
 
     yield
 
+    # Clear root logger state to prevent test pollution
+    root = logging.getLogger("")
+    root.handlers.clear()
+    root.setLevel(logging.WARNING)
+    root.disabled = False
+    root.propagate = True
+    root.filters.clear()
+    # Clear root logger's instance-level cache
+    if hasattr(root, "__dict__") and "_last_stream_ids" in root.__dict__:
+        del root.__dict__["_last_stream_ids"]
+
     # Clear loggers again after test
     logger_names = list(logging.Logger.manager.loggerDict.keys())
     for logger_name in logger_names:
