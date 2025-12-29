@@ -40,11 +40,12 @@ from __future__ import annotations
 import logging
 import sys
 import time
+import types
 import uuid
 from collections.abc import Generator
 from contextlib import contextmanager
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, TypeAlias, cast
+from typing import TYPE_CHECKING, Any, Self, TypeAlias, cast
 
 import pytest
 
@@ -227,6 +228,28 @@ class LoggingIsolation:
                 f"but got {actual_name} ({actual})"
             )
             raise AssertionError(msg)
+
+    def captureStreams(self) -> StreamCapture:
+        """Create a stream capture context manager for this test.
+
+        Returns a context manager that captures stdout/stderr during logging.
+        This is useful for tests that need to count log message occurrences,
+        particularly duplication detection tests.
+
+        Works reliably across all runtime modes (package, stitched, zipapp)
+        and execution modes (serial, parallel with xdist).
+
+        Returns:
+            StreamCapture: Context manager for capturing output.
+
+        Example:
+            def test_no_duplication(isolatedLogging):
+                with isolatedLogging.captureStreams() as capture:
+                    logger.debug("test message")
+                    count = capture.count_message("test message")
+                    assert count == 1
+        """
+        return StreamCapture()
 
 
 class LoggingTestLevel:
@@ -788,6 +811,81 @@ def loggingLevelTesting(
     return LoggingLevelTesting(isolatedLogging, initial_level, monkeypatch)  # pyright: ignore[reportUnknownArgumentType]
 
 
+# ============================================================================
+# Stream Capture Helper
+# ============================================================================
+
+
+class _LogRecordCapture(logging.Handler):
+    """Internal handler that captures log records for message counting."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.records: list[logging.LogRecord] = []
+
+    def emit(self, record: logging.LogRecord) -> None:
+        """Store the log record."""
+        self.records.append(record)
+
+
+class StreamCapture:
+    """Context manager for capturing log messages to detect log duplication.
+
+    Works reliably in xdist parallel mode, stitched mode, and all runtime modes.
+    Alternative to pytest's caplog that avoids worker process inconsistencies.
+
+    This is useful for tests that need to count occurrences of log messages,
+    particularly duplication detection tests that may fail with pytest's caplog
+    fixture in parallel mode or stitched mode.
+
+    Uses logging record capture instead of stream redirection to work properly
+    with apathetic-logging's handler system.
+
+    Usage:
+        def test_no_duplication(isolatedLogging):
+            with isolatedLogging.captureStreams() as capture:
+                logger.debug("test message")
+                count = capture.count_message("test message")
+                assert count == 1
+    """
+
+    def __init__(self) -> None:
+        self._capture_handler = _LogRecordCapture()
+        self._capture_handler.setLevel(logging.DEBUG)
+
+    def __enter__(self) -> Self:
+        # Add our record capture handler to root logger
+        root_logger = logging.getLogger()
+        root_logger.addHandler(self._capture_handler)
+        return self
+
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: types.TracebackType | None,
+    ) -> bool:
+        # Remove our record capture handler
+        root_logger = logging.getLogger()
+        root_logger.removeHandler(self._capture_handler)
+        return False
+
+    def count_message(self, message: str) -> int:
+        """Count how many times a message appears in captured log records.
+
+        Args:
+            message: The message string to search for (case-sensitive exact match).
+
+        Returns:
+            Number of times the exact message appears in records.
+        """
+        count = 0
+        for record in self._capture_handler.records:
+            if record.getMessage() == message:
+                count += 1
+        return count
+
+
 @pytest.fixture
 def apatheticLogger(isolatedLogging: LoggingIsolation) -> Logger:  # noqa: N803
     """Fixture providing a test logger with a unique name.
@@ -898,6 +996,7 @@ __all__ = [
     "LoggingState",
     "LoggingTestLevel",
     "RootLoggerState",
+    "StreamCapture",
     "apatheticLogger",
     "assertHandlerCount",
     "assertLevelEquals",

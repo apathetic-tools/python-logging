@@ -590,6 +590,21 @@ def test_manual_state_management() -> None:
 - `get_all_loggers() -> dict[str, Logger]` - Get all loggers
 - `assert_root_level(expected: str | int) -> None` - Assert root level
 - `assert_logger_level(name: str, expected: str | int) -> None` - Assert logger level
+- `captureStreams() -> StreamCapture` - Context manager for capturing log messages
+
+**Example with message capture**:
+```python
+def test_message_count(isolated_logging: LoggingIsolation) -> None:
+    logger = isolated_logging.get_logger("myapp")
+    logger.setLevel(logging.DEBUG)
+
+    with isolated_logging.captureStreams() as capture:
+        logger.debug("test message")
+
+    # Count exact message occurrences
+    count = capture.count_message("test message")
+    assert count == 1
+```
 
 #### `logging_test_level`
 
@@ -633,7 +648,41 @@ def test_logger_methods(apathetic_logger: Logger) -> None:
     apathetic_logger.debug("message")
 ```
 
-### Utility Functions
+### Utility Classes and Functions
+
+#### `StreamCapture` (Context Manager)
+
+**Purpose**: Capture log records to count message occurrences. Works reliably in xdist parallel mode and stitched mode.
+
+**Type**: Context manager (use with `with` statement)
+
+**Methods**:
+- `count_message(message: str) -> int` - Count exact message occurrences
+
+**When to use**:
+- Detecting message duplication
+- Verifying exact message text appears correct number of times
+- Testing in parallel mode (xdist) or stitched mode (where caplog fails)
+
+**Example**:
+```python
+from apathetic_logging.pytest_helpers import LoggingIsolation
+import logging
+
+def test_no_duplication(isolated_logging: LoggingIsolation) -> None:
+    logger = isolated_logging.get_logger("myapp")
+    logger.setLevel(logging.DEBUG)
+
+    # Capture messages as they're logged
+    with isolated_logging.captureStreams() as capture:
+        logger.debug("unique message")
+
+    # Count exact occurrences (should be 1, not 2)
+    count = capture.count_message("unique message")
+    assert count == 1
+```
+
+#### Utility Functions
 
 ```python
 def save_logging_state() -> LoggingState:
@@ -766,6 +815,46 @@ def test_mixed(isolated_logging: LoggingIsolation) -> None:
     # Which controls what?
 ```
 
+### 6. Use StreamCapture for Message Counting and Duplication Tests
+
+When you need to count exact message occurrences or test for duplication, use `StreamCapture` instead of pytest's `caplog`:
+
+```python
+from apathetic_logging.pytest_helpers import LoggingIsolation
+import logging
+
+# Good: Works in all modes (serial, parallel, stitched)
+def test_no_duplication(isolated_logging: LoggingIsolation) -> None:
+    logger = isolated_logging.get_logger("myapp")
+    logger.setLevel(logging.DEBUG)
+
+    with isolated_logging.captureStreams() as capture:
+        logger.debug("message")
+
+    # Count exact occurrences
+    count = capture.count_message("message")
+    assert count == 1  # Not 2 or more
+
+# Less ideal: caplog may fail in parallel/stitched modes
+def test_with_caplog(caplog: pytest.LogCaptureFixture) -> None:
+    with caplog.at_level(logging.DEBUG):
+        logger.debug("message")
+
+    # This count might be 0 or wrong in xdist workers or stitched mode
+    count = sum(1 for r in caplog.records if r.getMessage() == "message")
+    assert count == 1
+```
+
+**Why this matters**: `StreamCapture` captures log records at the logging level, independent of pytest's infrastructure. This makes it:
+- **Parallel-safe**: Works correctly in xdist worker processes
+- **Stitched-safe**: Works in single-file stitched distribution
+- **Consistent**: Same behavior across all runtime modes
+- **Simple**: Just call `count_message()`
+
+**When to use each**:
+- Use `StreamCapture.count_message()` for: Counting message occurrences, detecting duplication
+- Use `caplog.records` for: Filtering by level, checking logger names, accessing log metadata
+
 ## Common Pitfalls
 
 ### Pitfall 1: Forgetting Isolation Needs Setup
@@ -873,6 +962,69 @@ def test_example(isolated_logging: LoggingIsolation) -> None:
     root.setLevel(apathetic_logging.TEST_LEVEL)  # Integer
     apathetic_logging.setRootLevel("TEST")  # String
     assert root.level == apathetic_logging.TEST_LEVEL  # Both work
+```
+
+### Pitfall 6: Using pytest's caplog for Message Counting
+
+**Problem**: pytest's `caplog` fixture doesn't work reliably for counting log message occurrences in:
+- **xdist parallel mode**: caplog captures records inconsistently in worker processes
+- **stitched mode**: Handler identity checks (`isinstance()`) fail, causing double-capture
+- **When handlers are dynamically added**: apathetic-logging's `manageHandlers()` may add handlers after caplog setup
+
+```python
+# Bad: caplog fails in parallel/stitched modes
+def test_no_duplication(caplog: pytest.LogCaptureFixture) -> None:
+    with caplog.at_level(logging.DEBUG):
+        logger.debug("message")
+
+    # In xdist workers or stitched mode, count may be 0 or incorrect
+    count = sum(1 for r in caplog.records if r.getMessage() == "message")
+    assert count == 1  # May fail in parallel/stitched modes
+```
+
+**Solution**: Use `StreamCapture` (built-in to `LoggingIsolation`) instead:
+
+```python
+# Good: Works in all modes (parallel, stitched, serial)
+def test_no_duplication(isolated_logging: LoggingIsolation) -> None:
+    with isolated_logging.captureStreams() as capture:
+        logger.debug("message")
+
+    count = capture.count_message("message")
+    assert count == 1  # Works reliably in all modes
+```
+
+**Why this works**: `StreamCapture` captures log records directly at the logging level, not through pytest's handler infrastructure. This works with apathetic-logging's handler system and doesn't depend on pytest's worker process behavior.
+
+**When to use each approach**:
+- Use `caplog` for: Asserting log levels, checking logger names, filtering by level
+- Use `captureStreams()` for: Counting message occurrences, detecting duplication, checking exact message text
+
+**Example: Detecting Message Duplication**
+
+```python
+import logging
+import pytest
+from apathetic_logging.pytest_helpers import LoggingIsolation
+
+def test_child_logger_no_duplication(isolated_logging: LoggingIsolation) -> None:
+    """Verify messages from child loggers don't appear multiple times."""
+    root = isolated_logging.getRootLogger()
+    child = isolated_logging.getLogger("my.child")
+
+    root.setLevel(logging.DEBUG)
+    child.setLevel(logging.DEBUG)
+    child.propagate = True
+
+    # Capture messages as they're logged
+    with isolated_logging.captureStreams() as capture:
+        child.debug("unique message")
+
+    # Count exact message occurrences
+    count = capture.count_message("unique message")
+
+    # Should be 1, not 2 or more (duplication bug)
+    assert count == 1, f"Expected message once, got {count} times"
 ```
 
 ## Complete Working Examples
