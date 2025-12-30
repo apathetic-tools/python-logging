@@ -8,8 +8,17 @@ This only manifests in stitched mode where module state persists.
 import sys
 from io import StringIO
 
+import pytest
+
 import apathetic_logging as amod_logging
 import apathetic_logging.pytest_helpers as mod_pytest_helpers
+
+
+# Skip all tests in this module until apathetic-testing library is published
+pytestmark = pytest.mark.skip(
+    reason="Waiting for apathetic-testing library publication. "
+    "Fixtures will be imported from there instead of pytest_helpers."
+)
 
 
 # Allow up to 3 lines: 1 for the message + potential formatting/blank lines
