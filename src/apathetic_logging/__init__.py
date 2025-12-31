@@ -56,6 +56,13 @@ INHERIT_LEVEL = apathetic_logging.INHERIT_LEVEL
 NOTSET_LEVEL = apathetic_logging.NOTSET_LEVEL
 ROOT_ALLOW_ALL_LEVEL = apathetic_logging.ROOT_ALLOW_ALL_LEVEL
 
+# Standard library logging levels
+DEBUG_LEVEL = apathetic_logging.DEBUG_LEVEL
+INFO_LEVEL = apathetic_logging.INFO_LEVEL
+WARNING_LEVEL = apathetic_logging.WARNING_LEVEL
+ERROR_LEVEL = apathetic_logging.ERROR_LEVEL
+CRITICAL_LEVEL = apathetic_logging.CRITICAL_LEVEL
+
 # ANSI Colors
 ANSIColors = apathetic_logging.ANSIColors
 
@@ -143,9 +150,13 @@ logRootDynamic = apathetic_logging.logRootDynamic
 
 __all__ = [
     "BRIEF_LEVEL",
+    "CRITICAL_LEVEL",
+    "DEBUG_LEVEL",
     "DEFAULT_APATHETIC_LOG_LEVEL",
     "DEFAULT_APATHETIC_LOG_LEVEL_ENV_VARS",
     "DETAIL_LEVEL",
+    "ERROR_LEVEL",
+    "INFO_LEVEL",
     "INHERIT_LEVEL",
     "LEVEL_ORDER",
     "NOTSET_LEVEL",
@@ -155,6 +166,7 @@ __all__ = [
     "TAG_STYLES",
     "TEST_LEVEL",
     "TRACE_LEVEL",
+    "WARNING_LEVEL",
     "ANSIColors",
     "DualStreamHandler",
     "Logger",

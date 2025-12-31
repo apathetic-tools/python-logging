@@ -62,6 +62,22 @@ class ApatheticLogging_Internal_Constants:  # noqa: N801  # pyright: ignore[repo
     SILENT_LEVEL: int = logging.CRITICAL + 1
     """Disables all logging (one above the highest builtin level)."""
 
+    # Standard library logging levels (exposed for convenience and consistency)
+    DEBUG_LEVEL: int = logging.DEBUG
+    """Standard library DEBUG level (10)."""
+
+    INFO_LEVEL: int = logging.INFO
+    """Standard library INFO level (20)."""
+
+    WARNING_LEVEL: int = logging.WARNING
+    """Standard library WARNING level (30)."""
+
+    ERROR_LEVEL: int = logging.ERROR
+    """Standard library ERROR level (40)."""
+
+    CRITICAL_LEVEL: int = logging.CRITICAL
+    """Standard library CRITICAL level (50)."""
+
     LEVEL_ORDER: ClassVar[list[str]] = [
         "test",  # most verbose, bypasses capture for debugging tests
         "trace",
