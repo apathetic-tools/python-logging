@@ -15,7 +15,7 @@ Some of these we just want to consider, and may not want to implement.
 
 
 ## 🔌 API
-- None currently
+- Expose stdlib logging level constants (DEBUG_LEVEL, INFO_LEVEL, WARNING_LEVEL, ERROR_LEVEL, CRITICAL_LEVEL) for convenience and consistency with usage patterns in apathetic_testing
 
 
 ## 📚 Documentation

@@ -49,6 +49,14 @@ def direct_logger() -> Logger:
     # This is needed for tests that check parent-child relationships and
     # level inheritance.
     logger.parent = logging.getLogger("")
+
+    # Register the logger in the logging registry so that DualStreamHandler can
+    # find it when it looks up the logger by name in emit(). Without this,
+    # logging.getLogger(name) will create a new logger instance instead of
+    # returning the one we configured.
+    registry = logging.Logger.manager.loggerDict
+    registry[name] = logger
+
     return logger
 
 

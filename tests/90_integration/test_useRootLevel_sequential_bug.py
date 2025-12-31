@@ -8,17 +8,7 @@ This only manifests in stitched mode where module state persists.
 import sys
 from io import StringIO
 
-import pytest
-
 import apathetic_logging as amod_logging
-import apathetic_logging.pytest_helpers as mod_pytest_helpers
-
-
-# Skip all tests in this module until apathetic-testing library is published
-pytestmark = pytest.mark.skip(
-    reason="Waiting for apathetic-testing library publication. "
-    "Fixtures will be imported from there instead of pytest_helpers."
-)
 
 
 # Allow up to 3 lines: 1 for the message + potential formatting/blank lines
@@ -27,9 +17,7 @@ pytestmark = pytest.mark.skip(
 MAX_EXPECTED_LINES = 3
 
 
-def test_sequential_useRootLevel_single_message(
-    isolatedLogging: mod_pytest_helpers.LoggingIsolation,  # noqa: N803
-) -> None:
+def test_sequential_useRootLevel_single_message() -> None:
     """Verify sequential useRootLevel calls don't cause message duplication.
 
     This test reproduces the exact issue reported in .plan/062:
@@ -37,7 +25,7 @@ def test_sequential_useRootLevel_single_message(
     - Second context manager use: message appears 14-17 times (broken)
     """
     # Setup: get the root logger and ensure it's properly initialized
-    logger = isolatedLogging.getLogger("test")
+    logger = amod_logging.getLogger("test")
 
     # Save original streams
     old_stdout = sys.stdout
@@ -86,11 +74,9 @@ def test_sequential_useRootLevel_single_message(
         sys.stderr = old_stderr
 
 
-def test_sequential_useRootLevel_multiple_iterations(
-    isolatedLogging: mod_pytest_helpers.LoggingIsolation,  # noqa: N803
-) -> None:
+def test_sequential_useRootLevel_multiple_iterations() -> None:
     """Verify multiple sequential useRootLevel calls all produce correct output."""
-    logger = isolatedLogging.getLogger("test_multi")
+    logger = amod_logging.getLogger("test_multi")
 
     old_stdout = sys.stdout
     old_stderr = sys.stderr
@@ -121,15 +107,13 @@ def test_sequential_useRootLevel_multiple_iterations(
         sys.stderr = old_stderr
 
 
-def test_sequential_useRootLevel_with_stream_changes(
-    isolatedLogging: mod_pytest_helpers.LoggingIsolation,  # noqa: N803
-) -> None:
+def test_sequential_useRootLevel_with_stream_changes() -> None:
     """Simulate pytest capsys behavior: replacing streams between uses.
 
     This more closely matches what happens in pytest where streams can be
     redirected multiple times during test execution.
     """
-    logger = isolatedLogging.getLogger("test_streams")
+    logger = amod_logging.getLogger("test_streams")
 
     old_stdout = sys.stdout
     old_stderr = sys.stderr
@@ -181,19 +165,17 @@ def test_sequential_useRootLevel_with_stream_changes(
         sys.stderr = old_stderr
 
 
-def test_useRootLevel_clears_stream_cache(
-    isolatedLogging: mod_pytest_helpers.LoggingIsolation,  # noqa: N803
-) -> None:
+def test_useRootLevel_clears_stream_cache() -> None:
     """Verify that useRootLevel properly clears the _last_stream_ids cache.
 
     This is the core of the fix: the root logger's _last_stream_ids cache
     must be cleared when exiting the context manager.
     """
-    root = isolatedLogging.getRootLogger()
+    root = amod_logging.getRootLogger()
 
     # Before entering context manager, set _last_stream_ids to something
     # (simulating previous state)
-    root._last_stream_ids = (sys.stdout, sys.stderr)  # noqa: SLF001  # pyright: ignore[reportPrivateUsage]
+    root._last_stream_ids = (sys.stdout, sys.stderr)  # type: ignore[attr-defined]  # noqa: SLF001
 
     # Enter and exit context manager
     with amod_logging.useRootLevel("DEBUG"):
@@ -203,6 +185,6 @@ def test_useRootLevel_clears_stream_cache(
     # OR it should be reset to current stdout/stderr
     # The key is that stale stream identities should not cause re-entry loops
     assert (
-        root._last_stream_ids is None  # noqa: SLF001  # pyright: ignore[reportPrivateUsage]
-        or root._last_stream_ids == (sys.stdout, sys.stderr)  # noqa: SLF001  # pyright: ignore[reportPrivateUsage]
-    ), f"Stream cache not properly managed: {root._last_stream_ids}"  # noqa: SLF001  # pyright: ignore[reportPrivateUsage]
+        root._last_stream_ids is None  # type: ignore[attr-defined]  # noqa: SLF001
+        or root._last_stream_ids == (sys.stdout, sys.stderr)  # type: ignore[attr-defined]  # noqa: SLF001
+    ), f"Stream cache not properly managed: {root._last_stream_ids}"  # type: ignore[attr-defined]  # noqa: SLF001

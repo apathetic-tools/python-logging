@@ -43,6 +43,12 @@ def capture_log_output(
 
     Returns (stdout_text, stderr_text) as plain strings.
     Automatically restores sys.stdout/sys.stderr afterwards.
+
+    Note: log_level defaults to "TRACE" (not "TEST") to capture all message
+    levels while avoiding the pytest capture bypass that occurs when logger
+    level is TEST. When logger is at TEST level, DEBUG/TRACE messages write
+    to sys.__stderr__ to bypass pytest capture, which prevents capturing
+    output in tests. TRACE level allows capturing while still being verbose.
     """
     logger.enable_color = enable_color
     logger.setLevel(log_level.upper())
@@ -118,7 +124,8 @@ def test_formatter_includes_expected_tags(
 ) -> None:
     """Each log level should include its corresponding prefix/tag."""
     # --- setup ---
-    direct_logger.setLevel("test")  # most verbose to see all levels
+    # Avoid TEST level to not bypass capsys capture
+    direct_logger.setLevel("trace")
 
     # --- execute, and verify ---
     for level_name, (_, expected_tag) in mod_alogs.apathetic_logging.TAG_STYLES.items():
@@ -272,10 +279,10 @@ def test_log_dynamic_accepts_numeric_level(
     """log_dynamic() should work with int levels too."""
     # --- execute ---
     direct_logger.logDynamic(
-        mod_alogs.apathetic_logging.TRACE_LEVEL, "Numeric trace log works"
+        mod_alogs.apathetic_logging.DETAIL_LEVEL, "Numeric detail log works"
     )
 
     # --- verify ---
     captured = capsys.readouterr()
     combined = (captured.out + captured.err).lower()
-    assert "Numeric trace log works".lower() in combined
+    assert "Numeric detail log works".lower() in combined
