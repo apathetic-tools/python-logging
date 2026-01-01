@@ -12,8 +12,8 @@
 *Apathetic Python Logger* provides a lightweight, dependency-free logging solution designed for CLI tools. It extends Python's standard library `logging` module with colorized output, dual-stream handling (stdout/stderr), extra logging levels and context.
 
 > [!NOTE]
-> Heads up: the AI cooked dinner. It’s edible, but watch your step.  
-> Detailed bug reports welcome.
+> This project is largely AI-written and minimally polished. I rely on it, but I haven't reviewed every detail.
+> Expect rough edges. Thoughtful issue reports are appreciated.
 
 ## Quick Start
 
