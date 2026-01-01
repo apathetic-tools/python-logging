@@ -30,14 +30,14 @@ apathetic-utils = ">=0.2.1,<2.0.0"
 
 [[package]]
 name = "apathetic-testing"
-version = "0.2.1"
+version = "0.3.0"
 description = "Runtime-aware pytest extensions. "
 optional = false
 python-versions = ">=3.10"
 groups = ["dev"]
 files = [
-    {file = "apathetic_testing-0.2.1-py3-none-any.whl", hash = "sha256:dc759489621d33d29b4c0fc73bc738c8beee7f80563ec1ff599178f9e94aeeaa"},
-    {file = "apathetic_testing-0.2.1.tar.gz", hash = "sha256:cf046ce649cc59527762c5030425947e86ae5e46f0169d1dc62db39d11f4679d"},
+    {file = "apathetic_testing-0.3.0-py3-none-any.whl", hash = "sha256:7639e3733165cd925a65fb45a5fa4edde42aa3b89350fc47e6810d5f264fd254"},
+    {file = "apathetic_testing-0.3.0.tar.gz", hash = "sha256:5eb767186c064e0f4cfcfbbda4bf3d41758071954792d778264c6b1fe8af641b"},
 ]
 
 [package.dependencies]

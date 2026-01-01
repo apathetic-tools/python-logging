@@ -10,13 +10,13 @@ from unittest.mock import MagicMock
 
 import apathetic_utils
 import pytest
+from apathetic_testing import create_mock_version_info
 
 import apathetic_logging as mod_alogs
 import apathetic_logging.logging_utils as mod_logging_utils
 import apathetic_logging.registry_data as mod_registry_data
 from tests.utils import PATCH_STITCH_HINTS, PROGRAM_PACKAGE
 from tests.utils.level_validation import validate_test_level
-from tests.utils.version_info_mock import create_version_info
 
 
 # Safe test level value (26 is between BRIEF=25 and WARNING=30)
@@ -102,7 +102,7 @@ def test_module_std_camel_function(  # noqa: PLR0915
         monkeypatch.setattr(
             mod_logging_utils.sys,  # type: ignore[attr-defined]
             "version_info",
-            create_version_info(older_version[0], older_version[1], 0),
+            create_mock_version_info(older_version[0], older_version[1], 0),
         )
         try:
             with pytest.raises(NotImplementedError):
@@ -121,7 +121,7 @@ def test_module_std_camel_function(  # noqa: PLR0915
         monkeypatch.setattr(
             mod_logging_utils.sys,  # type: ignore[attr-defined]
             "version_info",
-            create_version_info(targ_version[0], targ_version[1], 0),
+            create_mock_version_info(targ_version[0], targ_version[1], 0),
         )
         try:
             # Use patch_everywhere with create_if_missing=True for missing functions
