@@ -2,6 +2,51 @@
 
 <!-- version list -->
 
+## v0.22.0 (2026-01-01)
+
+### Bug Fixes
+
+- Correct useRootLevel stream cache handling for parallel test execution
+  ([`be32156`](https://github.com/apathetic-tools/python-logging/commit/be3215620f56930bbd5623cb169edcbdf11ab0fd))
+
+### Chores
+
+- Add apathetic-testing dependency and update project configuration
+  ([`cf2967a`](https://github.com/apathetic-tools/python-logging/commit/cf2967acf456053ab13f77081e318ba2d4a44b27))
+
+### Documentation
+
+- Update project disclaimer messaging
+  ([`7d6f674`](https://github.com/apathetic-tools/python-logging/commit/7d6f674facd41024b6df5bf99a32b38e08c38d18))
+
+### Features
+
+- Expose stdlib logging level constants for convenience
+  ([`dcd53eb`](https://github.com/apathetic-tools/python-logging/commit/dcd53eb5c220af3af70103c9263dad34d8c94810))
+
+- Remove pytest_helpers - functionality moved to apathetic-testing library
+  ([`6685d75`](https://github.com/apathetic-tools/python-logging/commit/6685d75b909c7d7debadadd87c197af1a04b80f7))
+
+### Refactoring
+
+- Remove duplicate test utilities now in apathetic-testing library
+  ([`1334f0e`](https://github.com/apathetic-tools/python-logging/commit/1334f0eca9114e52564d197e5bac3ee630c98f83))
+
+- Reorganize unit tests by API section from docs/api.md
+  ([`2642948`](https://github.com/apathetic-tools/python-logging/commit/2642948a048559c8c26797743700c020c14f3a29))
+
+### Testing
+
+- Remove mypy type: ignore comments with proper apathetic-testing 0.3.0 types
+  ([`5aa93d4`](https://github.com/apathetic-tools/python-logging/commit/5aa93d4e6ffa5c542fe28ee28844abd91a1e8ab5))
+
+- Remove mypy type: ignore comments with proper apathetic-testing 0.3.0 types
+  ([`fa7b73c`](https://github.com/apathetic-tools/python-logging/commit/fa7b73ca26ea6f7b788f170dcd0586e148547bea))
+
+- Rewrite useRootLevel tests using apathetic_testing's isolated_logging fixture
+  ([`26df7d9`](https://github.com/apathetic-tools/python-logging/commit/26df7d920a6420c1d94f45b1282d447f7e1f0ec5))
+
+
 ## v0.21.0 (2025-12-29)
 
 ### Bug Fixes
