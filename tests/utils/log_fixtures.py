@@ -12,7 +12,6 @@ import pytest
 import apathetic_logging as mod_alogs
 
 from .constants import DEFAULT_TEST_LOG_LEVEL, PATCH_STITCH_HINTS, PROGRAM_PACKAGE
-from .safe_trace import make_safe_trace
 
 
 if TYPE_CHECKING:
@@ -21,7 +20,7 @@ else:
     Logger = mod_alogs.Logger
 
 
-safe_trace = make_safe_trace(icon="📏")
+safeTrace = mod_alogs.makeSafeTrace(icon="📏")
 
 
 def _suffix() -> str:
@@ -109,7 +108,7 @@ def module_logger(
         stitch_hints=PATCH_STITCH_HINTS,
     )
 
-    safe_trace(
+    safeTrace(
         "module_logger fixture",
         f"id={id(new_logger)}",
         f"level={new_logger.levelName}",
