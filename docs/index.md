@@ -6,7 +6,7 @@ permalink: /
 
 # Apathetic Python Logging 🪵
 
-**Small quality-of-life features on top of stdlib.**
+**Small quality-of-life features on top of stdlib.**  
 *Because you don't need another large dependency.*
 
 *Apathetic Python Logger* provides a lightweight, dependency-free logging solution designed for CLI tools. It extends Python's standard library `logging` module with colorized output, dual-stream handling (stdout/stderr), extra logging levels, and seamless integration with Apathetic Tools projects.
