@@ -9,11 +9,16 @@ capture_streams() helper for reliable stream capture across all runtime modes
 and execution modes (serial, parallel with xdist).
 """
 
-import sys
+from __future__ import annotations
 
-from apathetic_testing import LoggingIsolation
+import sys
+from typing import TYPE_CHECKING
 
 import apathetic_logging as amod_logging
+
+
+if TYPE_CHECKING:
+    from apathetic_testing import LoggingIsolation
 
 
 def test_sequential_useRootLevel_single_message(
