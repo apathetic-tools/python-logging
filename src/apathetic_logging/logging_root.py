@@ -13,6 +13,7 @@ to trace bugs.
 from __future__ import annotations
 
 import logging
+import sys
 from collections.abc import Generator
 from contextlib import contextmanager
 from typing import Any
@@ -403,11 +404,11 @@ class ApatheticLogging_Internal_LoggingRoot:  # noqa: N801
         finally:
             # Restore original level
             root.setLevel(old_level)
-            # Clear stream cache state to fix .plan/062 bug where stale stream IDs
+            # Update stream cache state to fix .plan/062 bug where stale stream IDs
             # cause handler rebuild loops in stitched mode on sequential context
-            # manager use. We reset to None to force a fresh handler rebuild check
-            # on next use.
-            root_any._last_stream_ids = None  # noqa: SLF001
+            # manager use. We set it to the current streams (not None) to signal
+            # valid state while allowing detection of stream changes on next use.
+            root_any._last_stream_ids = (sys.stdout, sys.stderr)  # noqa: SLF001
 
     @staticmethod
     @contextmanager
