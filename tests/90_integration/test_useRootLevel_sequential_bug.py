@@ -1,113 +1,73 @@
 """Test to reproduce the sequential useRootLevel bug from .plan/062.
 
 This test demonstrates the issue where using useRootLevel() context manager
-sequentially causes log messages to be emitted 14-17 times instead of once.
+sequentially causes log messages to be emitted multiple times instead of once.
 This only manifests in stitched mode where module state persists.
+
+Uses the apathetic_testing library's atest_isolated_logging fixture and
+capture_streams() helper for reliable stream capture across all runtime modes
+and execution modes (serial, parallel with xdist).
 """
 
 import sys
-from io import StringIO
+
+from apathetic_testing import LoggingIsolation
 
 import apathetic_logging as amod_logging
 
 
-# Allow up to 3 lines: 1 for the message + potential formatting/blank lines
-# (In stitched mode, logging may produce extra lines due to different formatting)
-# The critical thing is we should NOT see 14-17 lines (the original bug)
-MAX_EXPECTED_LINES = 3
-
-
-def test_sequential_useRootLevel_single_message() -> None:
+def test_sequential_useRootLevel_single_message(
+    atest_isolated_logging: LoggingIsolation,
+) -> None:
     """Verify sequential useRootLevel calls don't cause message duplication.
 
     This test reproduces the exact issue reported in .plan/062:
     - First context manager use: works fine
-    - Second context manager use: message appears 14-17 times (broken)
+    - Second context manager use: message appears multiple times (broken)
+
+    Uses the isolated_logging fixture's capture_streams() which properly
+    handles pytest's capsys/caplog and xdist parallel execution scenarios.
     """
-    # Setup: get the root logger and ensure it's properly initialized
     logger = amod_logging.getLogger("test")
 
-    # Save original streams
-    old_stdout = sys.stdout
-    old_stderr = sys.stderr
-
-    try:
-        # First context manager use
-        capture1 = StringIO()
-        sys.stdout = capture1
-        sys.stderr = capture1
-
+    # First context manager use
+    with atest_isolated_logging.capture_streams() as capture1:
         with amod_logging.useRootLevel("TRACE"):
             logger.debug("First message")
 
-        output1 = capture1.getvalue()
-        lines1 = [line for line in output1.splitlines() if line.strip()]
-        count1 = len(lines1)
+        count1 = capture1.count_message("First message")
+        assert count1 == 1, f"First message: expected 1 occurrence, got {count1}"
 
-        # Second context manager use - this is where the bug manifests
-        capture2 = StringIO()
-        sys.stdout = capture2
-        sys.stderr = capture2
-
+    # Second context manager use - this is where the bug manifests
+    with atest_isolated_logging.capture_streams() as capture2:
         with amod_logging.useRootLevel("TRACE"):
             logger.debug("Second message")
 
-        output2 = capture2.getvalue()
-        lines2 = [line for line in output2.splitlines() if line.strip()]
-        count2 = len(lines2)
-
-        # Verify: second context manager should output same number of lines as first
-        # Expected: 1-2 lines per message
-        # Broken behavior: 14-17 lines on second use
-        error_msg2 = (
-            f"Expected <={MAX_EXPECTED_LINES} lines for second message, got {count2}. "
-            "Bug manifested: message duplicated!"
-        )
-        assert count2 <= MAX_EXPECTED_LINES, error_msg2
-        error_msg1 = (
-            f"Expected <={MAX_EXPECTED_LINES} lines for first message, got {count1}"
-        )
-        assert count1 <= MAX_EXPECTED_LINES, error_msg1
-
-    finally:
-        sys.stdout = old_stdout
-        sys.stderr = old_stderr
+        count2 = capture2.count_message("Second message")
+        assert count2 == 1, f"Second message: expected 1 occurrence, got {count2}"
 
 
-def test_sequential_useRootLevel_multiple_iterations() -> None:
+def test_sequential_useRootLevel_multiple_iterations(
+    atest_isolated_logging: LoggingIsolation,
+) -> None:
     """Verify multiple sequential useRootLevel calls all produce correct output."""
     logger = amod_logging.getLogger("test_multi")
 
-    old_stdout = sys.stdout
-    old_stderr = sys.stderr
-
-    try:
-        # Test multiple sequential uses
-        for i in range(5):
-            capture = StringIO()
-            sys.stdout = capture
-            sys.stderr = capture
-
+    # Test multiple sequential uses
+    for i in range(5):
+        with atest_isolated_logging.capture_streams() as capture:
             with amod_logging.useRootLevel("TRACE"):
                 logger.debug("Iteration %s", i)
 
-            output = capture.getvalue()
-            lines = [line for line in output.splitlines() if line.strip()]
-            count = len(lines)
-
-            # Each iteration should produce 1-2 lines, not 14-17
-            error_msg = (
-                f"Iteration {i}: Expected <={MAX_EXPECTED_LINES} lines, got {count}. "
-                "Bug manifested!"
+            count = capture.count_message(f"Iteration {i}")
+            assert count == 1, (
+                f"Iteration {i}: expected 1 occurrence, got {count}. Bug manifested!"
             )
-            assert count <= MAX_EXPECTED_LINES, error_msg
-
-    finally:
-        sys.stdout = old_stdout
-        sys.stderr = old_stderr
 
 
-def test_sequential_useRootLevel_with_stream_changes() -> None:
+def test_sequential_useRootLevel_with_stream_changes(
+    atest_isolated_logging: LoggingIsolation,
+) -> None:
     """Simulate pytest capsys behavior: replacing streams between uses.
 
     This more closely matches what happens in pytest where streams can be
@@ -115,54 +75,29 @@ def test_sequential_useRootLevel_with_stream_changes() -> None:
     """
     logger = amod_logging.getLogger("test_streams")
 
-    old_stdout = sys.stdout
-    old_stderr = sys.stderr
-
-    try:
-        # First use with stream1
-        capture1 = StringIO()
-        sys.stdout = capture1
-        sys.stderr = capture1
-
+    # First use with stream1
+    with atest_isolated_logging.capture_streams() as capture1:
         with amod_logging.useRootLevel("TRACE"):
             logger.debug("Message 1")
 
-        output1 = capture1.getvalue()
-        count1 = len([line for line in output1.splitlines() if line.strip()])
+        count1 = capture1.count_message("Message 1")
+        assert count1 == 1, f"Message 1: expected 1 occurrence, got {count1}"
 
-        # Replace streams (like pytest capsys does between tests)
-        capture2 = StringIO()
-        sys.stdout = capture2
-        sys.stderr = capture2
-
+    # Second use with stream2 (streams replaced, like pytest capsys does)
+    with atest_isolated_logging.capture_streams() as capture2:
         with amod_logging.useRootLevel("TRACE"):
             logger.debug("Message 2")
 
-        output2 = capture2.getvalue()
-        count2 = len([line for line in output2.splitlines() if line.strip()])
+        count2 = capture2.count_message("Message 2")
+        assert count2 == 1, f"Message 2: expected 1 occurrence, got {count2}"
 
-        # Third use with yet another stream
-        capture3 = StringIO()
-        sys.stdout = capture3
-        sys.stderr = capture3
-
+    # Third use with stream3 (yet another stream replacement)
+    with atest_isolated_logging.capture_streams() as capture3:
         with amod_logging.useRootLevel("TRACE"):
             logger.debug("Message 3")
 
-        output3 = capture3.getvalue()
-        count3 = len([line for line in output3.splitlines() if line.strip()])
-
-        # All three should have similar counts (1-2 lines), not 14-17
-        error_msg1 = f"Message 1: Expected <={MAX_EXPECTED_LINES} lines, got {count1}"
-        error_msg2 = f"Message 2: Expected <={MAX_EXPECTED_LINES} lines, got {count2}"
-        error_msg3 = f"Message 3: Expected <={MAX_EXPECTED_LINES} lines, got {count3}"
-        assert count1 <= MAX_EXPECTED_LINES, error_msg1
-        assert count2 <= MAX_EXPECTED_LINES, error_msg2
-        assert count3 <= MAX_EXPECTED_LINES, error_msg3
-
-    finally:
-        sys.stdout = old_stdout
-        sys.stderr = old_stderr
+        count3 = capture3.count_message("Message 3")
+        assert count3 == 1, f"Message 3: expected 1 occurrence, got {count3}"
 
 
 def test_useRootLevel_clears_stream_cache() -> None:
