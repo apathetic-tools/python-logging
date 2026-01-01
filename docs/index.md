@@ -23,7 +23,7 @@ permalink: /
 - 🧩 **Apathetic Tools integration** — Works seamlessly with serger and other Apathetic Tools
 
 > [!NOTE]
-> This project is largely AI-written and minimally polished. I rely on it, but I haven't reviewed every detail.
+> This project is largely AI-written and minimally polished. I rely on it, but I haven't reviewed every detail.  
 > Expect rough edges. Thoughtful issue reports are appreciated.
 
 ## Quick Example
